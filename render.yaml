@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: pilzverwaltung-v73
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: APP_PASSWORD
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pilzverwaltung-db
+          property: connectionString
+
+databases:
+  - name: pilzverwaltung-db
+    plan: free
