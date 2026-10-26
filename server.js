@@ -73,7 +73,8 @@ function parseCookies(req) {
   const out = {};
   for (const part of String(req.headers.cookie || '').split(';')) {
     const i = part.indexOf('='); if (i < 0) continue;
-    out[part.slice(0,i).trim()] = decodeURIComponent(part.slice(i+1).trim());
+    try { out[part.slice(0,i).trim()] = decodeURIComponent(part.slice(i+1).trim()); }
+    catch (_) { /* Ungültige Cookie-Kodierung ignorieren. */ }
   }
   return out;
 }
@@ -1268,10 +1269,12 @@ async function serveStatic(req, res) {
 const server = http.createServer(async (req, res) => {
   try {
     if (!req.url.startsWith('/api/woo/webhook')) { try { await touchDevice(req,res); } catch(e) { console.warn('Geräteerkennung:', e.message); } }
-    if (req.url.startsWith('/api/')) return handleApi(req, res);
-    return serveStatic(req, res);
+    if (req.url.startsWith('/api/')) return await handleApi(req, res);
+    return await serveStatic(req, res);
   } catch (err) {
     console.error(err);
+    if (res.headersSent || res.writableEnded || res.destroyed) return;
+    if (err instanceof SyntaxError || err instanceof URIError) return sendJson(res, 400, { error: 'Ungültige Anfrage.' });
     return sendJson(res, 500, { error: 'Serverfehler.' });
   }
 });
