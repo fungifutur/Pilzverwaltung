@@ -1,0 +1,16 @@
+name: SEC-01 smoke tests
+on:
+  push:
+    branches: [fix/sec-01-request-errors]
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - run: node --check server.js
+      - run: node tests/sec01-smoke.cjs
