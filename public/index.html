@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.29</title>
+<title>Pilzverwaltung Serverversion 1.5.30</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.29</h1>
+<h1>Pilzverwaltung – Version 1.5.30</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -481,7 +481,7 @@ nav button.top-link{font-weight:bold}
 <section id="dowels" class="section">
 <h2>Dübel</h2>
 <div class="card"><strong>Bestand pro Strain:</strong><br><span id="dowelsSummary"></span></div>
-<div class="card"><h3>Dübel herstellen</h3><div class="form"><div><label>Quelle Typ</label><select id="duebSourceType" onchange="render(); renderProductionSkuOptions(true)"><option value="kb">Körnerbrut</option><option value="dowel">Dübel / Grossgebinde</option><option value="unknown">unbekannt</option><option value="set">Dübel-Set / Trio</option></select></div><div id="duebKbWrap"><label>Körnerbrut</label><select id="duebKb" onchange="renderProductionSkuOptions(true)"></select></div><div id="duebDowelWrap" style="display:none"><label>Dübel-Quelle</label><select id="duebDowel" onchange="renderProductionSkuOptions(true)"></select></div><div id="duebUnknownWrap" style="display:none"><label>Strain bei unbekannter Quelle</label><select id="duebUnknownStrain" onchange="renderProductionSkuOptions(true)"></select><span class="muted">Bestehenden Strain wählen; die genaue Ausgangscharge darf unbekannt sein.</span></div><div id="duebSetWrap" style="display:none"><label>Set / WooCommerce-Artikelnummer</label><select id="duebSetSku"><option value="Trio_Düb_150stk">Trio_Düb_150stk – 3×50 Stk</option><option value="Trio_Düb_300stk">Trio_Düb_300stk – 3×100 Stk</option><option value="Trio2_Düb_150stk">Trio2_Düb_150stk – 3×50 Stk</option><option value="Trio2_Düb_300stk">Trio2_Düb_300stk – 3×100 Stk</option></select></div><div id="duebSizeWrap"><label>Typ</label><select id="duebSize" onchange="renderProductionSkuOptions(true)"><option value="50 Stück">50 Stück</option><option value="75 Stück">75 Stück</option><option value="150 Stück">150 Stück</option><option value="300 Stück">300 Stück</option><option value="500 Stück">500 Stück</option><option value="1000 Stück">1000 Stück</option></select></div><div id="duebSkuWrap"><label>SKU Dübel</label><select id="duebSku"><option value="">von Quelle übernehmen / automatisch</option></select></div><div><label>Anzahl Produkte</label><input id="duebCount" type="text" inputmode="numeric" pattern="[0-9]*" value="1" min="1"></div><div><label>Herstellungsdatum</label><input id="duebDate" type="date"></div><div id="duebSourceUsageWrap"><label>Quelle nach Verwendung</label><label style="display:flex;gap:8px;align-items:center"><input id="duebSourceUsedUp" type="checkbox"> Quelle vollständig aufgebraucht → ins Archiv</label><span class="muted">Nicht markieren = Quelle bleibt aktiv und erhält den Hinweis „Angebraucht“.</span></div></div><button class="primary" onclick="addDueb()">Dübel speichern</button><div id="duebOrderHint" class="muted" style="margin-top:8px"></div><p class="muted">Normale Dübel werden als Lot gespeichert. Dübel-Sets erzeugen ein Set mit 3 Komponenten; Konti kann pro Komponente gebucht werden.</p></div>
+<div class="card"><h3>Dübel herstellen</h3><div class="form"><div><label>Quelle Typ</label><select id="duebSourceType" onchange="render(); renderProductionSkuOptions(true)"><option value="kb">Körnerbrut</option><option value="dowel">Dübel / Grossgebinde</option><option value="unknown">unbekannt</option></select></div><div id="duebKbWrap"><label>Körnerbrut</label><select id="duebKb" onchange="renderProductionSkuOptions(true)"></select></div><div id="duebDowelWrap" style="display:none"><label>Dübel-Quelle</label><select id="duebDowel" onchange="renderProductionSkuOptions(true)"></select></div><div id="duebUnknownWrap" style="display:none"><label>Strain bei unbekannter Quelle</label><select id="duebUnknownStrain" onchange="renderProductionSkuOptions(true)"></select><span class="muted">Bestehenden Strain wählen; die genaue Ausgangscharge darf unbekannt sein.</span></div><div id="duebSetWrap" style="display:none"><label>Set / WooCommerce-Artikelnummer</label><select id="duebSetSku"><option value="Trio_Düb_150stk">Trio_Düb_150stk – 3×50 Stk</option><option value="Trio_Düb_300stk">Trio_Düb_300stk – 3×100 Stk</option><option value="Trio2_Düb_150stk">Trio2_Düb_150stk – 3×50 Stk</option><option value="Trio2_Düb_300stk">Trio2_Düb_300stk – 3×100 Stk</option></select></div><div id="duebSizeWrap"><label>Typ</label><select id="duebSize" onchange="renderProductionSkuOptions(true)"><option value="50 Stück">50 Stück</option><option value="75 Stück">75 Stück</option><option value="150 Stück">150 Stück</option><option value="300 Stück">300 Stück</option><option value="500 Stück">500 Stück</option><option value="1000 Stück">1000 Stück</option></select></div><div id="duebSkuWrap"><label>SKU Dübel</label><select id="duebSku"><option value="">von Quelle übernehmen / automatisch</option></select></div><div><label>Anzahl Produkte</label><input id="duebCount" type="text" inputmode="numeric" pattern="[0-9]*" value="1" min="1"></div><div><label>Herstellungsdatum</label><input id="duebDate" type="date"></div><div id="duebSourceUsageWrap"><label>Quelle nach Verwendung</label><label style="display:flex;gap:8px;align-items:center"><input id="duebSourceUsedUp" type="checkbox"> Quelle vollständig aufgebraucht → ins Archiv</label><span class="muted">Nicht markieren = Quelle bleibt aktiv und erhält den Hinweis „Angebraucht“.</span></div></div><button class="primary" onclick="addDueb()">Dübel speichern</button><div id="duebOrderHint" class="muted" style="margin-top:8px"></div><p class="muted">Normale Dübel werden als Lot gespeichert. Dübel-Sets erzeugen ein Set mit 3 Komponenten; Konti kann pro Komponente gebucht werden.</p></div>
 <div class="card"><table><thead><tr><th>ID / Lot</th><th>Typ</th><th>SKU</th><th>Strain / Set</th><th>Quelle</th><th>Datum</th><th>Typ</th><th>Bestand Produkte</th><th>Komponenten</th><th>Status</th><th>Aktion</th></tr></thead><tbody id="dowelsRows"></tbody></table></div>
 </section>
 
@@ -1907,7 +1907,7 @@ function batchCandidatesForSku(sku){
   const add=(collection,arr,filter=()=>true,dateKey='date')=>(arr||[]).filter(x=>x.sku===sku&&!blocked.has(String(x.status||'').toLowerCase())&&filter(x)).forEach(x=>rows.push({collection,id:x.id,date:x[dateKey]||x.date||x.packDate,qty:qtyOrOne(x.qty),storageLocation:x.storageLocation||defaultStorageLocationForSku(sku),orderId:x.orderId||null,orderItemId:x.orderItemId||null}));
   add('goods',db.goods,x=>['Spritzen','Dübel','Dübel-Set'].includes(x.type) && !(x.type==='Dübel' && is1000Dowel(x) && x.anbruch) && (x.type!=='Dübel' && x.type!=='Dübel-Set' || String(x.status||'').toLowerCase()==='fertig durchwachsen'));
   // Körnerbrut zählt für Bestellung/Woo erst im Status 'im Kühlschrank'.
-  add('kb',db.kb,x=>String(x.status||'').toLowerCase()==='im kühlschrank'); add('sub',db.sub,x=>!x.forTest && String(x.status||'').toLowerCase()==='fertig durchwachsen'); add('lots',db.lots,()=>true,'packDate'); add('logs',db.logs,x=>String(x.status||'').toLowerCase()==='fertig durchwachsen');
+  add('kb',db.kb,x=>String(x.status||'').toLowerCase()==='im kühlschrank'&&!x.anbruch); add('sub',db.sub,x=>!x.forTest && String(x.status||'').toLowerCase()==='fertig durchwachsen'); add('lots',db.lots,()=>true,'packDate'); add('logs',db.logs,x=>String(x.status||'').toLowerCase()==='fertig durchwachsen');
   return rows.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||String(a.id).localeCompare(String(b.id),'de',{numeric:true}));
 }
 function reservationsForOtherOrders(orderId=null){return (db.wooReservations||[]).filter(r=>r.status==='reserved'&&(orderId==null||String(r.orderId)!==String(orderId))&&(db.wooOrders||[]).some(o=>String(o.id)===String(r.orderId)&&['processing','on-hold'].includes(String(o.status||'').toLowerCase())&&!o.archived&&!o.externalDeleted));}
@@ -6051,7 +6051,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.29'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.30'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

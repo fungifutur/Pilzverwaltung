@@ -1,3 +1,9 @@
+# Version 1.5.30 – Angebrochene Ware nicht verkäuflich, Dübel-Set aus der Auswahl
+
+- **Nicht verkäuflich:** Angebrochene 1000er-Dübelpakete (schon in 1.5.29) und neu auch **angebrochene Körnerbrut** zählen weder als Shop-Bestand noch werden sie für Bestellungen reserviert. Gilt im Server und im Browser. Betroffene Bestellungen bekommen beim nächsten Speichern/Abgleich automatisch die nächste vollständige Charge. Der WooCommerce-Bestand der betroffenen Artikel kann sinken.
+- **Dübel-Set:** Die Option «Dübel-Set / Trio» unter «Dübel herstellen» ist aus der Auswahl entfernt. Sets bestehen nur noch aus den Einzelprodukten (bestehende Set-Einträge bleiben sichtbar).
+- Neuer Test: angebrochene Körnerbrut wird nicht reserviert.
+
 # Version 1.5.29 – Bestandsabweichungen Server/Browser (INT-07, Vorbereitung)
 
 - **Vergleich mit echten Daten:** Der Bestand wurde für alle 150 Artikel einmal vom Server und einmal vom Browser berechnet (anonymisierter Export). Es gab drei Abweichungen, zwei echte Fehler im Server wurden behoben, danach 0 Abweichungen.
