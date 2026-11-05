@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.31';
+const APP_VERSION = '1.5.32';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -315,6 +315,7 @@ function normalizeDb(data) {
       db[key] = {};
     }
   }
+  if (!db.setBoms || !Object.keys(db.setBoms).length) db.setBoms = JSON.parse(JSON.stringify(SET_BOMS_DEFAULT));
   return db;
 }
 
@@ -816,7 +817,8 @@ async function wooReadOrderById(id){
 
 
 // Stücklisten / Sets 1.4.62: Eine Verkaufs-SKU kann mehrere interne Lagerartikel reservieren.
-const SET_BOMS = {
+// COD-02/M16: Standard-Stücklisten. Die gültigen Rezepte stehen in den Daten (db.setBoms); dies ist nur der Startwert.
+const SET_BOMS_DEFAULT = {
   'Ppul_Exp_150g': [
     {sku:'Ppul_Kör_150g', qty:1, label:'Lungenseitling Körnerbrut 150 g'},
     {sku:'INT_Stroh_500g', qty:1, label:'Strohpellets 500 g'},
@@ -845,7 +847,7 @@ const SET_BOMS = {
     {sku:'Post_Düb_150stk',qty:1,label:'Austernseitling Dübel 150 Stk.'},{sku:'Ppul_Düb_150stk',qty:1,label:'Lungenseitling Dübel 150 Stk.'},{sku:'Kmut_Düb_Bu_150stk',qty:1,label:'Stockschwämmchen Dübel 150 Stk.'}
   ]
 };
-function setBom(sku){ return SET_BOMS[String(sku||'')] || null; }
+function setBom(db, sku){ const m=db&&db.setBoms; return (m && Array.isArray(m[String(sku||'')]) && m[String(sku||'')].length) ? m[String(sku||'')] : null; }
 function dedupeProductCatalog(db){
   if(!Array.isArray(db.productCatalog)) db.productCatalog=[];
   const bySku=new Map(), idMap=new Map(), out=[];
@@ -946,14 +948,14 @@ function allocatableStock(db, sku, exceptOrderId = null, forSet = false) {
   return available;
 }
 function saleableStock(db, sku) {
-  const bom=setBom(sku);
+  const bom=setBom(db,sku);
   if(bom) return Math.max(0, Math.floor(Math.min(...bom.map(c=>allocatableStock(db,c.sku,null,true)/(Number(c.qty)||1)))));
   return Math.max(0, Math.floor(allocatableStock(db, sku, null, false)));
 }
 // INT-07: Der Server ist die einzige Stelle, die den Bestand rechnet. Der Browser zeigt diese Zahlen nur an.
 // «available» ist genau der Wert, der an WooCommerce gemeldet wird (saleableStock).
 function stockBreakdown(db, sku) {
-  const bom = setBom(sku);
+  const bom = setBom(db, sku);
   const available = saleableStock(db, sku);
   if (bom) return { physical: available, reserved: 0, productionReserve: 0, reserve: 0, available, set: true };
   const cat = catalogItem(db, sku);
@@ -964,7 +966,7 @@ function stockBreakdown(db, sku) {
 function stockMap(db) {
   const skus = new Set();
   for (const k of ['productCatalog','minStocks','dk','kb','sub','lots','logs','goods','petri','buckets']) for (const x of (db[k]||[])) if (x && x.sku) skus.add(String(x.sku));
-  for (const sku of Object.keys(SET_BOMS)) skus.add(sku);
+  for (const sku of Object.keys(db.setBoms||{})) skus.add(sku);
   for (const sku of (db.wooSync?.selectedSkus || [])) if (sku) skus.add(String(sku));
   const out = {};
   for (const sku of [...skus].sort()) out[sku] = stockBreakdown(db, sku);
@@ -1049,7 +1051,7 @@ function reserveOrderFifo(db, order) {
   const created=[];
   for (const item of (order.items||[])) {
     let need = Number(item.quantity)||0;
-    const bom=setBom(item.sku);
+    const bom=setBom(db,item.sku);
     if(bom){
       for(const component of bom){
         let componentNeed=need*(Number(component.qty)||1);
@@ -1630,6 +1632,7 @@ async function handleApi(req, res) {
           parsed.wooOrders = previous.wooOrders || [];
           ensureSetCatalog(parsed);
           dedupeProductCatalog(parsed);
+          parsed.setBoms = previous.setBoms;
           parsed.wooReservations = previous.wooReservations || [];
           parsed.wooSyncLog = previous.wooSyncLog || [];
           rebuildProcessingReservations(parsed);

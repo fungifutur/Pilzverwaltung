@@ -47,7 +47,7 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.31 gegen PostgreSQL', { skip }, () => {
+describe('Pilzverwaltung 1.5.32 gegen PostgreSQL', { skip }, () => {
   let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
@@ -441,6 +441,22 @@ describe('Pilzverwaltung 1.5.31 gegen PostgreSQL', { skip }, () => {
     assert.equal(wooStock.last, 2);
     assert.equal((await Browser_noauth_stock()), 401);
     async function Browser_noauth_stock() { return (await new Browser('10.0.0.9').req('GET', '/api/stock')).status; }
+  });
+
+  it('COD-02/M16: Set-Rezepte stehen in den Daten, der Server verwaltet sie', async () => {
+    const a = await A.req('GET', '/api/data'); const doc = a.json;
+    assert.ok(Array.isArray(doc.setBoms.Ppul_Exp_600g) && doc.setBoms.Ppul_Exp_600g.length >= 1, 'Standardrezepte sind in den Daten vorhanden');
+    // Ein Browser darf die Rezepte nicht überschreiben
+    const orig = JSON.stringify(doc.setBoms);
+    doc.setBoms = { Boese: [{ sku: 'X', qty: 1 }] };
+    const save = await A.req('POST', '/api/data', { body: doc, headers: { 'x-data-version': a.headers.get('x-data-version') } });
+    assert.equal(save.status, 200);
+    assert.equal(JSON.stringify((await A.req('GET', '/api/data')).json.setBoms), orig);
+    // Ein neues Rezept in den Daten wirkt sofort auf Bestand und Reservierung
+    await db.query(`UPDATE app_state SET data = jsonb_set(data, '{setBoms,TEST_SET}', '[{"sku":"KB_TEST","qty":1,"label":"Test"}]'::jsonb) WHERE id = 1`);
+    const st = await A.req('GET', '/api/stock');
+    assert.equal(st.json.stock.TEST_SET.set, true);
+    assert.equal(st.json.stock.TEST_SET.available, st.json.stock.KB_TEST.available);
   });
 
   it('Teamaufgaben: atomar, liefert Versionen', async () => {
