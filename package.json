@@ -1,0 +1,19 @@
+{
+  "name": "pilzverwaltung-server",
+  "version": "1.5.25",
+  "description": "Pilzverwaltung als Server-App mit ausschliesslicher PostgreSQL-Speicherung, QR-Arbeitsmaske, Backups und Administration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js",
+    "check": "node --check server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "pg": "^8.13.1",
+    "qrcode": "^1.5.4"
+  }
+}
