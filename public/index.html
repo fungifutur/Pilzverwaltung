@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.32</title>
+<title>Pilzverwaltung Serverversion 1.5.33</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.32</h1>
+<h1>Pilzverwaltung – Version 1.5.33</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -808,6 +808,15 @@ nav button.top-link{font-weight:bold}
 <h3>Lokaler Produktkatalog / Bestandsart</h3>
 <p class="muted">Zusätzliche/importierte Produkte werden hier Bereich und Bestandsart zugeordnet. Auto-Sync wird zentral oben für alle SKUs verwaltet.</p>
 <div id="localCatalogRows"></div>
+</div>
+<div class="card">
+<h3>Set-Rezepte (Stücklisten)</h3>
+<p class="muted">Ein Set hat keinen eigenen Bestand: er ergibt sich aus den Einzelprodukten (der kleinste Vorrat bestimmt, wie viele Sets verkäuflich sind). Eine Zeile pro Komponente im Format <code>SKU | Menge | Bezeichnung</code>. Änderungen brauchen das Admin-Passwort und wirken sofort auf Bestand und Reservierungen.</p>
+<div id="setBomRows"></div>
+<div style="margin-top:12px;border-top:1px solid var(--line,#ddd);padding-top:10px"><strong>Neues Set</strong>
+<div class="form"><div><label>Set-SKU (WooCommerce)</label><input id="setBomNewSku" placeholder="z. B. Trio_Düb_225stk"></div></div>
+<textarea id="setBomNewLines" rows="4" style="width:100%;box-sizing:border-box" placeholder="Post_Düb_75stk | 1 | Austernseitling Dübel 75 Stk.&#10;Ppul_Düb_75stk | 1 | Lungenseitling Dübel 75 Stk."></textarea>
+<button class="primary" onclick="saveSetBom('new')">Set anlegen</button></div>
 </div>
 <div class="card">
 <h3>Produkte / SKUs</h3>
@@ -1878,7 +1887,49 @@ async function importAllNewWooCatalog(){
   fresh.forEach(p=>db.productCatalog.push({id:'CAT-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),sku:p.sku,name:p.name||p.sku,wooId:p.id||null,parentId:p.parent_id||null,wooType:p.type||'',area:'unassigned',stockMode:'none',syncActive:false,qty:0,storageLocation:'',active:true,importedAt:new Date().toISOString()}));
   await save(); renderLocalCatalog(); renderWooCatalogPreview(); renderSkuMapping(); renderWooSyncUi(); alert(`${fresh.length} neue Produkte importiert.`);
 }
+// --- Set-Rezepte bearbeiten (COD-02/M16) ---
+function setBomToLines(list){ return (list||[]).map(c=>[c.sku,c.qty,c.label||''].join(' | ')).join('\n'); }
+function parseSetBomLines(text){
+  return String(text||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{ const p=l.split('|').map(x=>x.trim()); return {sku:p[0]||'',qty:p[1]===undefined||p[1]===''?1:Number(p[1]),label:p[2]||''}; });
+}
+function renderSetBomEditor(){
+  const boms=db.setBoms||{}; const keys=Object.keys(boms).sort();
+  setHTML('setBomRows',keys.length?keys.map((k,n)=>`<div style="margin-bottom:12px"><strong>${escHtml(k)}</strong>
+    <textarea id="setBomLines${n}" rows="${Math.max(3,boms[k].length+1)}" style="width:100%;box-sizing:border-box">${escHtml(setBomToLines(boms[k]))}</textarea>
+    <button class="secondary" onclick="saveSetBom(${n})">Speichern</button> <button class="danger" onclick="deleteSetBom(${n})">Set löschen</button></div>`).join(''):'<span class="muted">Noch keine Sets.</span>');
+}
+async function setBomRequest(payload){
+  const send=()=>fetch('/api/set-boms',{method:'POST',headers:apiHeaders({'Content-Type':'application/json'}),body:JSON.stringify(payload)});
+  let r=await send();
+  if(r.status===401){ if(!await adminLogin()) return null; r=await send(); }
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){ alert(j.error||'Rezept konnte nicht gespeichert werden.'); return null; }
+  if(j.setBoms) db.setBoms=j.setBoms;
+  if(Array.isArray(j.productCatalog)) db.productCatalog=j.productCatalog;
+  if(Array.isArray(j.wooReservations)) db.wooReservations=j.wooReservations;
+  if(Array.isArray(j.wooSyncLog)) db.wooSyncLog=j.wooSyncLog;
+  if(j.version){ DATA_VERSION=j.version; if(j.stock) SERVER_STOCK={version:j.version,stock:j.stock}; }
+  return j;
+}
+async function saveSetBom(which){
+  const sku=which==='new'?String(el('setBomNewSku').value||'').trim():Object.keys(db.setBoms||{}).sort()[which];
+  const text=which==='new'?el('setBomNewLines').value:el('setBomLines'+which).value;
+  const components=parseSetBomLines(text);
+  if(!sku) return alert('Bitte die Set-SKU eingeben.');
+  if(!components.length) return alert('Bitte mindestens eine Komponente eintragen.');
+  const j=await setBomRequest({action:'upsert',sku,components});
+  if(!j) return;
+  if(which==='new'){ el('setBomNewSku').value=''; el('setBomNewLines').value=''; }
+  render(); showLiveToast('Rezept gespeichert','Set '+sku+' gespeichert.');
+}
+async function deleteSetBom(n){
+  const sku=Object.keys(db.setBoms||{}).sort()[n]; if(!sku) return;
+  if(!confirm('Set '+sku+' wirklich löschen? Das Produkt hat danach wieder einen eigenen Bestand (meist 0).')) return;
+  const j=await setBomRequest({action:'delete',sku}); if(!j) return;
+  render(); showLiveToast('Rezept gelöscht','Set '+sku+' gelöscht.');
+}
 function renderLocalCatalog(){
+  try{ renderSetBomEditor(); }catch(e){ console.warn(e); }
   ensureCatalogState();
   const rows=(db.productCatalog||[]).map(p=>`<tr><td><strong>${escHtml(p.sku)}</strong><br><span class="muted">${escHtml(p.name||'')}</span></td><td><select onchange="updateCatalogField('${p.id}','area',this.value)"><option value="unassigned">nicht zugeordnet</option><option value="rawmaterials" ${p.area==='rawmaterials'?'selected':''}>Rohstoffe</option><option value="labmaterials" ${p.area==='labmaterials'?'selected':''}>Labormaterialien</option><option value="syringes" ${p.area==='syringes'?'selected':''}>Verkaufsspritzen</option><option value="kb" ${p.area==='kb'?'selected':''}>Körnerbrut</option><option value="microfilterbags" ${p.area==='microfilterbags'?'selected':''}>Mikrofiltersäcke</option><option value="sub" ${p.area==='sub'?'selected':''}>Substratsäcke / Pilzzuchtsets</option><option value="dowels" ${p.area==='dowels'?'selected':''}>Dübel</option><option value="lots" ${p.area==='lots'?'selected':''}>Dörrpilze</option><option value="other" ${p.area==='other'?'selected':''}>Sonstige</option></select></td><td><select onchange="updateCatalogField('${p.id}','stockMode',this.value)"><option value="none" ${p.stockMode==='none'?'selected':''}>nicht lagergeführt</option><option value="simple" ${p.stockMode==='simple'?'selected':''}>einfacher Stückbestand</option><option value="batch" ${p.stockMode==='batch'?'selected':''}>Chargen/FIFO</option></select></td><td><select onchange="updateCatalogField('${p.id}','syncActive',this.value==='yes')"><option value="no" ${!p.syncActive?'selected':''}>Sync aus</option><option value="yes" ${p.syncActive?'selected':''}>Sync aktiv</option></select></td></tr>`).join('');
   setHTML('localCatalogRows',`<table><thead><tr><th>Produkt</th><th>Bereich</th><th>Bestandsart</th><th>Woo Sync</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="muted">Noch keine neuen WooCommerce-Produkte importiert.</td></tr>'}</tbody></table>`);
@@ -6011,7 +6062,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.32'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.33'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

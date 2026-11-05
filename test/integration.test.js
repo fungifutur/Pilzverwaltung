@@ -47,7 +47,7 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.32 gegen PostgreSQL', { skip }, () => {
+describe('Pilzverwaltung 1.5.33 gegen PostgreSQL', { skip }, () => {
   let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
@@ -457,6 +457,26 @@ describe('Pilzverwaltung 1.5.32 gegen PostgreSQL', { skip }, () => {
     const st = await A.req('GET', '/api/stock');
     assert.equal(st.json.stock.TEST_SET.set, true);
     assert.equal(st.json.stock.TEST_SET.available, st.json.stock.KB_TEST.available);
+  });
+
+  it('COD-02/M16: Rezepte bearbeiten nur mit Admin-Passwort, mit Prüfungen; Katalog wächst mit den Rezepten', async () => {
+    const admin = { authorization: 'Bearer ' + APP_PW };
+    const body = { action: 'upsert', sku: 'NEW_SET', components: [{ sku: 'KB_SYNC', qty: 2, label: 'Brut' }, { sku: 'INT_Test_500g', qty: 1, label: 'Test Pellets' }] };
+    assert.equal((await A.req('POST', '/api/set-boms', { body })).status, 401, 'ohne Admin-Passwort');
+    const ok = await A.req('POST', '/api/set-boms', { body, headers: admin });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.json.setBoms.NEW_SET.length, 2);
+    const cat = ok.json.productCatalog.find(p => p.sku === 'INT_Test_500g');
+    assert.ok(cat && cat.area === 'rawmaterials' && cat.stockMode === 'simple', 'fehlende Komponente wird im Katalog angelegt');
+    assert.equal(ok.json.stock.NEW_SET.set, true);
+    assert.equal(ok.json.stock.NEW_SET.available, 0, 'Pellets fehlen, also kein Set verkäuflich');
+    const bad = async b => (await A.req('POST', '/api/set-boms', { body: b, headers: admin })).status;
+    assert.equal(await bad({ action: 'upsert', sku: 'OUTER', components: [{ sku: 'NEW_SET', qty: 1 }] }), 400, 'keine Verschachtelung');
+    assert.equal(await bad({ action: 'upsert', sku: 'X1', components: [{ sku: 'KB_SYNC', qty: 0 }] }), 400, 'Menge 0');
+    assert.equal(await bad({ action: 'upsert', sku: 'X1', components: [{ sku: 'X1', qty: 1 }] }), 400, 'Set in sich selbst');
+    assert.equal(await bad({ action: 'upsert', sku: 'KB_SYNC', components: [{ sku: 'KB_TEST', qty: 1 }] }), 400, 'Komponente eines Sets kann kein Set werden');
+    const del = await A.req('POST', '/api/set-boms', { body: { action: 'delete', sku: 'NEW_SET' }, headers: admin });
+    assert.equal(del.status, 200); assert.equal(del.json.setBoms.NEW_SET, undefined);
   });
 
   it('Teamaufgaben: atomar, liefert Versionen', async () => {

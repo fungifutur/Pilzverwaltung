@@ -1,3 +1,11 @@
+# Version 1.5.33 – Set-Rezepte bearbeiten, Katalog folgt den Daten (COD-02, M16)
+
+- **Rezepte bearbeiten:** Unter WooCommerce → «Lokaler Produktkatalog» gibt es neu die Karte «Set-Rezepte (Stücklisten)». Dort können Sets angelegt, geändert und gelöscht werden (eine Zeile pro Komponente: `SKU | Menge | Bezeichnung`). Speichern braucht das Admin-Passwort, weil Rezepte den Bestand bestimmen, der an WooCommerce gemeldet wird. Bestand, Reservierungen und WooCommerce-Meldung werden danach sofort neu berechnet.
+- **Prüfungen auf dem Server:** ganze Zahlen von 1 bis 1000, keine doppelten Komponenten, ein Set kann sich nicht selbst enthalten, keine Verschachtelung (eine Komponente darf kein Set sein).
+- **Katalog ohne feste Liste:** Die bisher fest im Programm stehende Liste interner Artikel (Körnerbrut, Stroh- und Nadelholzpellets) ist entfernt. Für jede Komponente eines Rezepts, die im Katalog fehlt, legt der Server einen internen Eintrag an (Bereich und Bestandsart aus der SKU-Schreibweise). Bestehende Einträge bleiben unverändert; gelöschte Katalogeinträge, die in keinem Rezept vorkommen, kehren nicht mehr zurück.
+- Mit den anonymisierten Echtdaten in der Oberfläche geprüft (7 Sets: Anzeige, unveränderte Speicherung, Neuanlage, Löschen). Neuer Test; Suite 35/35 grün.
+- Offen: Die Auswahl «Dübel-Set» im alten Herstellungsformular ist weiterhin nur über die Einzelprodukte vorgesehen; weitere feste Listen im Browser (z. B. SKU-Muster für Bereiche) folgen mit der Migration (M15/M17).
+
 # Version 1.5.32 – Stammdaten in den Daten, FIFO-Zuteilung nur noch auf dem Server (COD-02, M16, INT-07)
 
 - **Set-Rezepte in den Daten:** Die Stücklisten der Sets (z. B. Ppul_Exp_*, Trio_Düb_*, Star_Düb_*) stehen jetzt in den Daten (`setBoms`) statt fest im Programm. Beim ersten Start werden die bisherigen Rezepte eingetragen, Inhalt und Verhalten bleiben gleich. Der Server verwaltet sie; ein Browser kann sie nicht überschreiben. Die Bearbeitung über die Oberfläche folgt später.
