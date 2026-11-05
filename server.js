@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.27';
+const APP_VERSION = '1.5.28';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -888,6 +888,8 @@ function ensureSetCatalog(db){
   for(const [sku,name,area,stockMode] of defs){ if(!db.productCatalog.some(p=>p.sku===sku)) db.productCatalog.push({id:'INT-'+sku,sku,name,area,stockMode,qty:0,active:true,syncActive:false,internalOnly:true}); }
 }
 
+// INT-10 (b): fehlende Menge zählt als 1, eine ausdrückliche 0 bleibt 0 (früher wurde 0 zu 1 und erzeugte Phantom-Bestand)
+function qtyOrOne(v) { if (v === undefined || v === null || v === '') return 1; const n = Number(v); return Number.isFinite(n) ? Math.max(0, n) : 1; }
 function isArchivedStockStatus(status) {
   const s = String(status || '').toLowerCase();
   return ['verkauft','archiviert','aufgebraucht','verbraucht','kontaminiert','entsorgt'].includes(s);
@@ -900,7 +902,7 @@ function batchRowsForSku(db, sku) {
   const add = (collection, list, filter = () => true, dateKey = 'date') => {
     for (const x of (list || [])) {
       if (String(x.sku || '') !== String(sku || '') || isArchivedStockStatus(x.status) || !filter(x)) continue;
-      rows.push({ collection, id: x.id, date: x[dateKey] || x.date || x.packDate || '', qty: Math.max(0, Number(x.qty) || 1), storageLocation: x.storageLocation || '', orderId: x.orderId || null, orderItemId: x.orderItemId || null });
+      rows.push({ collection, id: x.id, date: x[dateKey] || x.date || x.packDate || '', qty: qtyOrOne(x.qty), storageLocation: x.storageLocation || '', orderId: x.orderId || null, orderItemId: x.orderItemId || null });
     }
   };
   add('goods', db.goods, x => ['Spritzen','Dübel','Dübel-Set'].includes(x.type) && (x.type!=='Dübel' && x.type!=='Dübel-Set' || String(x.status||'').toLowerCase()==='fertig durchwachsen'));
@@ -1100,7 +1102,7 @@ function consumeOrderReservations(db, orderId) {
       const p=(db.productCatalog||[]).find(x=>x.id===r.batchId || x.sku===r.sku); if(p) p.qty=Math.max(0,(Number(p.qty)||0)-(Number(r.qty)||0));
     } else {
       const arr=db[r.collection]||[]; const x=arr.find(v=>String(v.id)===String(r.batchId));
-      if(x){ const q=Number(x.qty)||1, left=Math.max(0,q-(Number(r.qty)||0)); if('qty' in x) x.qty=left; if(left<=0 || !('qty' in x)) { x.status='verkauft'; x.finishedAt=new Date().toISOString().slice(0,10); } }
+      if(x){ const q=qtyOrOne(x.qty), left=Math.max(0,q-(Number(r.qty)||0)); if('qty' in x) x.qty=left; if(left<=0 || !('qty' in x)) { x.status='verkauft'; x.finishedAt=new Date().toISOString().slice(0,10); } }
     }
     r.status='consumed'; r.consumedAt=new Date().toISOString();
   }
