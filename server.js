@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.32';
+const APP_VERSION = '1.5.33';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -878,16 +878,25 @@ function dedupeProductCatalog(db){
   return idMap.size;
 }
 
+// COD-02: Der Katalog richtet sich nach den Daten. Für jede Komponente eines Set-Rezepts (db.setBoms), die noch keinen
+// Katalogeintrag hat, wird ein interner Eintrag angelegt. Bereich und Bestandsart ergeben sich aus der SKU-Schreibweise.
+function inferCatalogKind(sku){
+  const s=String(sku||'');
+  if(s.startsWith('INT_')) return {area:'rawmaterials',stockMode:'simple'};
+  if(s.includes('_Kör_')) return {area:'kb',stockMode:'batch'};
+  if(s.includes('_Düb_')) return {area:'dowels',stockMode:'batch'};
+  if(s.includes('_Flü_')) return {area:'syringes',stockMode:'batch'};
+  return {area:'other',stockMode:'batch'};
+}
 function ensureSetCatalog(db){
   if(!Array.isArray(db.productCatalog)) db.productCatalog=[];
-  const defs=[
-    ['Ppul_Kör_150g','Lungenseitling Körnerbrut 150 g','kb','batch'],
-    ['Ppul_Kör_600g','Lungenseitling Körnerbrut 600 g','kb','batch'],
-    ['Ppul_Kör_1000g','Lungenseitling Körnerbrut 1000 g','kb','batch'],
-    ['INT_Stroh_500g','Strohpellets 500 g','rawmaterials','simple'],['INT_Stroh_2000g','Strohpellets 2000 g','rawmaterials','simple'],['INT_Stroh_3500g','Strohpellets 3500 g','rawmaterials','simple'],
-    ['INT_Nadelholz_500g','Nadelholzpellets 500 g','rawmaterials','simple'],['INT_Nadelholz_2000g','Nadelholzpellets 2000 g','rawmaterials','simple'],['INT_Nadelholz_3500g','Nadelholzpellets 3500 g','rawmaterials','simple']
-  ];
-  for(const [sku,name,area,stockMode] of defs){ if(!db.productCatalog.some(p=>p.sku===sku)) db.productCatalog.push({id:'INT-'+sku,sku,name,area,stockMode,qty:0,active:true,syncActive:false,internalOnly:true}); }
+  for(const comps of Object.values(db.setBoms||{})){
+    for(const c of (Array.isArray(comps)?comps:[])){
+      const sku=String(c&&c.sku||''); if(!sku || db.productCatalog.some(p=>p.sku===sku)) continue;
+      const {area,stockMode}=inferCatalogKind(sku);
+      db.productCatalog.push({id:'INT-'+sku,sku,name:String(c.label||sku),area,stockMode,qty:0,active:true,syncActive:false,internalOnly:true});
+    }
+  }
 }
 
 // INT-10 (b): fehlende Menge zählt als 1, eine ausdrückliche 0 bleibt 0 (früher wurde 0 zu 1 und erzeugte Phantom-Bestand)
@@ -1494,6 +1503,50 @@ async function handleApi(req, res) {
       console.error(err);
       return send(res, 500, 'QR konnte nicht erstellt werden');
     }
+  }
+
+  if (url.pathname === '/api/set-boms') {
+    if (req.method !== 'POST') return sendJson(res, 405, { error: 'Nur POST erlaubt.' });
+    // Rezepte bestimmen den Bestand, der an WooCommerce gemeldet wird: nur mit Admin-Passwort.
+    if (!isAuthorized(req)) return sendJson(res, 401, { error: 'Admin-Passwort erforderlich.' });
+    try {
+      const body = await readJson(req);
+      const action = body.action;
+      const sku = String(body.sku || '').trim();
+      if (!['upsert', 'delete'].includes(action)) return sendJson(res, 400, { error: 'Unbekannte Aktion.' });
+      if (!sku || sku.length > 100) return sendJson(res, 400, { error: 'Set-SKU fehlt oder ist zu lang.' });
+      let comps = null;
+      if (action === 'upsert') {
+        if (!Array.isArray(body.components) || body.components.length < 1 || body.components.length > 20) return sendJson(res, 400, { error: 'Ein Set braucht 1 bis 20 Komponenten.' });
+        comps = [];
+        for (const c of body.components) {
+          const csku = String(c && c.sku || '').trim(); const qty = Number(c && c.qty);
+          if (!csku || csku.length > 100) return sendJson(res, 400, { error: 'Komponenten-SKU fehlt.' });
+          if (!Number.isInteger(qty) || qty < 1 || qty > 1000) return sendJson(res, 400, { error: `Menge für ${csku} muss eine ganze Zahl von 1 bis 1000 sein.` });
+          if (csku === sku) return sendJson(res, 400, { error: 'Ein Set kann nicht sich selbst enthalten.' });
+          comps.push({ sku: csku, qty, label: String(c.label || '').trim().slice(0, 200) });
+        }
+        if (new Set(comps.map(c => c.sku)).size !== comps.length) return sendJson(res, 400, { error: 'Eine Komponente kommt doppelt vor.' });
+      }
+      const out = await withStateLock(async () => {
+        const db = await readData(); const before = JSON.parse(JSON.stringify(db));
+        if (!db.setBoms || typeof db.setBoms !== 'object') db.setBoms = {};
+        if (action === 'delete') { delete db.setBoms[sku]; }
+        else {
+          // Keine Verschachtelung: eine Komponente darf kein anderes Set sein, und das neue Set darf nirgends Komponente sein.
+          for (const c of comps) if (db.setBoms[c.sku]) throw httpError(400, `${c.sku} ist selbst ein Set und kann keine Komponente sein.`);
+          for (const [k, list] of Object.entries(db.setBoms)) if (k !== sku && list.some(x => x.sku === sku)) throw httpError(400, `${sku} wird im Set ${k} als Komponente verwendet und kann kein Set sein.`);
+          db.setBoms[sku] = comps;
+        }
+        ensureSetCatalog(db);
+        rebuildProcessingReservations(db);
+        const saved = await writeData(db, 'server_limited');
+        const syncResults = await syncChangedSkus(before, db, 'Set-Rezept geändert');
+        if (syncResults.length) await persistSyncLog(db);
+        return { db, saved, syncResults };
+      });
+      return sendJson(res, 200, { ok: true, setBoms: out.db.setBoms, productCatalog: out.db.productCatalog, wooReservations: out.db.wooReservations, wooSyncLog: out.db.wooSyncLog, stock: stockMap(out.db), version: out.saved.version, syncResults: out.syncResults });
+    } catch (err) { return failJson(res, err, 500, 'Rezept konnte nicht gespeichert werden.'); }
   }
 
   if (url.pathname === '/api/stock') {
