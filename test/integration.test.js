@@ -47,7 +47,7 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.28 gegen PostgreSQL', { skip }, () => {
+describe('Pilzverwaltung 1.5.29 gegen PostgreSQL', { skip }, () => {
   let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
@@ -373,6 +373,36 @@ describe('Pilzverwaltung 1.5.28 gegen PostgreSQL', { skip }, () => {
     assert.equal(await reserved(9201), 0, 'Charge mit Menge 0 ist kein Bestand');
     assert.equal(await reserved(9202), 1, 'Charge mit Menge 1 wird reserviert');
     assert.equal(await reserved(9203), 1, 'Charge ohne Mengenangabe zählt wie bisher als 1');
+  });
+
+  it('INT-07: zwei Positionen derselben Ware in einer Bestellung reservieren nicht dieselbe Charge doppelt', async () => {
+    const settled = async () => until(async () => (await db.query(`SELECT count(*)::int AS n FROM app_webhook_queue WHERE status='pending'`)).rows[0].n === 0);
+    const a = await A.req('GET', '/api/data'); const doc = a.json;
+    doc.kb = (doc.kb || []).concat([1, 2, 3].map(n => ({ id: 'KB-DUP-' + n, sku: 'DUP_TEST', strain: 'Dup', status: 'im Kühlschrank', date: '2026-01-0' + n })));
+    const save = await A.req('POST', '/api/data', { body: doc, headers: { 'x-data-version': a.headers.get('x-data-version') } });
+    assert.equal(save.status, 200);
+    const items = [{ id: 93011, name: 'Test', sku: 'DUP_TEST', quantity: 1, product_id: 1, variation_id: 0, total: '10' }, { id: 93012, name: 'Test', sku: 'DUP_TEST', quantity: 1, product_id: 1, variation_id: 0, total: '10' }];
+    await webhook(wooOrder(9301, 'processing', items), 'order.created'); await settled();
+    const rows = (await db.query(`SELECT r->>'batchId' AS b, sum((r->>'qty')::int) AS q FROM app_state, jsonb_array_elements(data->'wooReservations') r WHERE (r->>'orderId')::int=9301 AND r->>'status'='reserved' GROUP BY 1`)).rows;
+    assert.equal(rows.reduce((n, r) => n + Number(r.q), 0), 2, 'beide Positionen sind reserviert');
+    assert.ok(rows.every(r => Number(r.q) <= 1), 'keine Charge (Menge 1) ist doppelt reserviert: ' + JSON.stringify(rows));
+    assert.equal(rows.length, 2, 'zwei verschiedene Chargen');
+  });
+
+  it('INT-07: angebrochene 1000er-Dübel zählen nicht als Bestand (wie in der Oberfläche)', async () => {
+    const reserved = async id => Number((await db.query(`SELECT COALESCE(sum((r->>'qty')::int),0) AS n FROM app_state, jsonb_array_elements(data->'wooReservations') r WHERE (r->>'orderId')::int=$1 AND r->>'status'='reserved'`, [id])).rows[0].n);
+    const settled = async () => until(async () => (await db.query(`SELECT count(*)::int AS n FROM app_webhook_queue WHERE status='pending'`)).rows[0].n === 0);
+    const a = await A.req('GET', '/api/data'); const doc = a.json;
+    doc.goods = (doc.goods || []).concat([
+      { id: 'DUE-T-OPEN', type: 'Dübel', sku: 'D1000_OPEN', size: '1000 Stück', qty: 1, status: 'fertig durchwachsen', anbruch: true, date: '2026-01-01' },
+      { id: 'DUE-T-FULL', type: 'Dübel', sku: 'D1000_FULL', size: '1000 Stück', qty: 1, status: 'fertig durchwachsen', date: '2026-01-01' }]);
+    const save = await A.req('POST', '/api/data', { body: doc, headers: { 'x-data-version': a.headers.get('x-data-version') } });
+    assert.equal(save.status, 200);
+    const item = (id, sku) => [{ id: id * 10, name: 'Test', sku, quantity: 1, product_id: 1, variation_id: 0, total: '10' }];
+    await webhook(wooOrder(9302, 'processing', item(9302, 'D1000_OPEN')), 'order.created');
+    await webhook(wooOrder(9303, 'processing', item(9303, 'D1000_FULL')), 'order.created'); await settled();
+    assert.equal(await reserved(9302), 0, 'angebrochenes Paket ist kein Bestand');
+    assert.equal(await reserved(9303), 1, 'volles Paket wird reserviert');
   });
 
   it('Teamaufgaben: atomar, liefert Versionen', async () => {
