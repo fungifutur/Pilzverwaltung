@@ -43,6 +43,7 @@ Neu sind nur die zwei Tabellen `app_sessions` und `app_webhook_queue`, die beim 
 - **COD-02/M16 (Teil), INT-07 (Rest):** in Version 1.5.32: Set-Rezepte in den Daten, FIFO-Zuteilung nur noch auf dem Server.
 - **COD-02/M16 (Rezepte, Katalog):** in Version 1.5.33: Rezepte in der Oberfläche bearbeitbar (Admin-Passwort), Katalog folgt den Rezepten.
 - **M15, M17:** in Version 1.5.34: Abnahmebasis (`test/golden/`) und Abgleichbericht (`scripts/migration_report.js`), siehe `docs/MIGRATION_ABNAHME.md`.
+- **M18 (DSG-03, OPS-02, OPS-05):** in Version 1.5.36: einheitliche Backup-Fristen, Namenslöschung nach 90 Tagen, `docs/LOESCHKONZEPT.md`, `docs/NOTFALLBLATT.md`. Offen: Fristen mit Treuhand/Datenschutz bestätigen, Render-Backup-Tarif prüfen.
 - **INT-07, COD-01, COD-02, M14–M18** (doppelte Bestandslogik, IDs, Stammdaten, Zielarchitektur): gehören in die Migration.
 - **OPS-04 Lock-Datei:** `package-lock.json` ist eingecheckt.
 - Organisatorisches (ORG-*, DSG-02/03, FIN-*, WOO-03/04, OPS-05): nicht Sache des Codes.

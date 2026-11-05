@@ -48,7 +48,7 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.35 gegen PostgreSQL', { skip }, () => {
+describe('Pilzverwaltung 1.5.36 gegen PostgreSQL', { skip }, () => {
   let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
@@ -526,6 +526,40 @@ describe('Pilzverwaltung 1.5.35 gegen PostgreSQL', { skip }, () => {
     const diff = await run(['vergleichen', f1, f3]);
     assert.equal(diff.code, 1); assert.match(diff.out, /kb\/KB-G-1/); assert.match(diff.out, /G_KB/); assert.match(diff.out, /NICHT IN ORDNUNG/);
     fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('OPS-02/DSG-03: alte Backups aller Arten werden nach festen Fristen gelöscht, die neuesten bleiben', async () => {
+    const ago = d => new Date(Date.now() - d * 86400000).toISOString();
+    const add = async (kind, days) => (await db.query(`INSERT INTO app_backups(data, backup_kind, created_at) VALUES('{"x":1}'::jsonb, $1, $2) RETURNING id`, [kind, ago(days)])).rows[0].id;
+    const old = [await add('daily', 40), await add('daily_limited', 40), await add('change', 20), await add('change_limited', 20), await add('server_limited', 20), await add('undo', 10), await add('manual', 100)];
+    const young = [await add('daily_limited', 1), await add('change_limited', 1), await add('manual', 1), await add('manual', 2), await add('undo', 1)];
+    server.kill('SIGTERM'); await new Promise(r => setTimeout(r, 300)); await startServer();
+    const ids = async list => (await db.query(`SELECT id FROM app_backups WHERE id IN (${list.map(Number).join(',')})`)).rows.map(r => Number(r.id));
+    await until(async () => (await ids(old)).length === 0);
+    assert.deepEqual((await ids(old)), [], 'alte Backups sind gelöscht');
+    assert.equal((await ids(young)).length, young.length, 'junge Backups bleiben');
+  });
+
+  it('DSG-03: Namen in alten abgeschlossenen Bestellungen werden nach 90 Tagen gelöscht, junge und offene bleiben', async () => {
+    const ago = d => new Date(Date.now() - d * 86400000).toISOString();
+    const mk = (id, status, archived, days) => ({ id, number: String(id), status, archived, archivedAt: archived ? ago(days) : '', date_created: ago(days), customer: 'Berta Beispiel', billing: { first_name: 'Berta', last_name: 'Beispiel' }, shipping: { first_name: 'Berta', last_name: 'Beispiel' }, customer_note: 'bitte klingeln', items: [] });
+    const orders = [mk(9901, 'completed', true, 100), mk(9902, 'completed', true, 10), mk(9903, 'processing', false, 100)];
+    await db.query(`UPDATE app_state SET data = jsonb_set(data, '{wooOrders}', (data->'wooOrders') || $1::jsonb) WHERE id = 1`, [JSON.stringify(orders)]);
+    const a = await A.req('GET', '/api/data');
+    assert.equal((await A.req('POST', '/api/data', { body: a.json, headers: { 'x-data-version': a.headers.get('x-data-version') } })).status, 200);
+    const o = id => ((async () => (await A.req('GET', '/api/data')).json.wooOrders.find(x => x.id === id))());
+    const old = await o(9901), young = await o(9902), open = await o(9903);
+    assert.equal(old.customer, ''); assert.equal(old.billing.last_name, ''); assert.equal(old.customer_note, ''); assert.equal(old.anonymized, true);
+    assert.equal(young.customer, 'Berta Beispiel', 'junge archivierte Bestellung bleibt');
+    assert.equal(open.customer, 'Berta Beispiel', 'offene Bestellung bleibt, auch wenn alt');
+  });
+
+  it('DSG-03: erledigte Webhook-Einträge enthalten keine Adresse, E-Mail oder Telefonnummer mehr', async () => {
+    await webhook(wooOrder(9910, 'processing', [{ id: 99100, name: 'x', sku: 'KB_TEST', quantity: 1, product_id: 1, variation_id: 0, total: '10' }]), 'order.created');
+    await until(async () => (await db.query(`SELECT count(*)::int AS n FROM app_webhook_queue WHERE status='pending'`)).rows[0].n === 0);
+    const rows = (await db.query(`SELECT payload::text AS p FROM app_webhook_queue WHERE status='done' AND order_id='9910'`)).rows;
+    assert.ok(rows.length >= 1);
+    for (const r of rows) { assert.ok(!/Geheimweg|anna@example|0791234567/.test(r.p), r.p); assert.match(r.p, /9910/); }
   });
 
   it('Teamaufgaben: atomar, liefert Versionen', async () => {
