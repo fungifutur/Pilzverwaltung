@@ -67,5 +67,6 @@ Benötigte Repository-Secrets (Settings → Secrets and variables → Actions):
 - `GDRIVE_RCLONE_TOKEN`: Google-Drive-Token von `rclone config` / `rclone authorize "drive"`
 
 Optionale Variablen: `PG_MAJOR` (Standard 16, muss zur Render-Postgres-Version passen), `BACKUP_KEEP_DAYS` (Standard 30).
+Hinweis: Der Inhalt der Tabelle `app_backups` (interne Rückgängig-Stände der App, auf Render ca. 1,5 GB) wird im externen Backup standardmässig weggelassen; die Live-Daten (`app_state`) sind vollständig gesichert. Vollsicherung: Skript-Variable `BACKUP_EXCLUDE_DATA` leer setzen.
 
 Wiederherstellung testen: `gpg --decrypt DATEI.dump.gpg | pg_restore --no-owner --clean --if-exists -d "<URL einer LEEREN Test-Datenbank>"`
