@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.35';
+const APP_VERSION = '1.5.36';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -331,6 +331,18 @@ function minimizeOrders(db) {
     }
   }
 }
+// DSG-03: Namen in abgeschlossenen/stornierten Bestellungen werden nach Ablauf der Frist gelöscht. Die Bestellung (Nummer, Artikel, Mengen)
+// bleibt für die Bestandshistorie; Rechnungs- und Kundendaten liegen in WooCommerce und bexio.
+const ORDER_NAME_KEEP_DAYS = Math.max(1, Number(process.env.ORDER_NAME_KEEP_DAYS || 90));
+function anonymizeOldOrders(db, now = Date.now()) {
+  for (const o of (db.wooOrders || [])) {
+    if (!o || !o.archived || o.anonymized) continue;
+    const t = Date.parse(o.archivedAt || o.date_modified || o.date_created || '');
+    if (!Number.isFinite(t) || now - t < ORDER_NAME_KEEP_DAYS * 86400000) continue;
+    o.customer = ''; o.billing = { first_name: '', last_name: '' }; o.shipping = { first_name: '', last_name: '' };
+    o.customer_note = ''; o.anonymized = true; o.anonymizedAt = new Date(now).toISOString();
+  }
+}
 // Bereinigung (INT-09): überholte Reservierungsdatensätze wachsen sonst bei jedem Speichern.
 function pruneDb(db) {
   const now = Date.now(), DAY = 86400000;
@@ -344,6 +356,7 @@ function pruneDb(db) {
     });
   }
   minimizeOrders(db);
+  anonymizeOldOrders(db);
   return db;
 }
 
@@ -506,6 +519,27 @@ async function listBackups() {
   return result.rows.map(r => ({ id: r.id, created_at: r.created_at, kind: r.backup_kind || 'change', bytes: r.bytes }));
 }
 
+// OPS-02/DSG-03: Einheitliche Aufbewahrung für alle Backup-Arten in der Datenbank (jedes Backup enthält Namen von Kundinnen und Kunden).
+// Pro Art gilt: höchstens so alt wie angegeben UND mindestens die neuesten «behalte» Einträge bleiben immer (damit nie alles verschwindet).
+const BACKUP_RETENTION = [
+  { kinds: ['daily', 'daily_limited'], days: 30, keep: 2 },
+  { kinds: ['change', 'change_limited', 'server_limited'], days: 14, keep: 2 },
+  { kinds: ['undo'], days: 7, keep: 1 },
+  { kinds: ['manual'], days: 90, keep: 2 }
+];
+async function purgeOldBackups() {
+  let removed = 0;
+  for (const r of BACKUP_RETENTION) {
+    const ph = r.kinds.map((_, i) => '$' + (i + 1)).join(',');
+    const n = r.kinds.length;
+    const res = await pool.query(
+      `DELETE FROM app_backups WHERE backup_kind IN (${ph}) AND created_at < now() - ($${n + 1} || ' days')::interval
+         AND id NOT IN (SELECT id FROM app_backups WHERE backup_kind IN (${ph}) ORDER BY created_at DESC, id DESC LIMIT $${n + 2})`, [...r.kinds, String(r.days), r.keep]);
+    removed += res.rowCount || 0;
+  }
+  return removed;
+}
+
 async function ensureDailyBackup() {
   await ensurePostgres();
   const exists = await pool.query(`SELECT 1 FROM app_backups WHERE backup_kind IN ('daily','daily_limited') AND created_at >= date_trunc('day', now()) LIMIT 1`);
@@ -517,6 +551,7 @@ async function ensureDailyBackup() {
   }
   // Rückgängig-Sicherungen (OPS-02) sowie erledigte Webhook-Einträge und abgelaufene Sitzungen aufräumen.
   await pool.query(`DELETE FROM app_backups WHERE backup_kind='undo' AND id NOT IN (SELECT id FROM app_backups WHERE backup_kind='undo' ORDER BY id DESC LIMIT 10)`);
+  await purgeOldBackups();
   await pool.query(`DELETE FROM app_webhook_queue WHERE status='done' AND processed_at < now() - interval '7 days'`);
   await pool.query(`DELETE FROM app_webhook_queue WHERE status='failed' AND received_at < now() - interval '30 days'`);
   await pool.query(`DELETE FROM app_sessions WHERE expires_at < now()`);
@@ -1322,7 +1357,8 @@ async function runWebhookQueue() {
       const job = q.rows[0];
       try {
         await processWooOrderEvent(job.payload, 'webhook', job.topic);
-        await pool.query(`UPDATE app_webhook_queue SET status='done', processed_at=now(), attempts=attempts+1, last_error=NULL WHERE id=$1`, [job.id]);
+        await pool.query(`UPDATE app_webhook_queue SET status='done', processed_at=now(), attempts=attempts+1, last_error=NULL, payload=jsonb_build_object('id', payload->'id', 'number', payload->'number', 'status', payload->'status') WHERE id=$1`, [job.id]);
+        // DSG-03: Nach erfolgreicher Verarbeitung bleiben von der Bestellung nur Nummer und Status im Warteschlangen-Eintrag (keine Adresse, E-Mail, Telefon).
       } catch (err) {
         const attempts = job.attempts + 1;
         const failed = attempts >= WEBHOOK_MAX_ATTEMPTS;

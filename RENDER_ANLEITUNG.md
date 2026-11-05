@@ -1,3 +1,11 @@
+# Version 1.5.36 – Löschkonzept, einheitliche Aufbewahrung und Notfallblatt (M18: DSG-03, OPS-02, OPS-05)
+
+- **Backups, einheitlich:** Alle Backup-Arten in der Datenbank haben jetzt eine Frist (bisher blieben manuelle, Rückgängig- und alte Backups für immer): Tages-Backups 30 Tage, Änderungs-Backups 14 Tage, Rückgängig 7 Tage, manuelle 90 Tage. Die neuesten Einträge bleiben immer erhalten. Die Dokumentation sagt nicht mehr «90 Tage» für alles.
+- **Kundennamen:** Namen in abgeschlossenen oder stornierten Bestellungen werden 90 Tage nach Abschluss gelöscht (`ORDER_NAME_KEEP_DAYS`); Bestellnummer, Artikel und Mengen bleiben. Offene Bestellungen sind nicht betroffen.
+- **Webhook-Warteschlange:** Nach erfolgreicher Verarbeitung enthält der Eintrag nur noch Nummer und Status (vorher blieben Adresse, E-Mail und Telefon 7 Tage in der Warteschlange).
+- **Neue Dokumente:** `docs/LOESCHKONZEPT.md` (Fristen je Datenobjekt und System, Ablauf bei Auskunfts- oder Löschbegehren, Abfrage zur sofortigen Namenslöschung) und `docs/NOTFALLBLATT.md` (einseitig, zum Ausdrucken). Punkte mit «prüfen» bitte mit Treuhand/Datenschutz bestätigen.
+- Drei neue Tests; Suite 40/40 grün.
+
 # Version 1.5.35 – Frei gewordene Ware geht sofort an wartende Bestellungen
 
 - Bisher bekamen wartende Bestellungen nach einer Stornierung (oder Abschluss) die frei gewordene Ware erst beim nächsten Speichern oder Abgleich; Fehlmenge und Produktionsauftrag blieben bis dahin offen. Jetzt wird die Zuteilung bei jedem WooCommerce-Ereignis neu gerechnet, mit denselben Regeln wie beim Speichern (bezahlte Bestellungen zuerst, dann Vorauskasse, jeweils nach Datum).
