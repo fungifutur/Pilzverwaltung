@@ -47,7 +47,7 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.25 gegen PostgreSQL', { skip }, () => {
+describe('Pilzverwaltung 1.5.26 gegen PostgreSQL', { skip }, () => {
   let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
@@ -330,6 +330,30 @@ describe('Pilzverwaltung 1.5.25 gegen PostgreSQL', { skip }, () => {
     assert.equal(r.json.orders.find(o => o.id === 777).externalDeleted, true, 'in WooCommerce nicht mehr vorhanden');
     assert.equal((await A.req('GET', '/api/woo/reconcile-progress?id=t1')).json.done, true);
     wooOrdersProcessing = [];
+  });
+
+  it('Vorauskasse (on-hold) reserviert; Storno gibt frei; bezahlte Bestellungen haben Vorrang', async () => {
+    const kbItem = (id, q) => [{ id: id * 10, name: 'Körnerbrut', sku: 'KB_TEST', quantity: q, product_id: 1, variation_id: 0, total: '10' }];
+    const reserved = async id => Number((await db.query(`SELECT COALESCE(sum((r->>'qty')::int),0) AS n FROM app_state, jsonb_array_elements(data->'wooReservations') r WHERE (r->>'orderId')::int=$1 AND r->>'status'='reserved'`, [id])).rows[0].n);
+    const settled = async () => until(async () => (await db.query(`SELECT count(*)::int AS n FROM app_webhook_queue WHERE status='pending'`)).rows[0].n === 0);
+    // 1) wartende Bestellung reserviert sofort
+    await webhook(wooOrder(9101, 'on-hold', kbItem(9101, 1)), 'order.created'); await settled();
+    assert.equal(await reserved(9101), 1, 'on-hold reserviert');
+    // 2) Storno gibt wieder frei
+    await webhook({ ...wooOrder(9101, 'cancelled', kbItem(9101, 1)), date_modified: '2026-10-31T12:00:00' }, 'order.updated'); await settled();
+    assert.equal(await reserved(9101), 0, 'Storno gibt frei');
+    // 3) Älterer wartender Auftrag über den ganzen Bestand, jüngerer bezahlter Auftrag: bezahlt wird zuerst bedient
+    await webhook(wooOrder(9102, 'on-hold', kbItem(9102, 2), { date_created: '2026-10-01T09:00:00' }), 'order.created'); await settled();
+    assert.equal(await reserved(9102), 2);
+    await webhook(wooOrder(9103, 'processing', kbItem(9103, 1), { date_created: '2026-10-05T09:00:00' }), 'order.created'); await settled();
+    const a = await A.req('GET', '/api/data');
+    const save = await A.req('POST', '/api/data', { body: a.json, headers: { 'x-data-version': a.headers.get('x-data-version') } });
+    assert.equal(save.status, 200);
+    assert.equal(await reserved(9103), 1, 'bezahlte Bestellung bekommt ihre Ware');
+    assert.equal(await reserved(9102), 1, 'wartende Bestellung erhält nur den Rest');
+    // 4) Zahlung geht ein: on-hold → processing behält die Reservierung
+    await webhook({ ...wooOrder(9102, 'processing', kbItem(9102, 2), { date_created: '2026-10-01T09:00:00' }), date_modified: '2026-10-31T13:00:00' }, 'order.updated'); await settled();
+    assert.equal(await reserved(9103) + await reserved(9102), 2);
   });
 
   it('Teamaufgaben: atomar, liefert Versionen', async () => {
