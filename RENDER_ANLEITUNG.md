@@ -1,3 +1,12 @@
+# Version 1.5.28 – IDs und Logikfehler (INT-08, INT-10)
+
+- **INT-08 IDs:** Neue IDs werden aus der höchsten vorhandenen Nummer + 1 gebildet (früher Anzahl + 1, dadurch doppelte IDs nach Löschungen) und überspringen jede ID, die irgendwo schon vorkommt. Beim Aufteilen von 1000er-Dübeln behält die erste Packung die ursprüngliche ID (Packungen 2 bis n erhalten `-2`, `-3` …); bestehende IDs werden nicht mehr ersetzt, damit gedruckte QR-Etiketten und Bezüge gültig bleiben. Bereits früher umbenannte Dübel (`…-1`) werden über `splitFrom` auch unter der alten ID gefunden (Suche und QR-Scan). Bei zwei Geräten gleichzeitig verhindert weiterhin die Versionsprüfung (Meldung «Stand veraltet», neu laden) doppelte Speicherung; eine serverseitige ID-Sequenz gibt es noch nicht.
+- **INT-10 (b) Menge 0:** Eine ausdrückliche Menge 0 zählt nicht mehr als 1 (kein Phantom-Bestand). Fehlt die Mengenangabe ganz, gilt weiterhin 1. Betrifft Bestandsberechnung (Browser und Server), Ausbuchung beim Verkauf und Zusammenfassungen.
+- **INT-10 (c) Datum:** «Heute» und das MHD (+2 Jahre) werden in Schweizer Zeit (Europe/Zurich) gebildet, nicht mehr in UTC. Damit gibt es zwischen 00:00 und 02:00 Uhr nicht mehr das Vortagesdatum, und das MHD ist nicht mehr einen Tag zu früh.
+- **Offen: INT-10 (a)** Dübel-Sets werden als «beimpft» angelegt, gezählt wird nur «fertig durchwachsen» (sie sind nie Bestand). Das muss fachlich entschieden werden.
+- **Achtung beim Einspielen:** Chargen mit Menge 0, die noch nicht archiviert sind, zählten bisher als 1 und zählen jetzt 0. Die Bestandsmeldung an WooCommerce kann dadurch bei einzelnen Artikeln sinken (richtigerweise). Vorher prüfen, siehe Anleitung im Pull Request.
+- Neue Tests: `test/frontend-helpers.test.js` (IDs, Dübel-Aufteilung, Menge, Schweizer Datum) und ein Integrationstest für Menge 0.
+
 # Version 1.5.27 – Absicherung der Oberfläche gegen eingeschleusten Code (SEC-04)
 
 - **Escaping im Frontend:** Texte aus Daten (Sorte, SKU, Quelle, Notiz, Herkunft, Statusanzeigen, Etiketten, QR-Seite, Zusammenfassungs-Schaltflächen) werden jetzt überall maskiert, bevor sie in die Seite geschrieben werden. Werte in `onclick`-Attributen werden zusätzlich für HTML-Attribute maskiert.

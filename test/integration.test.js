@@ -47,7 +47,7 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.27 gegen PostgreSQL', { skip }, () => {
+describe('Pilzverwaltung 1.5.28 gegen PostgreSQL', { skip }, () => {
   let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
@@ -354,6 +354,25 @@ describe('Pilzverwaltung 1.5.27 gegen PostgreSQL', { skip }, () => {
     // 4) Zahlung geht ein: on-hold → processing behält die Reservierung
     await webhook({ ...wooOrder(9102, 'processing', kbItem(9102, 2), { date_created: '2026-10-01T09:00:00' }), date_modified: '2026-10-31T13:00:00' }, 'order.updated'); await settled();
     assert.equal(await reserved(9103) + await reserved(9102), 2);
+  });
+
+  it('INT-10 (b): Menge 0 zählt nicht als 1 (kein Phantom-Bestand), fehlende Menge schon', async () => {
+    const reserved = async id => Number((await db.query(`SELECT COALESCE(sum((r->>'qty')::int),0) AS n FROM app_state, jsonb_array_elements(data->'wooReservations') r WHERE (r->>'orderId')::int=$1 AND r->>'status'='reserved'`, [id])).rows[0].n);
+    const settled = async () => until(async () => (await db.query(`SELECT count(*)::int AS n FROM app_webhook_queue WHERE status='pending'`)).rows[0].n === 0);
+    const a = await A.req('GET', '/api/data'); const doc = a.json;
+    doc.lots = (doc.lots || []).concat([
+      { id: 'LOT-Z0', sku: 'ZERO_TEST', product: 'Null', qty: 0, status: 'lagernd', packDate: '2026-01-01' },
+      { id: 'LOT-Z1', sku: 'ONE_TEST', product: 'Eins', qty: 1, status: 'lagernd', packDate: '2026-01-01' },
+      { id: 'LOT-ZM', sku: 'MISSING_TEST', product: 'Ohne Menge', status: 'lagernd', packDate: '2026-01-01' }]);
+    const save = await A.req('POST', '/api/data', { body: doc, headers: { 'x-data-version': a.headers.get('x-data-version') } });
+    assert.equal(save.status, 200);
+    const item = (id, sku) => [{ id: id * 10, name: 'Test', sku, quantity: 1, product_id: 1, variation_id: 0, total: '10' }];
+    await webhook(wooOrder(9201, 'processing', item(9201, 'ZERO_TEST')), 'order.created');
+    await webhook(wooOrder(9202, 'processing', item(9202, 'ONE_TEST')), 'order.created');
+    await webhook(wooOrder(9203, 'processing', item(9203, 'MISSING_TEST')), 'order.created'); await settled();
+    assert.equal(await reserved(9201), 0, 'Charge mit Menge 0 ist kein Bestand');
+    assert.equal(await reserved(9202), 1, 'Charge mit Menge 1 wird reserviert');
+    assert.equal(await reserved(9203), 1, 'Charge ohne Mengenangabe zählt wie bisher als 1');
   });
 
   it('Teamaufgaben: atomar, liefert Versionen', async () => {

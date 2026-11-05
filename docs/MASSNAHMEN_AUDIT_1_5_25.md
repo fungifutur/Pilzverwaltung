@@ -31,14 +31,15 @@ Neu sind nur die zwei Tabellen `app_sessions` und `app_webhook_queue`, die beim 
 | OPS-04 | Konfiguration | `render.yaml` um fehlende Variablen ergänzt, `npm ci`; `.gitignore` |
 | COD-03 | Tests | Integrationstest `test/integration.test.js` (22 Tests, siehe unten); veraltetes MySQL-Schema gekennzeichnet |
 | COD-04 | Toter Code | Endpunkt `/api/woo/orders` (rief eine nicht vorhandene Funktion auf) entfernt |
-| OPS-01 / M2 | Backup | `scripts/pg_backup.sh` (verschlüsselter `pg_dump` ausserhalb von Render). Muss noch eingerichtet und geplant werden |
+| OPS-01 / M2 | Backup | Nächtlicher verschlüsselter `pg_dump` nach Google Drive über GitHub Actions (siehe unten), Wiederherstellung getestet |
 
 ## Was bewusst NICHT geändert wurde
 
 - **INT-04 / M8:** Umgang mit on-hold ist entschieden und umgesetzt (Vorauskasse reserviert, Storno gibt frei). Offen bleibt die grundsätzliche Frage, welches System den Bestand führt.
 - **SEC-04** (Escaping im Frontend): in Version 1.5.27 umgesetzt (siehe Änderungsliste in README.md). **SEC-05 SRI**: weiterhin offen, SheetJS konnte in dieser Umgebung nicht heruntergeladen werden, um es lokal auszuliefern oder mit Prüfsumme zu sichern.
-- **INT-07, INT-08, INT-10, COD-01, COD-02, M14–M18** (doppelte Bestandslogik, IDs, Stammdaten, Zielarchitektur): gehören in die Migration.
-- **OPS-04 Lock-Datei:** konnte hier nicht erzeugt werden (kein Zugriff auf das npm-Register). Einmal `npm install` ausführen und `package-lock.json` einchecken.
+- **INT-08, INT-10 (b)(c):** in Version 1.5.28 umgesetzt (siehe README.md); INT-10 (a) wartet auf eine fachliche Entscheidung.
+- **INT-07, COD-01, COD-02, M14–M18** (doppelte Bestandslogik, IDs, Stammdaten, Zielarchitektur): gehören in die Migration.
+- **OPS-04 Lock-Datei:** `package-lock.json` ist eingecheckt.
 - Organisatorisches (ORG-*, DSG-02/03, FIN-*, WOO-03/04, OPS-05): nicht Sache des Codes.
 
 ## Hinweise zum Betrieb
@@ -66,7 +67,7 @@ Benötigte Repository-Secrets (Settings → Secrets and variables → Actions):
 - `BACKUP_PASSPHRASE`: langes Passwort für die Verschlüsselung. Separat und sicher aufbewahren, ohne das Passwort lässt sich kein Backup öffnen.
 - `GDRIVE_RCLONE_TOKEN`: Google-Drive-Token von `rclone config` / `rclone authorize "drive"`
 
-Optionale Variablen: `PG_MAJOR` (Standard 16, muss zur Render-Postgres-Version passen), `BACKUP_KEEP_DAYS` (Standard 30).
+Optionale Variablen: `PG_MAJOR` (Standard 16; auf Render läuft Postgres 18, dort ist die Variable auf 18 gesetzt), `BACKUP_KEEP_DAYS` (Standard 30).
 Hinweis: Der Inhalt der Tabelle `app_backups` (interne Rückgängig-Stände der App, auf Render ca. 1,5 GB) wird im externen Backup standardmässig weggelassen; die Live-Daten (`app_state`) sind vollständig gesichert. Vollsicherung: Skript-Variable `BACKUP_EXCLUDE_DATA` leer setzen.
 
 Wiederherstellung testen: `gpg --decrypt DATEI.dump.gpg | pg_restore --no-owner --clean --if-exists -d "<URL einer LEEREN Test-Datenbank>"`

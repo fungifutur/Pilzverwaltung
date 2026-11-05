@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.27</title>
+<title>Pilzverwaltung Serverversion 1.5.28</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.27</h1>
+<h1>Pilzverwaltung – Version 1.5.28</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -1182,7 +1182,12 @@ async function initApp(){
   handleQrOpenFromUrl();
   startLiveUpdates();
 }
-function today(){return new Date().toISOString().slice(0,10)}
+function localIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+// INT-10 (c): Datum in Schweizer Zeit, nicht UTC (zwischen 00:00 und 02:00 Uhr entstand sonst das Vortagesdatum)
+function today(){try{return new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Zurich'}).format(new Date())}catch(e){return localIso(new Date())}}
+function addYearsIso(iso,years){const p=String(iso).split('-').map(Number);return new Date(Date.UTC(p[0]+years,p[1]-1,p[2])).toISOString().slice(0,10)}
+// INT-10 (b): fehlende Menge zählt als 1, eine ausdrückliche 0 bleibt 0
+function qtyOrOne(v){if(v===undefined||v===null||v==='')return 1;const n=Number(v);return Number.isFinite(n)?Math.max(0,n):1}
 function fmt(d){return d?new Date(d+'T00:00:00').toLocaleDateString('de-CH'):'–'}
 function ageDays(a,b=today()){
   if(!a || !b) return '–';
@@ -1198,7 +1203,7 @@ function dowelPackLabel(x){return is1000Dowel(x)&&x.packIndex&&x.packTotal ? `${
 function normalize1000DowelPacks(){
   if(!Array.isArray(db.goods))return false; let changed=false; const out=[];
   for(const x of db.goods){
-    if(is1000Dowel(x) && (+x.qty||0)>1){ const total=+x.qty||1; for(let i=1;i<=total;i++){out.push({...x,id:`${x.id}-${i}`,qty:1,startQty:1,packIndex:i,packTotal:total,splitFrom:x.id});} changed=true; }
+    if(is1000Dowel(x) && (+x.qty||0)>1){ const total=+x.qty||1; for(let i=1;i<=total;i++){out.push({...x,id:i===1?x.id:`${x.id}-${i}`,qty:1,startQty:1,packIndex:i,packTotal:total,splitFrom:x.id});} changed=true; }
     else { if(is1000Dowel(x)&&!x.packIndex){x.packIndex=1;x.packTotal=1;} out.push(x); }
   }
   if(changed)db.goods=out; return changed;
@@ -1349,8 +1354,19 @@ function show(id,btn){
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
 }
-function next(prefix,arr){let y=new Date().getFullYear(),n=arr.filter(x=>x.id.startsWith(prefix+'-'+y)).length+1;return `${prefix}-${y}-${String(n).padStart(4,'0')}`}
-function by(a,id){return (db[a]||[]).find(x=>x.id==id)||{}}
+// INT-08: höchste vorhandene Nummer + 1 (nicht Anzahl + 1) und nie eine ID, die irgendwo schon vorkommt
+function allIdsInUse(){const set=new Set();for(const k of Object.keys(db||{})){const v=db[k];if(Array.isArray(v))for(const x of v){if(x&&x.id!==undefined&&x.id!==null)set.add(String(x.id));}}return set}
+function next(prefix,arr){
+  const y=+today().slice(0,4); const re=new RegExp('^'+String(prefix).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'-'+y+'-(\\d+)');
+  let max=0; (arr||[]).forEach(x=>{const m=re.exec(String(x&&x.id!==undefined?x.id:'')); if(m) max=Math.max(max,parseInt(m[1],10));});
+  const used=allIdsInUse(); let n=max+1, id;
+  do{ id=`${prefix}-${y}-${String(n).padStart(4,'0')}`; n++; }while(used.has(id));
+  return id;
+}
+function by(a,id){const list=db[a]||[];const f=list.find(x=>x.id==id);if(f)return f;
+  // INT-08: Etiketten/Bezüge auf eine früher aufgeteilte Dübel-ID führen zur ersten Packung
+  if(a==='goods'){const s=list.find(x=>x.splitFrom==id&&(+x.packIndex||1)===1);if(s)return s;}
+  return {}}
 function opts(a,fn){let arr=Array.isArray(a)?a:(db[a]||[]);return arr.map(x=>`<option value="${escHtml(x.id)}">${escHtml(fn(x))}</option>`).join('')}
 
 
@@ -1888,7 +1904,7 @@ function setComponentPlan(sku,qty,orderId=null,itemId=null){const bom=setBom(sku
 function batchCandidatesForSku(sku){
   const rows=[];
   const blocked=new Set(['verkauft','archiviert','aufgebraucht','verbraucht','kontaminiert','entsorgt']);
-  const add=(collection,arr,filter=()=>true,dateKey='date')=>(arr||[]).filter(x=>x.sku===sku&&!blocked.has(String(x.status||'').toLowerCase())&&filter(x)).forEach(x=>rows.push({collection,id:x.id,date:x[dateKey]||x.date||x.packDate,qty:+x.qty||1,storageLocation:x.storageLocation||defaultStorageLocationForSku(sku),orderId:x.orderId||null,orderItemId:x.orderItemId||null}));
+  const add=(collection,arr,filter=()=>true,dateKey='date')=>(arr||[]).filter(x=>x.sku===sku&&!blocked.has(String(x.status||'').toLowerCase())&&filter(x)).forEach(x=>rows.push({collection,id:x.id,date:x[dateKey]||x.date||x.packDate,qty:qtyOrOne(x.qty),storageLocation:x.storageLocation||defaultStorageLocationForSku(sku),orderId:x.orderId||null,orderItemId:x.orderItemId||null}));
   add('goods',db.goods,x=>['Spritzen','Dübel','Dübel-Set'].includes(x.type) && !(x.type==='Dübel' && is1000Dowel(x) && x.anbruch) && (x.type!=='Dübel' && x.type!=='Dübel-Set' || String(x.status||'').toLowerCase()==='fertig durchwachsen'));
   // Körnerbrut zählt für Bestellung/Woo erst im Status 'im Kühlschrank'.
   add('kb',db.kb,x=>String(x.status||'').toLowerCase()==='im kühlschrank'); add('sub',db.sub,x=>!x.forTest && String(x.status||'').toLowerCase()==='fertig durchwachsen'); add('lots',db.lots,()=>true,'packDate'); add('logs',db.logs,x=>String(x.status||'').toLowerCase()==='fertig durchwachsen');
@@ -3196,7 +3212,7 @@ setText('sOrdersOpen', (db.wooOrders||[]).filter(isWooActiveOrder).length);
 setText('sLc', (db.lc||[]).filter(x=>!['verbraucht','archiviert','kontaminiert'].includes(x.status)).length);
 setText('sKb', db.kb.filter(x=>!['beimpft','archiviert','kontaminiert'].includes(x.status)).length);
 setText('sLots', db.lots.filter(x=>x.status!=='archiviert' && x.status!=='verkauft').length);
-setText('sTestSubs', (db.sub||[]).filter(x=>x.forTest && !isArchivedStatus(x.status)).reduce((a,x)=>a+(+x.qty||1),0));
+setText('sTestSubs', (db.sub||[]).filter(x=>x.forTest && !isArchivedStatus(x.status)).reduce((a,x)=>a+qtyOrOne(x.qty),0));
 const _activeOrders=(db.wooOrders||[]).filter(isWooActiveOrder);
 const _orderStates=_activeOrders.map(orderComputed);
 setText('sOrdersReady', _activeOrders.filter((o,i)=>String(o.status||'').toLowerCase()==='processing'&&_orderStates[i].ready).length);
@@ -3209,7 +3225,7 @@ updateDbPrepStats();
 renderTaskCenter();
 
 const testSubs = (db.sub||[]).filter(x=>x.forTest && !isArchivedStatus(x.status));
-setHTML('testSubSummary', stockSummaryDropdown('testsub', testSubs, x=>+x.qty||1));
+setHTML('testSubSummary', stockSummaryDropdown('testsub', testSubs, x=>qtyOrOne(x.qty)));
 setHTML('testSubRows', applyViewFilter('testsub', testSubs).map(x=>{
   const hid = domId(x.id);
   const nextNo = nextHarvestNo(x.id);
@@ -3223,7 +3239,7 @@ setHTML('testSubRows', applyViewFilter('testsub', testSubs).map(x=>{
 <td>${esc(x.strain)}</td>
 <td>${esc(sourceCompact('sub',x))}</td>
 <td>${esc(by('mix',x.mix).name||x.mix)}</td>
-<td>${x.qty || 1}</td>
+<td>${qtyOrOne(x.qty)}</td>
 <td>${badge(x.status)}</td>
 <td>${harvestHtml}</td>
 <td>${entryHtml}</td>
@@ -3246,7 +3262,7 @@ setHTML('lotSummary', stockSummary('lots', db.lots, x=>+x.qty||0));
 setHTML('dowelsSummary', stockSummary('dowels', (db.goods||[]).filter(x=>x.type==='Dübel' || x.type==='Dübel-Set'), x=>+x.qty||0));
 setHTML('syringesSummary', stockSummary('syringes', (db.goods||[]).filter(x=>x.type==='Spritzen'), x=>+x.qty||0));
 setHTML('masterSyringesSummary', stockSummary('mastersyringes', (db.goods||[]).filter(x=>x.type==='Master-Spritzen'), x=>+x.qty||0));
-setHTML('logsSummary', stockSummary('logs', db.logs, x=>+x.qty||1));
+setHTML('logsSummary', stockSummary('logs', db.logs, x=>qtyOrOne(x.qty)));
 renderMinProductOptions();
 renderMinStockAccordions();
 renderSkuMapping();
@@ -3338,7 +3354,7 @@ let subAllActive = activeSubItems();
 let subDates = Array.from(new Set(subAllActive.map(x=>x.date).filter(Boolean))).sort();
 setOptions('subDateFilter', '<option value="">Alle Daten</option>' + subDates.map(d=>`<option value="${d}" ${d===currentSubDate?'selected':''}>${fmt(d)}</option>`).join(''));
 let subDateFiltered = currentSubDate ? subAllActive.filter(x=>x.date===currentSubDate) : subAllActive;
-setHTML('subSummary', stockSummaryDropdown('sub', subDateFiltered, x=>+x.qty||1));
+setHTML('subSummary', stockSummaryDropdown('sub', subDateFiltered, x=>qtyOrOne(x.qty)));
 let subFilteredRows = applyViewFilter('sub', subDateFiltered);
 setHTML('subRows', subFilteredRows.map(x=>`<tr>
 <td><input type="checkbox" class="subBulkCheck" value="${x.id}"></td>
@@ -3346,7 +3362,7 @@ setHTML('subRows', subFilteredRows.map(x=>`<tr>
 <td>${esc(x.strain)}</td>
 <td>${esc(sourceCompact('sub',x))}</td>
 <td>${esc(by('mix',x.mix).name||x.mix)}</td>
-<td>${x.qty || 1}</td>
+<td>${qtyOrOne(x.qty)}</td>
 <td>${x.forTest?badge('Test'):'–'}</td>
 <td>${badge(x.status)}</td>
 <td>${db.harv.filter(h=>h.sub==x.id).map(h=>esc(h.no+'.: '+h.weight+'g')).join('<br>')||'–'}</td>
@@ -3379,7 +3395,7 @@ setHTML('logRows', applyViewFilter('logs', activeItems(db.logs)).map(x=>`<tr>
 <td>${esc(sourceCompact('logs',x))}</td>
 <td>${esc(x.wood)}</td>
 <td>${esc(x.diameter)} cm / ${x.length} cm</td>
-<td>${x.qty || 1}</td>
+<td>${qtyOrOne(x.qty)}</td>
 <td>${badge(x.status)}</td>
 <td>
 <button class="secondary" onclick="editItem('logs','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('logs','${x.id}')">Historie</button>
@@ -3967,8 +3983,6 @@ if(pt==='unknown' && !b.product)return alert('Bitte Produkt bei unbekannter Quel
 let count=+packCount.value||0;
 if(count<=0)return alert('Bitte gültige Anzahl Packungen eingeben.');
 let d=packDate.value||today();
-let m=new Date(d+'T00:00:00');
-m.setFullYear(m.getFullYear()+2);
 db.lots.push({
   id:(pt==='unknown'?next('LOT',db.lots):b.id.replace('EIM','LOT')+'-'+String(db.lots.filter(l=>l.bucket===b.id).length+1).padStart(3,'0')),
   bucket:b.id,
@@ -3976,7 +3990,7 @@ db.lots.push({
   sku:findSku('lots', b.product, ''),
   storageLocation:defaultStorageLocationForSku(findSku('lots', b.product, '')),
   date:d,
-  mhd:m.toISOString().slice(0,10),
+  mhd:addYearsIso(d,2),
   qty:count,
   status:'lagernd'
 });
@@ -4286,7 +4300,7 @@ function moveSubToFruiting(id, silent=false){
   let x = by('sub', id);
   if(!x.id) return alert('Substratsack nicht gefunden.');
 
-  let available = +x.qty || 1;
+  let available = qtyOrOne(x.qty);
   let qty = available;
   if(!silent){
     if(available > 1){
@@ -4942,7 +4956,7 @@ function renderLabels(){
 
 function markLabelPrinted(area,id){
   const arr=getCollectionByArea(area);
-  const item=(arr||[]).find(x=>(x.id||x.masterCode)===id);
+  const item=(arr||[]).find(x=>(x.id||x.masterCode)===id)||(arr||[]).find(x=>x.splitFrom===id&&(+x.packIndex||1)===1);
   if(!item) return alert('Datensatz nicht gefunden.');
   item.labelPrinted=true;
   item.labelPrintedAt=today();
@@ -4957,7 +4971,7 @@ function markVisibleLabelsPrinted(){
     const area=c.getAttribute('data-label-area');
     const id=c.getAttribute('data-label-id');
     const arr=getCollectionByArea(area);
-    const item=(arr||[]).find(x=>(x.id||x.masterCode)===id);
+    const item=(arr||[]).find(x=>(x.id||x.masterCode)===id)||(arr||[]).find(x=>x.splitFrom===id&&(+x.packIndex||1)===1);
     if(item){ item.labelPrinted=true; item.labelPrintedAt=today(); }
   });
   archiveLog('labels','sichtbare Etiketten','Etiketten gedruckt','Anzahl: '+cards.length);
@@ -5030,7 +5044,7 @@ function openQrAction(area,id){
     alert('Dauerkulturen und Petrischalen haben bewusst keine QR-Arbeitsmaske. Bitte über die Tabelle bearbeiten.');
     return;
   }
-  const item=(getCollectionByArea(area)||[]).find(x=>(x.id||x.masterCode)===id);
+  const item=(getCollectionByArea(area)||[]).find(x=>(x.id||x.masterCode)===id)||(getCollectionByArea(area)||[]).find(x=>x.splitFrom===id&&(+x.packIndex||1)===1);
   if(!item) return alert('Datensatz nicht gefunden: '+id);
   setText('qrActionTitle', 'Scan – '+id);
   const name=esc(item.strain||item.product||item.name||'');
@@ -5151,7 +5165,7 @@ function scanAddHarvest(id){
 function scanSubAction(id,action){
   const x=by('sub',id); if(!x.id) return alert('Substratsack nicht gefunden.');
   const qty=+(el('scanSubQty')?.value||1); if(qty<=0) return alert('Ungültige Anzahl.');
-  const available=+x.qty||1; if(qty>available) return alert('Nicht genug Bestand.');
+  const available=qtyOrOne(x.qty); if(qty>available) return alert('Nicht genug Bestand.');
   if(action==='fruiting'){
     if(x.forTest){ x.status='im Fruchtungsraum'; x.fruitingDate=today(); archiveLog('sub',id,'im Fruchtungsraum','QR-Scan; Test; Anzahl: '+qty); }
     else { x.qty=available-qty; archiveLog('sub',id,'im Fruchtungsraum','QR-Scan; Anzahl: '+qty); if(x.qty<=0){ x.qty=0; x.status='im Fruchtungsraum'; } }
@@ -5811,7 +5825,7 @@ function parseImportDate(v){
     if(!isNaN(d.getTime())) return d.toISOString().slice(0,10);
   }
   const d=new Date(raw);
-  if(!isNaN(d.getTime())) return d.toISOString().slice(0,10);
+  if(!isNaN(d.getTime())) return localIso(d);
   return '';
 }
 
@@ -6037,7 +6051,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.27'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.28'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
