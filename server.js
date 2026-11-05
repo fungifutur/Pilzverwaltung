@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.29';
+const APP_VERSION = '1.5.30';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -897,7 +897,7 @@ function isArchivedStockStatus(status) {
 function catalogItem(db, sku) {
   return (db.productCatalog || []).find(p => String(p.sku || '') === String(sku || '') && p.active !== false) || null;
 }
-// Ein angebrochenes 1000er-Dübelpaket ist kein vollständiges Verkaufsprodukt mehr (wie in der Oberfläche).
+// Angebrochene 1000er-Dübelpakete und angebrochene Körnerbrut sind keine vollständigen Verkaufsprodukte mehr (nicht verkäuflich).
 function is1000Dowel(x) { return !!x && x.type==='Dübel' && /(^|\D)1000(\D|$)/.test(String(x.size||x.variant||'')); }
 function batchRowsForSku(db, sku) {
   const rows = [];
@@ -910,7 +910,7 @@ function batchRowsForSku(db, sku) {
   add('goods', db.goods, x => ['Spritzen','Dübel','Dübel-Set'].includes(x.type) && !(x.type==='Dübel' && is1000Dowel(x) && x.anbruch) && (x.type!=='Dübel' && x.type!=='Dübel-Set' || String(x.status||'').toLowerCase()==='fertig durchwachsen'));
   // Körnerbrut ist erst verkaufs-/reservierbar, wenn sie ausdrücklich im Kühlschrank liegt.
   // 'am durchwachsen' und andere Zwischenstatus dürfen weder Woo-Bestand noch FIFO erhöhen.
-  add('kb', db.kb, x => String(x.status || '').toLowerCase() === 'im kühlschrank');
+  add('kb', db.kb, x => String(x.status || '').toLowerCase() === 'im kühlschrank' && !x.anbruch);
   add('sub', db.sub, x => !x.forTest && String(x.status||'').toLowerCase()==='fertig durchwachsen');
   add('lots', db.lots, () => true, 'packDate');
   add('logs', db.logs, x => String(x.status||'').toLowerCase()==='fertig durchwachsen');
