@@ -55,3 +55,17 @@ Neu sind nur die zwei Tabellen `app_sessions` und `app_webhook_queue`, die beim 
 Geprüft werden unter anderem: Start mit Datenbank im alten Format, Login und Sperre, Geräte-Freigabe, Versionskonflikt, gleichzeitige Webhooks, Wiederholung fehlerhafter Webhooks, Ausbuchung durch Webhook, Datenminimierung, Backup/Restore/Undo, Abgleich, Passwortwechsel.
 Die Tests wurden gegen PostgreSQL 16 ausgeführt: 22 von 22 bestanden. Die Oberfläche wurde zusätzlich in Chromium für Anmeldung, Laden, Speichern, Konfliktmeldung und Admin-Abfrage beim Massenlöschen geprüft.
 Nicht geprüft werden konnte: ein echter WooCommerce-Shop (die Tests verwenden eine Attrappe), die Render-Umgebung, QR-Code-Erzeugung (Modul `qrcode` war hier nicht installierbar) und der Excel-Import.
+
+## Automatisches Backup nach Google Drive (GitHub Actions)
+
+Workflow: `.github/workflows/db-backup.yml`, läuft täglich ca. 02:30 und manuell über Actions → «DB-Backup nach Google Drive» → Run workflow.
+Ablauf: `pg_dump` der Render-Datenbank → Verschlüsselung (AES256, Passwort) → Upload nach Google Drive, Ordner `Pilzverwaltung-Backups` → Dateien älter als 30 Tage werden gelöscht. Schlägt ein Lauf fehl, schickt GitHub eine E-Mail.
+
+Benötigte Repository-Secrets (Settings → Secrets and variables → Actions):
+- `BACKUP_DATABASE_URL`: «External Database URL» der Render-Datenbank
+- `BACKUP_PASSPHRASE`: langes Passwort für die Verschlüsselung. Separat und sicher aufbewahren, ohne das Passwort lässt sich kein Backup öffnen.
+- `GDRIVE_RCLONE_TOKEN`: Google-Drive-Token von `rclone config` / `rclone authorize "drive"`
+
+Optionale Variablen: `PG_MAJOR` (Standard 16, muss zur Render-Postgres-Version passen), `BACKUP_KEEP_DAYS` (Standard 30).
+
+Wiederherstellung testen: `gpg --decrypt DATEI.dump.gpg | pg_restore --no-owner --clean --if-exists -d "<URL einer LEEREN Test-Datenbank>"`
