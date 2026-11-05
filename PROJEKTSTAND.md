@@ -1,3 +1,11 @@
+# Version 1.5.29 – Bestandsabweichungen Server/Browser (INT-07, Vorbereitung)
+
+- **Vergleich mit echten Daten:** Der Bestand wurde für alle 150 Artikel einmal vom Server und einmal vom Browser berechnet (anonymisierter Export). Es gab drei Abweichungen, zwei echte Fehler im Server wurden behoben, danach 0 Abweichungen.
+- **Doppelte Reservierung in einer Bestellung:** Hatte eine Bestellung zwei Positionen derselben Ware (z. B. 2 × Ppul_Exp_600g), konnte dieselbe Charge doppelt reserviert werden. Jetzt zählt jede neue Reservierung sofort mit, die zweite Position bekommt die nächste Charge. Bestehende doppelte Reservierungen korrigieren sich beim nächsten Speichern oder Abgleich von selbst.
+- **Angebrochene 1000er-Dübelpackungen:** Der Server zählte sie noch als Bestand (der Browser nicht). Jetzt zählen sie auch auf dem Server nicht mehr. Die Bestandsmeldung von Post_Düb_1000stk an WooCommerce kann dadurch um 1 sinken.
+- Neue Tests: zwei Integrationstests (keine doppelte Charge, angebrochene 1000er-Dübel).
+- Weiterhin offen: INT-10 (a) Dübel-Sets (inzwischen nur noch über die Einzelprodukte, Option «Dübel-Set» unter «Dübel herstellen» kann entfernt werden); restliche Schritte von INT-07 (Logik nur noch auf dem Server).
+
 # Version 1.5.28 – IDs und Logikfehler (INT-08, INT-10)
 
 - **INT-08 IDs:** Neue IDs werden aus der höchsten vorhandenen Nummer + 1 gebildet (früher Anzahl + 1, dadurch doppelte IDs nach Löschungen) und überspringen jede ID, die irgendwo schon vorkommt. Beim Aufteilen von 1000er-Dübeln behält die erste Packung die ursprüngliche ID (Packungen 2 bis n erhalten `-2`, `-3` …); bestehende IDs werden nicht mehr ersetzt, damit gedruckte QR-Etiketten und Bezüge gültig bleiben. Bereits früher umbenannte Dübel (`…-1`) werden über `splitFrom` auch unter der alten ID gefunden (Suche und QR-Scan). Bei zwei Geräten gleichzeitig verhindert weiterhin die Versionsprüfung (Meldung «Stand veraltet», neu laden) doppelte Speicherung; eine serverseitige ID-Sequenz gibt es noch nicht.

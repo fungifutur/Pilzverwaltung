@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.28';
+const APP_VERSION = '1.5.29';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -897,6 +897,8 @@ function isArchivedStockStatus(status) {
 function catalogItem(db, sku) {
   return (db.productCatalog || []).find(p => String(p.sku || '') === String(sku || '') && p.active !== false) || null;
 }
+// Ein angebrochenes 1000er-Dübelpaket ist kein vollständiges Verkaufsprodukt mehr (wie in der Oberfläche).
+function is1000Dowel(x) { return !!x && x.type==='Dübel' && /(^|\D)1000(\D|$)/.test(String(x.size||x.variant||'')); }
 function batchRowsForSku(db, sku) {
   const rows = [];
   const add = (collection, list, filter = () => true, dateKey = 'date') => {
@@ -905,7 +907,7 @@ function batchRowsForSku(db, sku) {
       rows.push({ collection, id: x.id, date: x[dateKey] || x.date || x.packDate || '', qty: qtyOrOne(x.qty), storageLocation: x.storageLocation || '', orderId: x.orderId || null, orderItemId: x.orderItemId || null });
     }
   };
-  add('goods', db.goods, x => ['Spritzen','Dübel','Dübel-Set'].includes(x.type) && (x.type!=='Dübel' && x.type!=='Dübel-Set' || String(x.status||'').toLowerCase()==='fertig durchwachsen'));
+  add('goods', db.goods, x => ['Spritzen','Dübel','Dübel-Set'].includes(x.type) && !(x.type==='Dübel' && is1000Dowel(x) && x.anbruch) && (x.type!=='Dübel' && x.type!=='Dübel-Set' || String(x.status||'').toLowerCase()==='fertig durchwachsen'));
   // Körnerbrut ist erst verkaufs-/reservierbar, wenn sie ausdrücklich im Kühlschrank liegt.
   // 'am durchwachsen' und andere Zwischenstatus dürfen weder Woo-Bestand noch FIFO erhöhen.
   add('kb', db.kb, x => String(x.status || '').toLowerCase() === 'im kühlschrank');
@@ -1022,6 +1024,8 @@ function reserveOrderFifo(db, order) {
   if (!Array.isArray(db.wooReservations)) db.wooReservations=[];
   if (!Array.isArray(db.productionRequests)) db.productionRequests=[];
   releaseOrderReservations(db, order.id, 'replaced');
+  // INT-07: Die alten Reservierungen dieser Bestellung sind jetzt 'replaced'. Alle Verfügbarkeitsrechnungen unten zählen deshalb
+  // auch die Reservierungen mit, die in dieser Schleife für frühere Positionen derselben Bestellung entstehen (kein doppeltes Reservieren derselben Charge).
   const created=[];
   for (const item of (order.items||[])) {
     let need = Number(item.quantity)||0;
@@ -1029,17 +1033,17 @@ function reserveOrderFifo(db, order) {
     if(bom){
       for(const component of bom){
         let componentNeed=need*(Number(component.qty)||1);
-        const componentAllocatable=allocatableStock(db,component.sku,order.id,true);
+        const componentAllocatable=allocatableStock(db,component.sku,null,true);
         const componentReserveNeed=Math.min(componentNeed,componentAllocatable);
         const cat=catalogItem(db,component.sku);
         if(cat && cat.stockMode==='simple'){
-          const take=Math.min(componentReserveNeed,Math.max(0,(Number(cat.qty)||0)-reservedSimpleQty(db,component.sku,order.id)));
+          const take=Math.min(componentReserveNeed,Math.max(0,(Number(cat.qty)||0)-reservedSimpleQty(db,component.sku,null)));
           if(take>0){const r={id:'WR-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),orderId:order.id,orderNumber:order.number,itemId:item.id,sku:component.sku,parentSku:item.sku,name:component.label||component.sku,collection:'productCatalog',batchId:cat.id,qty:take,storageLocation:cat.storageLocation||'',status:'reserved',createdAt:new Date().toISOString()};db.wooReservations.push(r);created.push(r);}
         }else{
           let left=componentReserveNeed;
           for(const b of batchRowsForSku(db,component.sku)){
             if(left<=0)break;
-            const available=Math.max(0,b.qty-reservedQtyForBatch(db,b.collection,b.id,order.id)); const take=Math.min(left,available);
+            const available=Math.max(0,b.qty-reservedQtyForBatch(db,b.collection,b.id,null)); const take=Math.min(left,available);
             if(take>0){const r={id:'WR-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),orderId:order.id,orderNumber:order.number,itemId:item.id,sku:component.sku,parentSku:item.sku,name:component.label||component.sku,collection:b.collection,batchId:b.id,qty:take,storageLocation:b.storageLocation||'',status:'reserved',createdAt:new Date().toISOString()};db.wooReservations.push(r);created.push(r);left-=take;}
           }
         }
@@ -1058,9 +1062,9 @@ function reserveOrderFifo(db, order) {
       continue;
     }
     const cat = catalogItem(db,item.sku);
-    need=Math.min(need,allocatableStock(db,item.sku,order.id,false));
+    need=Math.min(need,allocatableStock(db,item.sku,null,false));
     if (cat && cat.stockMode === 'simple') {
-      const take=Math.min(need, Math.max(0,(Number(cat.qty)||0)-reservedSimpleQty(db,item.sku,order.id)));
+      const take=Math.min(need, Math.max(0,(Number(cat.qty)||0)-reservedSimpleQty(db,item.sku,null)));
       if(take>0){ const r={id:'WR-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),orderId:order.id,orderNumber:order.number,itemId:item.id,sku:item.sku,name:item.name,collection:'productCatalog',batchId:cat.id,qty:take,storageLocation:cat.storageLocation||'',status:'reserved',createdAt:new Date().toISOString()}; db.wooReservations.push(r); created.push(r); need-=take; }
     } else {
       // Ware, die ausdrücklich für diese Bestellposition produziert wurde, hat Vorrang
@@ -1079,7 +1083,7 @@ function reserveOrderFifo(db, order) {
           const ownerActive=(db.wooOrders||[]).some(o=>String(o.id)===String(b.orderId)&&['processing','on-hold'].includes(String(o.status||'').toLowerCase())&&!o.archived&&!o.externalDeleted);
           if(ownerActive) continue;
         }
-        const available=Math.max(0,b.qty-reservedQtyForBatch(db,b.collection,b.id,order.id));
+        const available=Math.max(0,b.qty-reservedQtyForBatch(db,b.collection,b.id,null));
         const take=Math.min(need,available);
         if(take>0){ const r={id:'WR-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),orderId:order.id,orderNumber:order.number,itemId:item.id,sku:item.sku,name:item.name,collection:b.collection,batchId:b.id,qty:take,storageLocation:b.storageLocation||'',status:'reserved',createdAt:new Date().toISOString()}; db.wooReservations.push(r); created.push(r); need-=take; }
       }
