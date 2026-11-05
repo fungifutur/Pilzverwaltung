@@ -47,7 +47,7 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.29 gegen PostgreSQL', { skip }, () => {
+describe('Pilzverwaltung 1.5.30 gegen PostgreSQL', { skip }, () => {
   let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
@@ -403,6 +403,22 @@ describe('Pilzverwaltung 1.5.29 gegen PostgreSQL', { skip }, () => {
     await webhook(wooOrder(9303, 'processing', item(9303, 'D1000_FULL')), 'order.created'); await settled();
     assert.equal(await reserved(9302), 0, 'angebrochenes Paket ist kein Bestand');
     assert.equal(await reserved(9303), 1, 'volles Paket wird reserviert');
+  });
+
+  it('INT-07: angebrochene Körnerbrut ist nicht verkäuflich', async () => {
+    const reserved = async id => Number((await db.query(`SELECT COALESCE(sum((r->>'qty')::int),0) AS n FROM app_state, jsonb_array_elements(data->'wooReservations') r WHERE (r->>'orderId')::int=$1 AND r->>'status'='reserved'`, [id])).rows[0].n);
+    const settled = async () => until(async () => (await db.query(`SELECT count(*)::int AS n FROM app_webhook_queue WHERE status='pending'`)).rows[0].n === 0);
+    const a = await A.req('GET', '/api/data'); const doc = a.json;
+    doc.kb = (doc.kb || []).concat([
+      { id: 'KB-T-OPEN', sku: 'KB_OPEN', status: 'im Kühlschrank', anbruch: true, date: '2026-01-01', strain: 'Test' },
+      { id: 'KB-T-FULL', sku: 'KB_FULL', status: 'im Kühlschrank', date: '2026-01-01', strain: 'Test' }]);
+    const save = await A.req('POST', '/api/data', { body: doc, headers: { 'x-data-version': a.headers.get('x-data-version') } });
+    assert.equal(save.status, 200);
+    const item = (id, sku) => [{ id: id * 10, name: 'Test', sku, quantity: 1, product_id: 1, variation_id: 0, total: '10' }];
+    await webhook(wooOrder(9304, 'processing', item(9304, 'KB_OPEN')), 'order.created');
+    await webhook(wooOrder(9305, 'processing', item(9305, 'KB_FULL')), 'order.created'); await settled();
+    assert.equal(await reserved(9304), 0, 'angebrochene Körnerbrut ist kein Bestand');
+    assert.equal(await reserved(9305), 1, 'volle Körnerbrut wird reserviert');
   });
 
   it('Teamaufgaben: atomar, liefert Versionen', async () => {
