@@ -75,4 +75,29 @@ describe('Hilfsfunktionen der Oberfläche', () => {
     globalThis.Date = class extends RealDate { constructor(...a) { if (a.length) super(...a); else super(fixed); } static now() { return fixed; } };
     try { assert.equal(load(['localIso', 'today'], {}).today(), '2026-11-05'); } finally { globalThis.Date = RealDate; }
   });
+
+  it('Tempo: by() liefert dasselbe wie die lineare Suche, auch nach Änderungen im selben Arbeitsschritt', () => {
+    const db = { kb: [{ id: 'KB-1', n: 'a' }, { id: 'KB-2', n: 'b' }, { id: 'KB-1', n: 'doppelt' }], goods: [{ id: 'DUE-1-1', splitFrom: 'DUE-1', packIndex: 1 }, { id: 'DUE-1-2', splitFrom: 'DUE-1', packIndex: 2 }], num: [{ id: 5, n: 'fünf' }] };
+    const h = load(['by'], db);
+    assert.equal(h.by('kb', 'KB-1').n, 'a', 'erster Treffer gewinnt');
+    assert.equal(h.by('kb', 'KB-2').n, 'b');
+    assert.deepEqual(h.by('kb', 'KB-9'), {}, 'unbekannte ID gibt leeres Objekt');
+    assert.equal(h.by('num', '5').n, 'fünf', 'lockerer Vergleich Zahl/Text wie bisher');
+    assert.equal(h.by('goods', 'DUE-1').id, 'DUE-1-1', 'früher aufgeteilte Dübel-ID führt zur ersten Packung');
+    assert.deepEqual(h.by('nichts', 'x'), {}, 'unbekannte Sammlung');
+    db.kb.push({ id: 'KB-3', n: 'neu' });   // im selben Arbeitsschritt hinzugefügt
+    assert.equal(h.by('kb', 'KB-3').n, 'neu', 'neue Einträge werden sofort gefunden');
+    db.kb = [{ id: 'KB-1', n: 'ersetzt' }];  // ganze Liste ersetzt
+    assert.equal(h.by('kb', 'KB-1').n, 'ersetzt');
+    assert.deepEqual(h.by('kb', undefined), {}, 'ohne ID leeres Objekt');
+  });
+
+  it('Tempo: today() und normTxt() liefern dieselben Werte wie zuvor', () => {
+    const h = load(['localIso', 'today', 'normTxt'], {});
+    assert.match(h.today(), /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(h.today(), new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Zurich' }).format(new Date()));
+    assert.equal(h.normTxt('Pleurotus Ostréatus – Königs-Austernpilz!'), 'pleurotus ostreatus konigs austernpilz');
+    assert.equal(h.normTxt(null), '');
+    assert.equal(h.normTxt('Äpfel'), h.normTxt('Äpfel'), 'zweiter Aufruf (aus dem Zwischenspeicher) gleich');
+  });
 });

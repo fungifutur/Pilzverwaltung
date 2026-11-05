@@ -1,3 +1,13 @@
+# Version 1.5.37 – Schneller speichern und anzeigen
+
+Anlass: Beim Scannen mehrerer QR-Codes mit Statusänderungen dauerte das Speichern spürbar lange. Gemessen mit den anonymisierten Echtdaten (1,7 MB Datenbestand):
+
+- **Anzeige nach jedem Speichern ca. 3× schneller** (Neuaufbau der Seite: 550–900 ms → 180–270 ms). Ursache war vor allem das ständige lineare Nachschlagen derselben Einträge und die Berechnung des heutigen Datums über die Zeitzonen-Funktion bei jeder Zeile. Die Seite ist danach Zeichen für Zeichen identisch (3,5 MB HTML verglichen).
+- **Serverseitig ca. 30 % schneller** (Speichern 280 ms → 200 ms lokal): Die Vorher-Kopie für «Rückgängig» entsteht jetzt in der Datenbank selbst statt über den Server, und der Browser lädt Bestellungen, Reservierungen und Sync-Protokoll (rund 1 MB) nicht mehr bei jedem Speichern hoch (der Server ersetzt sie ohnehin).
+- **Weniger Wachstum:** Unveränderte Reservierungen behalten ihren Datensatz. Bisher entstand bei jedem Speichern für jede offene Bestellung ein neuer «ersetzter» Eintrag, der das Dokument aufblähte (im Testbestand 1281 Einträge, davon rund 1000 ersetzte).
+- Auf dem Render-Tarif mit 0,1 CPU wirkt sich das stärker aus als auf einem normalen Rechner.
+- Neue Tests (Nachschlagen, Datum, Reservierungen wachsen nicht); Suite 41/41 und 7/7 grün.
+
 # Version 1.5.36 – Löschkonzept, einheitliche Aufbewahrung und Notfallblatt (M18: DSG-03, OPS-02, OPS-05)
 
 - **Backups, einheitlich:** Alle Backup-Arten in der Datenbank haben jetzt eine Frist (bisher blieben manuelle, Rückgängig- und alte Backups für immer): Tages-Backups 30 Tage, Änderungs-Backups 14 Tage, Rückgängig 7 Tage, manuelle 90 Tage. Die neuesten Einträge bleiben immer erhalten. Die Dokumentation sagt nicht mehr «90 Tage» für alles.

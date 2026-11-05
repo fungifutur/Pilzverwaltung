@@ -48,7 +48,7 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.36 gegen PostgreSQL', { skip }, () => {
+describe('Pilzverwaltung 1.5.37 gegen PostgreSQL', { skip }, () => {
   let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
@@ -560,6 +560,18 @@ describe('Pilzverwaltung 1.5.36 gegen PostgreSQL', { skip }, () => {
     const rows = (await db.query(`SELECT payload::text AS p FROM app_webhook_queue WHERE status='done' AND order_id='9910'`)).rows;
     assert.ok(rows.length >= 1);
     for (const r of rows) { assert.ok(!/Geheimweg|anna@example|0791234567/.test(r.p), r.p); assert.match(r.p, /9910/); }
+  });
+
+  it('Tempo: unveränderte Reservierungen erzeugen beim Speichern keine neuen Datensätze', async () => {
+    const count = async () => Number((await db.query(`SELECT jsonb_array_length(data->'wooReservations') AS n FROM app_state WHERE id = 1`)).rows[0].n);
+    const reservedKeys = async () => (await db.query(`SELECT r->>'id' AS id FROM app_state, jsonb_array_elements(data->'wooReservations') r WHERE r->>'status'='reserved' ORDER BY 1`)).rows.map(r => r.id).join(',');
+    let a = await A.req('GET', '/api/data');
+    assert.equal((await A.req('POST', '/api/data', { body: a.json, headers: { 'x-data-version': a.headers.get('x-data-version') } })).status, 200);
+    const n1 = await count(), k1 = await reservedKeys();
+    for (let i = 0; i < 3; i++) { a = await A.req('GET', '/api/data'); assert.equal((await A.req('POST', '/api/data', { body: a.json, headers: { 'x-data-version': a.headers.get('x-data-version') } })).status, 200); }
+    assert.equal(await count(), n1, 'keine neuen Datensätze bei unveränderter Lage');
+    assert.equal(await reservedKeys(), k1, 'die bestehenden Reservierungen bleiben dieselben Datensätze');
+    assert.ok(k1.length > 0, 'es gibt aktive Reservierungen');
   });
 
   it('Teamaufgaben: atomar, liefert Versionen', async () => {
