@@ -1,0 +1,397 @@
+[
+ {
+  "schritt": "Bestellung 9801 (bezahlt, 1 Körnerbrut)",
+  "bestand": {
+   "G_D1000": {
+    "physical": 1,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 1
+   },
+   "G_KB": {
+    "physical": 3,
+    "reserved": 1,
+    "productionReserve": 1,
+    "reserve": 0,
+    "available": 1
+   },
+   "G_LOT": {
+    "physical": 5,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 5
+   },
+   "G_SET": {
+    "physical": 1,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 1,
+    "set": true
+   },
+   "G_SIMPLE": {
+    "physical": 7,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 2,
+    "available": 5
+   },
+   "G_SUB": {
+    "physical": 3,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 3
+   },
+   "G_SYR": {
+    "physical": 4,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 4
+   }
+  },
+  "reservierungen": [
+   [
+    9801,
+    98011,
+    "G_KB",
+    "KB-G-1",
+    1
+   ]
+  ],
+  "produktionsauftraege": []
+ },
+ {
+  "schritt": "Bestellung 9802 (Vorauskasse, zwei Positionen derselben Ware)",
+  "bestand": {
+   "G_D1000": {
+    "physical": 1,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 1
+   },
+   "G_KB": {
+    "physical": 3,
+    "reserved": 2,
+    "productionReserve": 1,
+    "reserve": 0,
+    "available": 0
+   },
+   "G_LOT": {
+    "physical": 5,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 5
+   },
+   "G_SET": {
+    "physical": 0,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 0,
+    "set": true
+   },
+   "G_SIMPLE": {
+    "physical": 7,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 2,
+    "available": 5
+   },
+   "G_SUB": {
+    "physical": 3,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 3
+   },
+   "G_SYR": {
+    "physical": 4,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 4
+   }
+  },
+  "reservierungen": [
+   [
+    9801,
+    98011,
+    "G_KB",
+    "KB-G-1",
+    1
+   ],
+   [
+    9802,
+    98021,
+    "G_KB",
+    "KB-G-2",
+    1
+   ]
+  ],
+  "produktionsauftraege": []
+ },
+ {
+  "schritt": "Bestellung 9803 (bezahlt, 1 Set)",
+  "bestand": {
+   "G_D1000": {
+    "physical": 1,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 1
+   },
+   "G_KB": {
+    "physical": 3,
+    "reserved": 2,
+    "productionReserve": 1,
+    "reserve": 0,
+    "available": 0
+   },
+   "G_LOT": {
+    "physical": 5,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 5
+   },
+   "G_SET": {
+    "physical": 0,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 0,
+    "set": true
+   },
+   "G_SIMPLE": {
+    "physical": 7,
+    "reserved": 2,
+    "productionReserve": 0,
+    "reserve": 2,
+    "available": 3
+   },
+   "G_SUB": {
+    "physical": 3,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 3
+   },
+   "G_SYR": {
+    "physical": 4,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 4
+   }
+  },
+  "reservierungen": [
+   [
+    9801,
+    98011,
+    "G_KB",
+    "KB-G-1",
+    1
+   ],
+   [
+    9803,
+    98031,
+    "G_KB",
+    "KB-G-2",
+    1
+   ],
+   [
+    9803,
+    98031,
+    "G_SIMPLE",
+    "PC-G-2",
+    2
+   ]
+  ],
+  "produktionsauftraege": [
+   [
+    9803,
+    "G_KB",
+    "erledigt",
+    1
+   ]
+  ]
+ },
+ {
+  "schritt": "Bestellung 9801 storniert",
+  "bestand": {
+   "G_D1000": {
+    "physical": 1,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 1
+   },
+   "G_KB": {
+    "physical": 3,
+    "reserved": 2,
+    "productionReserve": 1,
+    "reserve": 0,
+    "available": 0
+   },
+   "G_LOT": {
+    "physical": 5,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 5
+   },
+   "G_SET": {
+    "physical": 0,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 0,
+    "set": true
+   },
+   "G_SIMPLE": {
+    "physical": 7,
+    "reserved": 2,
+    "productionReserve": 0,
+    "reserve": 2,
+    "available": 3
+   },
+   "G_SUB": {
+    "physical": 3,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 3
+   },
+   "G_SYR": {
+    "physical": 4,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 4
+   }
+  },
+  "reservierungen": [
+   [
+    9802,
+    98021,
+    "G_KB",
+    "KB-G-2",
+    1
+   ],
+   [
+    9803,
+    98031,
+    "G_KB",
+    "KB-G-1",
+    1
+   ],
+   [
+    9803,
+    98031,
+    "G_SIMPLE",
+    "PC-G-2",
+    2
+   ]
+  ],
+  "produktionsauftraege": [
+   [
+    9803,
+    "G_KB",
+    "erledigt",
+    1
+   ]
+  ]
+ },
+ {
+  "schritt": "Bestellung 9802 bezahlt",
+  "bestand": {
+   "G_D1000": {
+    "physical": 1,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 1
+   },
+   "G_KB": {
+    "physical": 3,
+    "reserved": 2,
+    "productionReserve": 1,
+    "reserve": 0,
+    "available": 0
+   },
+   "G_LOT": {
+    "physical": 5,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 5
+   },
+   "G_SET": {
+    "physical": 0,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 0,
+    "set": true
+   },
+   "G_SIMPLE": {
+    "physical": 7,
+    "reserved": 2,
+    "productionReserve": 0,
+    "reserve": 2,
+    "available": 3
+   },
+   "G_SUB": {
+    "physical": 3,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 3
+   },
+   "G_SYR": {
+    "physical": 4,
+    "reserved": 0,
+    "productionReserve": 0,
+    "reserve": 0,
+    "available": 4
+   }
+  },
+  "reservierungen": [
+   [
+    9802,
+    98021,
+    "G_KB",
+    "KB-G-1",
+    1
+   ],
+   [
+    9802,
+    98022,
+    "G_KB",
+    "KB-G-2",
+    1
+   ],
+   [
+    9803,
+    98031,
+    "G_SIMPLE",
+    "PC-G-2",
+    2
+   ]
+  ],
+  "produktionsauftraege": [
+   [
+    9803,
+    "G_KB",
+    "offen",
+    1
+   ]
+  ]
+ }
+]

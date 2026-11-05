@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.33';
+const APP_VERSION = '1.5.35';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -1286,6 +1286,8 @@ async function processWooOrderEvent(rawOrder, source='webhook', topic='') {
       releaseOrderReservations(db,order.id,'released');
     }
 
+    // Frei gewordene Ware (Storno, Abschluss) geht sofort an wartende Bestellungen; die Zuteilung ist dieselbe wie beim Speichern (bezahlte zuerst, dann nach Datum).
+    rebuildProcessingReservations(db);
     addSyncLog(db,{sku:'*',reason:`Woo Bestellung #${order.number} → ${order.status}`,status:'info',message:`Quelle: ${source}${terminal?'; Bestellung abgeschlossen/archiviert.':''}`});
     // Erst speichern, dann an WooCommerce melden (INT-05): Schlägt das Speichern fehl, hat der Shop keinen Bestand erhalten,
     // den die Pilzverwaltung nicht kennt. Fehlgeschlagene Meldungen werden als «pending» protokolliert und automatisch wiederholt.

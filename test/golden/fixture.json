@@ -1,0 +1,156 @@
+{
+ "_hinweis": "Synthetische Testdaten (keine echten Daten). Abnahmebasis für die Migration (M15): Ist-Verhalten von Bestand, Reservierung, FIFO und Sets.",
+ "kb": [
+  {
+   "id": "KB-G-1",
+   "sku": "G_KB",
+   "status": "im Kühlschrank",
+   "date": "2026-01-01",
+   "strain": "Test"
+  },
+  {
+   "id": "KB-G-2",
+   "sku": "G_KB",
+   "status": "im Kühlschrank",
+   "date": "2026-01-02",
+   "strain": "Test"
+  },
+  {
+   "id": "KB-G-3",
+   "sku": "G_KB",
+   "status": "im Kühlschrank",
+   "date": "2026-01-03",
+   "strain": "Test",
+   "anbruch": true
+  },
+  {
+   "id": "KB-G-4",
+   "sku": "G_KB",
+   "status": "im Kühlschrank",
+   "date": "2026-01-04",
+   "strain": "Test"
+  },
+  {
+   "id": "KB-G-5",
+   "sku": "G_KB",
+   "status": "im Kühlschrank",
+   "date": "2026-01-05",
+   "strain": "Test",
+   "qty": 0
+  },
+  {
+   "id": "KB-G-6",
+   "sku": "G_KB",
+   "status": "am durchwachsen",
+   "date": "2026-01-06",
+   "strain": "Test"
+  }
+ ],
+ "sub": [
+  {
+   "id": "SUB-G-1",
+   "sku": "G_SUB",
+   "status": "fertig durchwachsen",
+   "date": "2026-02-01",
+   "qty": 3
+  },
+  {
+   "id": "SUB-G-2",
+   "sku": "G_SUB",
+   "status": "fertig durchwachsen",
+   "date": "2026-02-02",
+   "qty": 9,
+   "forTest": true
+  },
+  {
+   "id": "SUB-G-3",
+   "sku": "G_SUB",
+   "status": "verkauft",
+   "date": "2026-02-03",
+   "qty": 5
+  }
+ ],
+ "lots": [
+  {
+   "id": "LOT-G-1",
+   "sku": "G_LOT",
+   "status": "lagernd",
+   "packDate": "2026-03-01",
+   "qty": 5
+  }
+ ],
+ "goods": [
+  {
+   "id": "DUE-G-1",
+   "type": "Dübel",
+   "sku": "G_D1000",
+   "size": "1000 Stück",
+   "qty": 1,
+   "status": "fertig durchwachsen",
+   "date": "2026-04-01"
+  },
+  {
+   "id": "DUE-G-2",
+   "type": "Dübel",
+   "sku": "G_D1000",
+   "size": "1000 Stück",
+   "qty": 1,
+   "status": "fertig durchwachsen",
+   "date": "2026-04-02",
+   "anbruch": true
+  },
+  {
+   "id": "SPR-G-1",
+   "type": "Spritzen",
+   "sku": "G_SYR",
+   "qty": 4,
+   "date": "2026-04-03",
+   "status": "lagernd"
+  }
+ ],
+ "productCatalog": [
+  {
+   "id": "PC-G-1",
+   "sku": "G_KB",
+   "name": "Körnerbrut Test",
+   "area": "kb",
+   "stockMode": "batch",
+   "qty": 0,
+   "active": true,
+   "syncActive": false
+  },
+  {
+   "id": "PC-G-2",
+   "sku": "G_SIMPLE",
+   "name": "Einfacher Artikel",
+   "area": "goods",
+   "stockMode": "simple",
+   "qty": 7,
+   "setReserve": 2,
+   "active": true,
+   "syncActive": false
+  }
+ ],
+ "minStocks": [
+  {
+   "id": "MS-G-1",
+   "sku": "G_KB",
+   "reserve": 1,
+   "reserveActive": true
+  }
+ ],
+ "setBoms": {
+  "G_SET": [
+   {
+    "sku": "G_KB",
+    "qty": 1,
+    "label": "Körnerbrut"
+   },
+   {
+    "sku": "G_SIMPLE",
+    "qty": 2,
+    "label": "Einfacher Artikel"
+   }
+  ]
+ }
+}
