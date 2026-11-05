@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.30</title>
+<title>Pilzverwaltung Serverversion 1.5.31</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.30</h1>
+<h1>Pilzverwaltung – Version 1.5.31</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -998,6 +998,9 @@ sessionStorage.removeItem('pilz_api_token');
 let LIVE_UPDATED_AT=null;
 // Datenstand, auf dem die lokalen Daten aufbauen. Wird beim Speichern mitgesendet; der Server weist veraltete Stände ab (409).
 let DATA_VERSION='';
+// INT-07: Bestand rechnet der Server. {version, stock:{sku:{physical,reserved,productionReserve,reserve,available,set}}}
+let SERVER_STOCK=null;
+async function refreshServerStock(){ try{ const r=await fetch('/api/stock',{cache:'no-store',headers:apiHeaders()}); if(r.ok){ const j=await r.json(); if(j&&j.stock) SERVER_STOCK={version:j.version,stock:j.stock}; } }catch(e){ console.warn('Serverbestand nicht geladen',e); } }
 let LIVE_POLL_BUSY=false;
 let LIVE_SAVE_BUSY=false;
 let LIVE_TOAST_TIMER=null;
@@ -1068,6 +1071,7 @@ async function loadServerData(){
       if(data && typeof data==='object' && Object.keys(data).length){ db=data; }
       DATA_VERSION=r.headers.get('X-Data-Version')||'';
     }
+    await refreshServerStock();
     const m=await fetch('/api/live-state',{cache:'no-store',headers:apiHeaders()});
     if(m.ok){ const meta=await m.json(); LIVE_UPDATED_AT=meta.updatedAt||null; }
   }catch(e){ if(e?.code==='DEVICE_BLOCKED') throw e; console.warn('Serverdaten konnten nicht geladen werden', e); }
@@ -1091,6 +1095,7 @@ async function pollLiveUpdates(){
     if(!fresh || typeof fresh!=='object') return;
     db=fresh;
     DATA_VERSION=r.headers.get('X-Data-Version')||DATA_VERSION;
+    await refreshServerStock();
     ['dk','petri','lc','kb','mix','sub','harv','buckets','lots','goods','logs','archive','minStocks','testGroups','masterCultures','productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks'].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
     if(!db.masterCounters || typeof db.masterCounters !== 'object' || Array.isArray(db.masterCounters)) db.masterCounters={};
     LIVE_UPDATED_AT=next;
@@ -1148,6 +1153,7 @@ async function save(successMessage=''){
       if(!r.ok) throw new Error('Speichern fehlgeschlagen');
       const result=await r.json().catch(()=>({}));
       if(result.version) DATA_VERSION=result.version;
+      if(result.stock && result.version) SERVER_STOCK={version:result.version,stock:result.stock};
       if(Array.isArray(result.wooOrders)) db.wooOrders=result.wooOrders;
       if(Array.isArray(result.wooReservations)) db.wooReservations=result.wooReservations;
       if(Array.isArray(result.wooSyncLog)) db.wooSyncLog=result.wooSyncLog;
@@ -2186,6 +2192,8 @@ function ensureWooSyncSettings(){
 }
 function productionReserveForSkuUi(sku){return (db.minStocks||[]).filter(m=>String(m.sku||'')===String(sku||'')&&m.reserveActive!==false&&m.reserveActive!=='nein').reduce((mx,m)=>Math.max(mx,Math.max(0,+m.reserve||0)),0);}
 function wooStockBreakdown(sku,forSet=false){
+  // INT-07: Zahlen vom Server verwenden, solange sie zum aktuellen Datenstand gehören. Sonst (Notfall) lokale Berechnung.
+  if(!forSet && SERVER_STOCK && SERVER_STOCK.version===DATA_VERSION && SERVER_STOCK.stock[sku]) return SERVER_STOCK.stock[sku];
   const bom=setBom(sku); if(bom){const vals=bom.map(c=>wooStockBreakdown(c.sku,true).available/(+c.qty||1));const available=Math.max(0,Math.floor(Math.min(...vals)));return {physical:available,reserved:0,productionReserve:0,reserve:0,available,set:true};}
   const cat=(db.productCatalog||[]).find(p=>p.sku===sku&&p.active!==false);
   const reserved=(db.wooReservations||[]).filter(r=>r.status==='reserved'&&r.sku===sku).reduce((a,r)=>a+(+r.qty||0),0);
@@ -6051,7 +6059,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.30'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.31'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

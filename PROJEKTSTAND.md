@@ -1,3 +1,10 @@
+# Version 1.5.31 – Bestand wird nur noch vom Server gerechnet (INT-07, Hauptschritt)
+
+- **Server rechnet:** Neue Abfrage `/api/stock` und jede Antwort beim Speichern liefern den Bestand pro Artikel (Physisch, Bestellungen, Produktionsreserve, Set-Reserve, Verfügbar). Die Oberfläche zeigt diese Zahlen an, statt selbst zu rechnen. Nur wenn die Serverzahlen fehlen oder nicht zum Datenstand passen, rechnet der Browser notfalls wie bisher.
+- **WooCommerce:** «Bestand nach WooCommerce schreiben» (einzeln und mehrere) verwendet immer den Serverbestand. Die Zahl, die der Browser mitschickt, wird ignoriert. Damit können Browser und Server nie mehr unterschiedliche Zahlen melden.
+- Geprüft mit den echten (anonymisierten) Daten: 208 Artikel, 0 Abweichungen zwischen Anzeige und lokaler Berechnung. Neuer Test; Suite 33/33 grün.
+- Offen für INT-07: Die Auswahl der Chargen bei der Bestellplanung (FIFO-Vorschau) rechnet noch im Browser, die endgültige Reservierung macht aber der Server.
+
 # Version 1.5.30 – Angebrochene Ware nicht verkäuflich, Dübel-Set aus der Auswahl
 
 - **Nicht verkäuflich:** Angebrochene 1000er-Dübelpakete (schon in 1.5.29) und neu auch **angebrochene Körnerbrut** zählen weder als Shop-Bestand noch werden sie für Bestellungen reserviert. Gilt im Server und im Browser. Betroffene Bestellungen bekommen beim nächsten Speichern/Abgleich automatisch die nächste vollständige Charge. Der WooCommerce-Bestand der betroffenen Artikel kann sinken.

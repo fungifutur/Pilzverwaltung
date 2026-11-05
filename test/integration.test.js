@@ -47,7 +47,7 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.30 gegen PostgreSQL', { skip }, () => {
+describe('Pilzverwaltung 1.5.31 gegen PostgreSQL', { skip }, () => {
   let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
@@ -419,6 +419,28 @@ describe('Pilzverwaltung 1.5.30 gegen PostgreSQL', { skip }, () => {
     await webhook(wooOrder(9305, 'processing', item(9305, 'KB_FULL')), 'order.created'); await settled();
     assert.equal(await reserved(9304), 0, 'angebrochene Körnerbrut ist kein Bestand');
     assert.equal(await reserved(9305), 1, 'volle Körnerbrut wird reserviert');
+  });
+
+  it('INT-07: Der Server rechnet den Bestand; WooCommerce bekommt nie die Zahl des Browsers', async () => {
+    const a = await A.req('GET', '/api/data'); const doc = a.json;
+    doc.kb = (doc.kb || []).concat([
+      { id: 'KB-T-S1', sku: 'KB_SYNC', status: 'im Kühlschrank', date: '2026-01-01', strain: 'Test' },
+      { id: 'KB-T-S2', sku: 'KB_SYNC', status: 'im Kühlschrank', date: '2026-01-02', strain: 'Test' },
+      { id: 'KB-T-S3', sku: 'KB_SYNC', status: 'im Kühlschrank', anbruch: true, date: '2026-01-03', strain: 'Test' }]);
+    const save = await A.req('POST', '/api/data', { body: doc, headers: { 'x-data-version': a.headers.get('x-data-version') } });
+    assert.equal(save.status, 200);
+    assert.equal(save.json.stock.KB_SYNC.available, 2, 'Antwort des Speicherns enthält den Serverbestand');
+    const st = await A.req('GET', '/api/stock');
+    assert.equal(st.status, 200);
+    assert.equal(st.json.stock.KB_SYNC.available, 2);
+    assert.equal(st.json.stock.KB_SYNC.physical, 2, 'angebrochene Körnerbrut zählt nicht');
+    assert.equal(st.json.version, save.json.version);
+    const r = await A.req('POST', '/api/woo/sync-stock', { body: { items: [{ sku: 'KB_SYNC', stock: 999 }] } });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.results[0].requested_stock, 2, 'Serverzahl statt Browserzahl');
+    assert.equal(wooStock.last, 2);
+    assert.equal((await Browser_noauth_stock()), 401);
+    async function Browser_noauth_stock() { return (await new Browser('10.0.0.9').req('GET', '/api/stock')).status; }
   });
 
   it('Teamaufgaben: atomar, liefert Versionen', async () => {

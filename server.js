@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.30';
+const APP_VERSION = '1.5.31';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -950,6 +950,26 @@ function saleableStock(db, sku) {
   if(bom) return Math.max(0, Math.floor(Math.min(...bom.map(c=>allocatableStock(db,c.sku,null,true)/(Number(c.qty)||1)))));
   return Math.max(0, Math.floor(allocatableStock(db, sku, null, false)));
 }
+// INT-07: Der Server ist die einzige Stelle, die den Bestand rechnet. Der Browser zeigt diese Zahlen nur an.
+// «available» ist genau der Wert, der an WooCommerce gemeldet wird (saleableStock).
+function stockBreakdown(db, sku) {
+  const bom = setBom(sku);
+  const available = saleableStock(db, sku);
+  if (bom) return { physical: available, reserved: 0, productionReserve: 0, reserve: 0, available, set: true };
+  const cat = catalogItem(db, sku);
+  const physical = cat && cat.stockMode === 'simple' ? (Number(cat.qty)||0) : batchRowsForSku(db, sku).reduce((a,b)=>a+(Number(b.qty)||0),0);
+  const reserved = (db.wooReservations||[]).filter(r=>r.status==='reserved' && String(r.sku||'')===String(sku||'')).reduce((a,r)=>a+(Number(r.qty)||0),0);
+  return { physical: Math.max(0,physical), reserved: Math.max(0,reserved), productionReserve: productionReserveForSku(db, sku), reserve: Math.max(0, Number(cat?.setReserve)||0), available };
+}
+function stockMap(db) {
+  const skus = new Set();
+  for (const k of ['productCatalog','minStocks','dk','kb','sub','lots','logs','goods','petri','buckets']) for (const x of (db[k]||[])) if (x && x.sku) skus.add(String(x.sku));
+  for (const sku of Object.keys(SET_BOMS)) skus.add(sku);
+  for (const sku of (db.wooSync?.selectedSkus || [])) if (sku) skus.add(String(sku));
+  const out = {};
+  for (const sku of [...skus].sort()) out[sku] = stockBreakdown(db, sku);
+  return out;
+}
 function allSyncSkus(db) {
   const skus=new Set((db.productCatalog || []).filter(p => p.active !== false && p.syncActive && p.sku).map(p => String(p.sku)));
   for(const sku of (db.wooSync?.selectedSkus || [])) if(sku) skus.add(String(sku));
@@ -1474,6 +1494,13 @@ async function handleApi(req, res) {
     }
   }
 
+  if (url.pathname === '/api/stock') {
+    try {
+      const st = await readState();
+      return sendJson(res, 200, { ok:true, version: st.version, stock: stockMap(st.db) });
+    } catch (err) { return failJson(res, err, 500, 'Bestand konnte nicht berechnet werden.'); }
+  }
+
   if (url.pathname === '/api/live-state') {
     try {
       await ensurePostgres();
@@ -1612,7 +1639,7 @@ async function handleApi(req, res) {
           if (syncResults.length) await persistSyncLog(parsed);
           return { saved, syncResults, prevVersion: version };
         });
-        return sendJson(res, 200, { ok: true, savedAt: new Date().toISOString(), syncResults: out.syncResults, wooOrders: parsed.wooOrders, wooReservations: parsed.wooReservations, wooSyncLog: parsed.wooSyncLog, version: out.saved.version, prevVersion: out.prevVersion });
+        return sendJson(res, 200, { ok: true, savedAt: new Date().toISOString(), syncResults: out.syncResults, wooOrders: parsed.wooOrders, wooReservations: parsed.wooReservations, wooSyncLog: parsed.wooSyncLog, stock: stockMap(parsed), version: out.saved.version, prevVersion: out.prevVersion });
       } catch (err) {
         return failJson(res, err, 500, 'Daten konnten nicht gespeichert werden.');
       }
@@ -1742,11 +1769,13 @@ async function handleApi(req, res) {
       const body = await readJson(req);
       const items = Array.isArray(body.items) ? body.items.slice(0, 100) : [];
       const enableManageStock = !!body.enableManageStock;
+      const syncDb = await readData();
       const results = [];
       for (const item of items) {
         const sku = String(item.sku || '').trim();
-        const stock = Math.max(0, Math.floor(Number(item.stock) || 0));
         if (!sku) continue;
+        // INT-07: Es zählt allein der Serverbestand, nicht die Zahl, die der Browser mitschickt.
+        const stock = Math.max(0, Math.floor(saleableStock(syncDb, sku)));
         try {
           const product = await wooFindProductBySku(sku);
           if (!product) { results.push({ sku, found: false, error: 'SKU in WooCommerce nicht gefunden.' }); continue; }
