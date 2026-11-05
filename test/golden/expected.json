@@ -199,8 +199,8 @@
     1
    ],
    [
-    9802,
-    98021,
+    9803,
+    98031,
     "G_KB",
     "KB-G-2",
     1
@@ -217,7 +217,7 @@
    [
     9803,
     "G_KB",
-    "offen",
+    "erledigt",
     1
    ]
   ]
@@ -234,10 +234,10 @@
    },
    "G_KB": {
     "physical": 3,
-    "reserved": 1,
+    "reserved": 2,
     "productionReserve": 1,
     "reserve": 0,
-    "available": 1
+    "available": 0
    },
    "G_LOT": {
     "physical": 5,
@@ -247,11 +247,11 @@
     "available": 5
    },
    "G_SET": {
-    "physical": 1,
+    "physical": 0,
     "reserved": 0,
     "productionReserve": 0,
     "reserve": 0,
-    "available": 1,
+    "available": 0,
     "set": true
    },
    "G_SIMPLE": {
@@ -287,6 +287,13 @@
    [
     9803,
     98031,
+    "G_KB",
+    "KB-G-1",
+    1
+   ],
+   [
+    9803,
+    98031,
     "G_SIMPLE",
     "PC-G-2",
     2
@@ -296,7 +303,7 @@
    [
     9803,
     "G_KB",
-    "offen",
+    "erledigt",
     1
    ]
   ]

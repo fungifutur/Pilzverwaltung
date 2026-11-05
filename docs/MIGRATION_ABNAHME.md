@@ -15,7 +15,8 @@ Der Test «M15: Abnahmebasis» in `test/integration.test.js` spielt das ab und v
 **Neues System prüfen:** dieselben `fixture.json` und `scenario.json` einspielen und mit `expected.json` vergleichen. Die Datei ist bewusst unabhängig von der Technik.
 
 Was die Abnahmebasis heute festhält (und bei der Migration entschieden werden sollte):
-- Gibt eine Stornierung Ware frei, bekommen wartende Bestellungen sie erst beim nächsten Speichern oder Abgleich (Schritt 4: die Fehlmenge von Bestellung 9803 bleibt bis dahin offen).
+- Gibt eine Stornierung Ware frei, geht sie sofort an wartende Bestellungen (Schritt 4: Bestellung 9803 bekommt die Körnerbrut, der Produktionsauftrag ist erledigt).
+- Bezahlte Bestellungen werden nach Datum bedient: wird eine ältere Vorauskasse-Bestellung bezahlt (Schritt 5), kann sie Ware einer jüngeren bezahlten Bestellung übernehmen.
 - Produktionsreserve und Set-Reserve verringern, was Bestellungen reservieren dürfen.
 
 **Keine echten Daten ins Repository!** Das Repository ist öffentlich. Exporte der echten Anwendung (auch anonymisierte) gehören nicht hinein.
