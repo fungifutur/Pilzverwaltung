@@ -8,6 +8,7 @@ const { spawn } = require('node:child_process');
 const crypto = require('node:crypto');
 const http = require('node:http');
 const path = require('node:path');
+const fs = require('node:fs');
 
 const DB_URL = process.env.TEST_DATABASE_URL || '';
 const skip = !DB_URL ? 'TEST_DATABASE_URL nicht gesetzt' : (/(localhost|127\.0\.0\.1|\[::1\])/.test(DB_URL) ? false : 'TEST_DATABASE_URL muss auf localhost zeigen (Schutz vor Datenverlust)');
@@ -47,7 +48,7 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.33 gegen PostgreSQL', { skip }, () => {
+describe('Pilzverwaltung 1.5.34 gegen PostgreSQL', { skip }, () => {
   let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
@@ -477,6 +478,54 @@ describe('Pilzverwaltung 1.5.33 gegen PostgreSQL', { skip }, () => {
     assert.equal(await bad({ action: 'upsert', sku: 'KB_SYNC', components: [{ sku: 'KB_TEST', qty: 1 }] }), 400, 'Komponente eines Sets kann kein Set werden');
     const del = await A.req('POST', '/api/set-boms', { body: { action: 'delete', sku: 'NEW_SET' }, headers: admin });
     assert.equal(del.status, 200); assert.equal(del.json.setBoms.NEW_SET, undefined);
+  });
+
+  it('M15: Abnahmebasis (Golden Master) — Bestand, Reservierung, FIFO und Sets bleiben wie dokumentiert', async () => {
+    const dir = path.join(__dirname, 'golden');
+    const fx = JSON.parse(fs.readFileSync(path.join(dir, 'fixture.json'), 'utf8'));
+    const scenario = JSON.parse(fs.readFileSync(path.join(dir, 'scenario.json'), 'utf8'));
+    const admin = { authorization: 'Bearer ' + APP_PW };
+    const a = await A.req('GET', '/api/data'); const doc = a.json;
+    for (const k of ['kb', 'sub', 'lots', 'goods', 'productCatalog', 'minStocks']) doc[k] = (doc[k] || []).concat(fx[k] || []);
+    assert.equal((await A.req('POST', '/api/data', { body: doc, headers: { 'x-data-version': a.headers.get('x-data-version') } })).status, 200);
+    for (const [sku, components] of Object.entries(fx.setBoms)) assert.equal((await A.req('POST', '/api/set-boms', { body: { action: 'upsert', sku, components }, headers: admin })).status, 200);
+    const orderIds = new Set(scenario.steps.map(s => s.order.id)); const seen = new Set();
+    const settled = async () => until(async () => (await db.query(`SELECT count(*)::int AS n FROM app_webhook_queue WHERE status='pending'`)).rows[0].n === 0);
+    const snapshots = [];
+    for (const step of scenario.steps) {
+      const o = step.order;
+      const items = o.items.map(i => ({ id: i.id, name: i.sku, sku: i.sku, quantity: i.quantity, product_id: 1, variation_id: 0, total: '10' }));
+      await webhook(wooOrder(o.id, o.status, items, { date_created: o.date }), seen.has(o.id) ? 'order.updated' : 'order.created'); seen.add(o.id);
+      await settled();
+      const data = (await A.req('GET', '/api/data')).json; const stock = (await A.req('GET', '/api/stock')).json.stock;
+      const gStock = {}; for (const k of Object.keys(stock).filter(k => k.startsWith('G_')).sort()) gStock[k] = stock[k];
+      const reservations = (data.wooReservations || []).filter(r => r.status === 'reserved' && orderIds.has(Number(r.orderId))).map(r => [Number(r.orderId), Number(r.itemId), r.sku, r.batchId, r.qty]).sort((x, y) => JSON.stringify(x).localeCompare(JSON.stringify(y)));
+      const production = (data.productionRequests || []).filter(r => orderIds.has(Number(r.orderId))).map(r => [Number(r.orderId), r.sku, r.status, r.qty]).sort((x, y) => JSON.stringify(x).localeCompare(JSON.stringify(y)));
+      snapshots.push({ schritt: step.name, bestand: gStock, reservierungen: reservations, produktionsauftraege: production });
+    }
+    const file = path.join(dir, 'expected.json');
+    if (process.env.GOLDEN_UPDATE === '1') fs.writeFileSync(file, JSON.stringify(snapshots, null, 1) + '\n');
+    const expected = JSON.parse(fs.readFileSync(file, 'utf8'));
+    assert.deepEqual(snapshots, expected);
+  });
+
+  it('M17: Abgleichbericht erkennt identische und abweichende Stände', async () => {
+    const { execFile } = require('node:child_process'); const os = require('node:os');
+    const run = args => new Promise(res => execFile(process.execPath, [path.join(__dirname, '..', 'scripts', 'migration_report.js'), ...args], (err, stdout, stderr) => res({ code: err ? err.code : 0, out: stdout + stderr })));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pv-bericht-'));
+    const f1 = path.join(dir, 'vorher.json'), f2 = path.join(dir, 'nachher.json'), f3 = path.join(dir, 'anders.json');
+    const r1 = await run(['erstellen', '--url', BASE, '--passwort', RESCUE_PW, '--out', f1]); assert.equal(r1.code, 0, r1.out);
+    const r2 = await run(['erstellen', '--url', BASE, '--passwort', RESCUE_PW, '--out', f2]); assert.equal(r2.code, 0, r2.out);
+    const same = await run(['vergleichen', f1, f2]); assert.equal(same.code, 0, same.out); assert.match(same.out, /in Ordnung/);
+    const rep = JSON.parse(fs.readFileSync(f2, 'utf8'));
+    assert.ok(rep.ids.kb.includes('KB-G-1'), 'IDs der Etiketten sind im Bericht');
+    assert.ok(rep.bestand.G_KB, 'Bestand je SKU ist im Bericht');
+    assert.ok(!JSON.stringify(rep).includes('Geheimweg'), 'keine Kundendaten im Bericht');
+    rep.ids.kb = rep.ids.kb.filter(x => x !== 'KB-G-1'); rep.bestand.G_KB.verfuegbar += 1; rep.zaehlung.kb -= 1;
+    fs.writeFileSync(f3, JSON.stringify(rep));
+    const diff = await run(['vergleichen', f1, f3]);
+    assert.equal(diff.code, 1); assert.match(diff.out, /kb\/KB-G-1/); assert.match(diff.out, /G_KB/); assert.match(diff.out, /NICHT IN ORDNUNG/);
+    fs.rmSync(dir, { recursive: true, force: true });
   });
 
   it('Teamaufgaben: atomar, liefert Versionen', async () => {

@@ -1,0 +1,90 @@
+{
+ "_hinweis": "Ablauf der Bestellungen (als WooCommerce-Webhooks). Nach jedem Schritt wird der Zustand mit expected.json verglichen.",
+ "steps": [
+  {
+   "name": "Bestellung 9801 (bezahlt, 1 Körnerbrut)",
+   "order": {
+    "id": 9801,
+    "status": "processing",
+    "date": "2026-11-01T10:00:00",
+    "items": [
+     {
+      "id": 98011,
+      "sku": "G_KB",
+      "quantity": 1
+     }
+    ]
+   }
+  },
+  {
+   "name": "Bestellung 9802 (Vorauskasse, zwei Positionen derselben Ware)",
+   "order": {
+    "id": 9802,
+    "status": "on-hold",
+    "date": "2026-11-01T11:00:00",
+    "items": [
+     {
+      "id": 98021,
+      "sku": "G_KB",
+      "quantity": 1
+     },
+     {
+      "id": 98022,
+      "sku": "G_KB",
+      "quantity": 1
+     }
+    ]
+   }
+  },
+  {
+   "name": "Bestellung 9803 (bezahlt, 1 Set)",
+   "order": {
+    "id": 9803,
+    "status": "processing",
+    "date": "2026-11-01T12:00:00",
+    "items": [
+     {
+      "id": 98031,
+      "sku": "G_SET",
+      "quantity": 1
+     }
+    ]
+   }
+  },
+  {
+   "name": "Bestellung 9801 storniert",
+   "order": {
+    "id": 9801,
+    "status": "cancelled",
+    "date": "2026-11-01T10:00:00",
+    "items": [
+     {
+      "id": 98011,
+      "sku": "G_KB",
+      "quantity": 1
+     }
+    ]
+   }
+  },
+  {
+   "name": "Bestellung 9802 bezahlt",
+   "order": {
+    "id": 9802,
+    "status": "processing",
+    "date": "2026-11-01T11:00:00",
+    "items": [
+     {
+      "id": 98021,
+      "sku": "G_KB",
+      "quantity": 1
+     },
+     {
+      "id": 98022,
+      "sku": "G_KB",
+      "quantity": 1
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -1,3 +1,10 @@
+# Version 1.5.34 – Vorbereitung der Migration: Abnahmebasis und Abgleichbericht (M15, M17)
+
+- **Abnahmebasis (M15):** `test/golden/` hält das heutige Verhalten von Bestand, Reservierung, FIFO und Sets als Referenz fest (erfundene Testdaten, 5 Bestell-Schritte). Ein neues System muss dasselbe liefern. Läuft als Test mit.
+- **Abgleichbericht (M17):** `scripts/migration_report.js` erstellt aus `/api/export` und `/api/stock` einen Bericht (Anzahl, IDs für QR-Etiketten, Bestand je SKU, Reservierungen, offene Bestellungen) und vergleicht zwei Berichte vorher/nachher. Anleitung: `docs/MIGRATION_ABNAHME.md`.
+- Die Anwendung selbst ist unverändert (nur Versionsnummer). Suite 37/37 grün.
+- Beobachtung aus der Abnahmebasis: Nach einer Stornierung bekommen wartende Bestellungen die frei gewordene Ware erst beim nächsten Speichern oder Abgleich. Das ist heute so und noch nicht geändert.
+
 # Version 1.5.33 – Set-Rezepte bearbeiten, Katalog folgt den Daten (COD-02, M16)
 
 - **Rezepte bearbeiten:** Unter WooCommerce → «Lokaler Produktkatalog» gibt es neu die Karte «Set-Rezepte (Stücklisten)». Dort können Sets angelegt, geändert und gelöscht werden (eine Zeile pro Komponente: `SKU | Menge | Bezeichnung`). Speichern braucht das Admin-Passwort, weil Rezepte den Bestand bestimmen, der an WooCommerce gemeldet wird. Bestand, Reservierungen und WooCommerce-Meldung werden danach sofort neu berechnet.
