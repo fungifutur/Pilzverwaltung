@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.26</title>
+<title>Pilzverwaltung Serverversion 1.5.27</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.26</h1>
+<h1>Pilzverwaltung – Version 1.5.27</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -1190,7 +1190,7 @@ function ageDays(a,b=today()){
   return Math.abs(diff);
 }
 function old3(d){return ageDays(d)>1095}
-function badge(s){let c='badge'; if(String(s).includes('kontaminiert')||String(s).includes('archiv')||String(s).includes('verkauft')||String(s).includes('verbraucht')||String(s).includes('aufgebraucht'))c+=' danger'; else if(String(s).includes('am ')||String(s).includes('älter'))c+=' warn'; return `<span class="${c}">${s}</span>`}
+function badge(s){let c='badge'; if(String(s).includes('kontaminiert')||String(s).includes('archiv')||String(s).includes('verkauft')||String(s).includes('verbraucht')||String(s).includes('aufgebraucht'))c+=' danger'; else if(String(s).includes('am ')||String(s).includes('älter'))c+=' warn'; return `<span class="${c}">${esc(s)}</span>`}
 function isArchivedStatus(s){return ['kontaminiert','verbraucht','aufgebraucht','archiviert','verkauft','beimpft / verwendet','Test beendet','test beendet'].includes(String(s||''));}
 function activeItems(arr){return (arr||[]).filter(x=>!isArchivedStatus(x.status));}
 function is1000Dowel(x){return !!x && x.type==='Dübel' && /(^|\D)1000(\D|$)/.test(String(x.size||x.variant||''));}
@@ -1237,7 +1237,7 @@ function stockSummary(moduleKey, arr, countFn=(x)=>1){
   const keys=Object.keys(map).sort();
   if(!keys.length) return '<span class="muted">Keine aktiven Einträge.</span>';
   const allButton = `<button class="secondary" onclick="clearViewFilter('${moduleKey}')">Alle anzeigen</button>`;
-  const buttons = keys.map(k=>`<button class="secondary" onclick="setViewFilter('${moduleKey}', '${String(k).replace(/'/g, "\\'")}')">${k}: ${map[k]}</button>`).join(' ');
+  const buttons = keys.map(k=>`<button class="secondary" onclick="setViewFilter('${moduleKey}', '${escHtml(escJs(k))}')">${escHtml(k)}: ${map[k]}</button>`).join(' ');
   return allButton + ' ' + buttons;
 }
 
@@ -1278,7 +1278,7 @@ function refreshSummaryDropdown(moduleKey){
 
   const keys = data.keys.filter(k => ((k + ' ' + data.map[k] + ' ' + (data.searchMap?.[k] || '')).toLowerCase()).includes(term));
   results.innerHTML = keys.length
-    ? keys.map(k=>`<button class="secondary" onclick="setViewFilter('${moduleKey}', '${String(k).replace(/'/g, "\'")}')">${escHtml(k)}: ${data.map[k]}</button>`).join(' ')
+    ? keys.map(k=>`<button class="secondary" onclick="setViewFilter('${moduleKey}', '${escHtml(escJs(k))}')">${escHtml(k)}: ${data.map[k]}</button>`).join(' ')
     : '<span class="muted" style="margin-left:8px">Keine Treffer.</span>';
 }
 
@@ -1691,10 +1691,10 @@ function renderSkuMapping(){
     return `<tr><td>${escHtml(m.name)}</td><td>${escHtml(m.de||'')}</td><td><strong>${escHtml(m.code)}</strong></td><td>${cells[0]}</td><td>${cells[1]}</td><td>${cells[2]}</td><td>${cells[3]}</td><td>${cells[4]}</td><td>${cells[5]}</td></tr>`;
   }).join('');
   setHTML('skuMapRows', rows);
-  const productRows=allSkuProducts().map(p=>`<tr><td>${escHtml(p.sku)}</td><td><button class="secondary" onclick="hideSkuFromAssignment('${escJs(p.sku)}')">Aus Auto-Zuordnung entfernen</button></td><td>${escHtml(skuKind(p.sku))}</td><td>${escHtml(skuVariant(p.sku)||'–')}</td><td>${escHtml(p.name)}</td><td><select onchange="setSkuDefaultLocation('${escJs(p.sku)}',this.value)">${skuStorageLocationOptions(p.sku)}</select></td><td>${p.sku==='Ppul_Kör_1000g'?`<input type="number" min="0" value="${skuSetReserve(p.sku)}" style="width:75px" onchange="setSkuSetReserve('${escJs(p.sku)}',this.value)" title="Für Experimentiersets geschützter Bestand">`:'–'}</td></tr>`).join('');
+  const productRows=allSkuProducts().map(p=>`<tr><td>${escHtml(p.sku)}</td><td><button class="secondary" onclick="hideSkuFromAssignment('${escHtml(escJs(p.sku))}')">Aus Auto-Zuordnung entfernen</button></td><td>${escHtml(skuKind(p.sku))}</td><td>${escHtml(skuVariant(p.sku)||'–')}</td><td>${escHtml(p.name)}</td><td><select onchange="setSkuDefaultLocation('${escHtml(escJs(p.sku))}',this.value)">${skuStorageLocationOptions(p.sku)}</select></td><td>${p.sku==='Ppul_Kör_1000g'?`<input type="number" min="0" value="${skuSetReserve(p.sku)}" style="width:75px" onchange="setSkuSetReserve('${escHtml(escJs(p.sku))}',this.value)" title="Für Experimentiersets geschützter Bestand">`:'–'}</td></tr>`).join('');
   setHTML('skuProductRows', productRows);
   const hidden=(db.hiddenSkus||[]);
-  setHTML('hiddenSkuBox', hidden.length ? `<strong>Aus Auto-Zuordnung entfernte SKUs:</strong><br>${hidden.map(x=>`<span class="badge" style="margin:4px">${escHtml(x)} <button class="secondary" style="padding:2px 6px" onclick="restoreSkuForAssignment('${escJs(x)}')">wieder aktivieren</button></span>`).join('')}` : '');
+  setHTML('hiddenSkuBox', hidden.length ? `<strong>Aus Auto-Zuordnung entfernte SKUs:</strong><br>${hidden.map(x=>`<span class="badge" style="margin:4px">${escHtml(x)} <button class="secondary" style="padding:2px 6px" onclick="restoreSkuForAssignment('${escHtml(escJs(x))}')">wieder aktivieren</button></span>`).join('')}` : '');
 }
 
 
@@ -2116,7 +2116,7 @@ function renderWooOrders(){
     const rs=(db.productionRequests||[]).filter(r=>r.status!=='erledigt');
     const grouped={}; rs.forEach(r=>{const k=r.area||'other';(grouped[k]||(grouped[k]=[])).push(r)});
     const labels={syringes:'Spritzen',kb:'Körnerbrut',sub:'Substratsäcke / Pilzzuchtsets',logs:'Holzstämme',microfilterbags:'Mikrofiltersäcke',dowels:'Dübel',lots:'Dörrpilze',rawmaterials:'Rohstoffe',labmaterials:'Labormaterialien',other:'Sonstige'};
-    const html=Object.entries(grouped).map(([g,rows])=>`<div class="card"><h3>${escHtml(labels[g]||g)}</h3><table><thead><tr><th>Bestellung</th><th>Produkt</th><th>SKU</th><th>Menge</th><th>Status</th><th>Aktion</th></tr></thead><tbody>${rows.map(r=>`<tr><td>#${escHtml(String(r.orderNumber))}</td><td>${escHtml(r.name)}</td><td>${escHtml(r.sku||'–')}</td><td>${r.qty}</td><td>${escHtml(r.status)}</td><td><button class="secondary" onclick="setProductionRequestStatus('${r.id}','produziert')">Produziert</button> <button class="secondary" onclick="setProductionRequestStatus('${r.id}','in Durchwachsung')">In Durchwachsung</button> <button class="secondary" onclick="setProductionRequestStatus('${r.id}','erledigt')">Erledigt</button></td></tr>`).join('')}</tbody></table></div>`).join('');
+    const html=Object.entries(grouped).map(([g,rows])=>`<div class="card"><h3>${escHtml(labels[g]||g)}</h3><table><thead><tr><th>Bestellung</th><th>Produkt</th><th>SKU</th><th>Menge</th><th>Status</th><th>Aktion</th></tr></thead><tbody>${rows.map(r=>`<tr><td>#${escHtml(String(r.orderNumber))}</td><td>${escHtml(r.name)}</td><td>${escHtml(r.sku||'–')}</td><td>${esc(r.qty)}</td><td>${escHtml(r.status)}</td><td><button class="secondary" onclick="setProductionRequestStatus('${r.id}','produziert')">Produziert</button> <button class="secondary" onclick="setProductionRequestStatus('${r.id}','in Durchwachsung')">In Durchwachsung</button> <button class="secondary" onclick="setProductionRequestStatus('${r.id}','erledigt')">Erledigt</button></td></tr>`).join('')}</tbody></table></div>`).join('');
     return setHTML('wooOrdersRows',html||'<span class="muted">Keine bestellbezogenen Produktionsaufträge.</span>');
   }
   if(orderView==='packing'){
@@ -2124,7 +2124,7 @@ function renderWooOrders(){
     const rows=[];
     ready.forEach(({o,c})=>{c.picks.forEach(p=>{const loc=(db.storageLocations||[]).find(x=>x.id===p.location);const lp=storageLocationParts(loc||{});rows.push({...p,orderNumber:o.number||o.id,customer:o.customer||'',room:lp.room||'',shelf:lp.shelf||'',box:lp.box||''});});});
     rows.sort((a,b)=>[a.room,a.shelf,a.box,String(a.orderNumber)].join('\u0000').localeCompare([b.room,b.shelf,b.box,String(b.orderNumber)].join('\u0000'),'de',{numeric:true,sensitivity:'base'}));
-    const html=rows.length?`<div class="card"><h3>Pack-/Versandliste nach Lagerort</h3><table><thead><tr><th>1. Raum</th><th>2. Regal</th><th>3. Kiste</th><th>Bestellung</th><th>Kunde</th><th>Menge</th><th>Produkt</th><th>SKU</th><th>Charge</th></tr></thead><tbody>${rows.map(p=>`<tr><td><strong>${escHtml(p.room||'–')}</strong></td><td>${escHtml(p.shelf||'–')}</td><td>${escHtml(p.box||'–')}</td><td>#${escHtml(String(p.orderNumber))}</td><td>${escHtml(p.customer)}</td><td>${p.qty}</td><td>${escHtml(p.name)}</td><td>${escHtml(p.sku||'–')}</td><td>${escHtml(p.id)}</td></tr>`).join('')}</tbody></table></div>`:'';
+    const html=rows.length?`<div class="card"><h3>Pack-/Versandliste nach Lagerort</h3><table><thead><tr><th>1. Raum</th><th>2. Regal</th><th>3. Kiste</th><th>Bestellung</th><th>Kunde</th><th>Menge</th><th>Produkt</th><th>SKU</th><th>Charge</th></tr></thead><tbody>${rows.map(p=>`<tr><td><strong>${escHtml(p.room||'–')}</strong></td><td>${escHtml(p.shelf||'–')}</td><td>${escHtml(p.box||'–')}</td><td>#${escHtml(String(p.orderNumber))}</td><td>${escHtml(p.customer)}</td><td>${esc(p.qty)}</td><td>${escHtml(p.name)}</td><td>${escHtml(p.sku||'–')}</td><td>${escHtml(p.id)}</td></tr>`).join('')}</tbody></table></div>`:'';
     return setHTML('wooOrdersRows',html||'<span class="muted">Momentan ist keine Bestellung vollständig packbereit.</span>');
   }
   const active=(db.wooOrders||[]).filter(o=>isWooActiveOrder(o)&&['processing','on-hold'].includes(String(o.status||'').toLowerCase()));
@@ -2135,13 +2135,13 @@ function renderWooOrders(){
   const groups=[['In Bearbeitung – Versand',active.filter(o=>group(o)===0)],['In Bearbeitung – Abholung',active.filter(o=>group(o)===1)],['In Wartestellung',active.filter(o=>group(o)===2)]];
   const archived=(db.wooOrders||[]).filter(o=>!isWooActiveOrder(o));
   const waitingPreview=waitingOrderPreview();
-  const html=groups.map(([heading,orders])=>`<h3>${escHtml(heading)} (${orders.length})</h3>`+orders.map(o=>{const c=orderComputed(o);const dateLabel=pickup(o)?'Späteste Bereitstellung':'Spätester Versand';const rawDate=String(o.latest_shipping_date||'');const dateText=/^\d{4}-\d{2}-\d{2}$/.test(rawDate)?rawDate.slice(8,10)+'.'+rawDate.slice(5,7)+'.'+rawDate.slice(0,4):'nicht verfügbar';const hasNote=Boolean(String(o.customer_note||'').trim()||String(o.internal_note||'').trim());const manualDate=String(o.manual_shipping_date||'');const effectiveDate=manualDate||rawDate;const effectiveText=/^\d{4}-\d{2}-\d{2}$/.test(effectiveDate)?effectiveDate.slice(8,10)+'.'+effectiveDate.slice(5,7)+'.'+effectiveDate.slice(0,4):'nicht verfügbar';return `<details class="card${hasNote?' woo-order-has-note':''}"><summary style="display:flex;justify-content:space-between;gap:12px;align-items:center"><span><strong>#${escHtml(String(o.number||o.id))}</strong> · ${escHtml(o.customer||'')} · Woo: ${escHtml(o.status||'')} · <strong>${escHtml(pickup(o)&&c.status==='Versandbereit'?'Abholbereit':c.status)}</strong>${hasNote?'<span class="woo-order-note-indicator">✎ Bemerkung vorhanden</span>':''}</span><span style="margin-left:auto;white-space:nowrap;${manualDate?'background:#fff3cd;border:1px solid #e5b94d;border-radius:8px;padding:6px 10px;':''}">${manualDate?'<strong>★ Wunschdatum · </strong>':''}${manualDate?(pickup(o)?'Gewünschte Bereitstellung':'Gewünschter Versand'):dateLabel}: <strong>${escHtml(effectiveText)}</strong></span></summary><div style="margin:12px 0;padding:10px;border:1px solid #e5e7eb;border-radius:10px"><strong>${pickup(o)?'Gewünschte Bereitstellung':'Gewünschter Versand'} (nur Pilzverwaltung)</strong><div class="muted" style="margin:4px 0 8px">Automatisch berechnet: ${escHtml(dateText)}. Ein Wunschdatum hat für Anzeige und Sortierung Vorrang.</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input type="date" id="woo-manual-date-${o.id}" value="${escHtml(manualDate)}" style="width:auto;margin:0"><button class="secondary" id="woo-manual-date-save-${o.id}" onclick="saveOrderManualDate(${JSON.stringify(o.id)})">Datum speichern</button><button class="secondary" onclick="document.getElementById('woo-manual-date-${o.id}').value='';saveOrderManualDate(${JSON.stringify(o.id)})">Datum entfernen</button></div></div><div style="margin:12px 0;padding:10px;background:#f8fafc;border-radius:10px"><strong>Kundenbemerkung (WooCommerce)</strong><div style="white-space:pre-wrap;margin-top:6px">${escHtml(o.customer_note||'Keine Kundenbemerkung vorhanden.')}</div></div><div style="margin:12px 0"><label for="woo-note-${o.id}"><strong>Interne Bemerkung (Pilzverwaltung)</strong></label><textarea id="woo-note-${o.id}" rows="3" style="width:100%;box-sizing:border-box" placeholder="Eigene Bemerkung zur Bestellung …">${escHtml(o.internal_note||'')}</textarea><button class="secondary" id="woo-note-save-${o.id}" onclick="saveOrderInternalNote(${JSON.stringify(o.id)})">Bemerkung speichern</button></div>${(o.items||[]).map(i=>{const own=(db.wooReservations||[]).filter(r=>String(r.orderId)===String(o.id)&&String(r.itemId)===String(i.id)&&r.status==='reserved'); const bom=setBom(i.sku); const waiting=false; let plan;if(waiting){plan=waitingPreview.get(String(o.id)+':'+String(i.id))||{picks:[],missing:+i.quantity||0};}else if(bom){const comps=bom.map(c=>{const ors=waiting?[]:own.filter(r=>r.sku===c.sku),reserved=ors.reduce((a,r)=>a+(+r.qty||0),0),required=(+i.quantity||0)*(+c.qty||1),availability=waiting?fifoPlan(c.sku,required,o.id,i.id):null,got=waiting?required-availability.missing:reserved;return {...c,required,got,missing:Math.max(0,required-got),waiting,picks:waiting?availability.picks:ors.map(r=>({id:r.collection==='productCatalog'?(r.sku||r.batchId):r.batchId,qty:+r.qty||0,location:r.storageLocation||''}))};});plan={components:comps,picks:comps.flatMap(c=>c.picks),missing:comps.reduce((a,c)=>a+c.missing,0)};}else plan=own.length?{picks:own.map(r=>({id:r.collection==='productCatalog'?(r.sku||r.batchId):r.batchId,qty:+r.qty||0,location:r.storageLocation||''})),missing:Math.max(0,(+i.quantity||0)-own.reduce((a,r)=>a+(+r.qty||0),0))}:fifoPlan(i.sku,i.quantity,o.id,i.id); const req=getProductionRequest(o,i), stage=orderItemProductionStage(o,i);return `<div style="margin:10px 0"><strong>${i.quantity} × ${escHtml(i.name)}</strong> ${stage==='ready'?'<span class="badge">'+(pickup(o)?'Abholbereit':'Versandbereit')+'</span>':stage==='made'?'<span class="badge warn">Hergestellt</span>':''} <span class="muted">${escHtml(i.sku||'ohne SKU')}</span><br>${plan.components?plan.components.map(c=>`<div class="muted" style="margin:4px 0">${escHtml(c.label)}: ${c.got}/${c.required} ${c.waiting?'verfügbar · Nicht reserviert':'reserviert'} ${c.missing?`<span class="badge warn">Fehlt ${c.missing}</span>`:'<span class="badge">✓</span>'}</div>`).join(''):''}${plan.picks.map(p=>`<span class="badge">${p.qty} × ${escHtml(p.id)} · ${escHtml(locName(p.location))}</span>`).join(' ')||'<span class="muted">Kein Bestand zugeordnet.</span>'}${plan.missing?` <span class="badge warn">Fehlen ${plan.missing}</span> ${req?`<span class="badge">${escHtml(req.status)}</span>`:`<button class="primary" onclick="prepareOrderProductionForm(${o.id},${i.id})">Produzieren</button>`}`:''}</div>`}).join('')}</details>`}).join('')).join('');
+  const html=groups.map(([heading,orders])=>`<h3>${escHtml(heading)} (${orders.length})</h3>`+orders.map(o=>{const c=orderComputed(o);const dateLabel=pickup(o)?'Späteste Bereitstellung':'Spätester Versand';const rawDate=String(o.latest_shipping_date||'');const dateText=/^\d{4}-\d{2}-\d{2}$/.test(rawDate)?rawDate.slice(8,10)+'.'+rawDate.slice(5,7)+'.'+rawDate.slice(0,4):'nicht verfügbar';const hasNote=Boolean(String(o.customer_note||'').trim()||String(o.internal_note||'').trim());const manualDate=String(o.manual_shipping_date||'');const effectiveDate=manualDate||rawDate;const effectiveText=/^\d{4}-\d{2}-\d{2}$/.test(effectiveDate)?effectiveDate.slice(8,10)+'.'+effectiveDate.slice(5,7)+'.'+effectiveDate.slice(0,4):'nicht verfügbar';return `<details class="card${hasNote?' woo-order-has-note':''}"><summary style="display:flex;justify-content:space-between;gap:12px;align-items:center"><span><strong>#${escHtml(String(o.number||o.id))}</strong> · ${escHtml(o.customer||'')} · Woo: ${escHtml(o.status||'')} · <strong>${escHtml(pickup(o)&&c.status==='Versandbereit'?'Abholbereit':c.status)}</strong>${hasNote?'<span class="woo-order-note-indicator">✎ Bemerkung vorhanden</span>':''}</span><span style="margin-left:auto;white-space:nowrap;${manualDate?'background:#fff3cd;border:1px solid #e5b94d;border-radius:8px;padding:6px 10px;':''}">${manualDate?'<strong>★ Wunschdatum · </strong>':''}${manualDate?(pickup(o)?'Gewünschte Bereitstellung':'Gewünschter Versand'):dateLabel}: <strong>${escHtml(effectiveText)}</strong></span></summary><div style="margin:12px 0;padding:10px;border:1px solid #e5e7eb;border-radius:10px"><strong>${pickup(o)?'Gewünschte Bereitstellung':'Gewünschter Versand'} (nur Pilzverwaltung)</strong><div class="muted" style="margin:4px 0 8px">Automatisch berechnet: ${escHtml(dateText)}. Ein Wunschdatum hat für Anzeige und Sortierung Vorrang.</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input type="date" id="woo-manual-date-${o.id}" value="${escHtml(manualDate)}" style="width:auto;margin:0"><button class="secondary" id="woo-manual-date-save-${o.id}" onclick="saveOrderManualDate(${JSON.stringify(o.id)})">Datum speichern</button><button class="secondary" onclick="document.getElementById('woo-manual-date-${o.id}').value='';saveOrderManualDate(${JSON.stringify(o.id)})">Datum entfernen</button></div></div><div style="margin:12px 0;padding:10px;background:#f8fafc;border-radius:10px"><strong>Kundenbemerkung (WooCommerce)</strong><div style="white-space:pre-wrap;margin-top:6px">${escHtml(o.customer_note||'Keine Kundenbemerkung vorhanden.')}</div></div><div style="margin:12px 0"><label for="woo-note-${o.id}"><strong>Interne Bemerkung (Pilzverwaltung)</strong></label><textarea id="woo-note-${o.id}" rows="3" style="width:100%;box-sizing:border-box" placeholder="Eigene Bemerkung zur Bestellung …">${escHtml(o.internal_note||'')}</textarea><button class="secondary" id="woo-note-save-${o.id}" onclick="saveOrderInternalNote(${JSON.stringify(o.id)})">Bemerkung speichern</button></div>${(o.items||[]).map(i=>{const own=(db.wooReservations||[]).filter(r=>String(r.orderId)===String(o.id)&&String(r.itemId)===String(i.id)&&r.status==='reserved'); const bom=setBom(i.sku); const waiting=false; let plan;if(waiting){plan=waitingPreview.get(String(o.id)+':'+String(i.id))||{picks:[],missing:+i.quantity||0};}else if(bom){const comps=bom.map(c=>{const ors=waiting?[]:own.filter(r=>r.sku===c.sku),reserved=ors.reduce((a,r)=>a+(+r.qty||0),0),required=(+i.quantity||0)*(+c.qty||1),availability=waiting?fifoPlan(c.sku,required,o.id,i.id):null,got=waiting?required-availability.missing:reserved;return {...c,required,got,missing:Math.max(0,required-got),waiting,picks:waiting?availability.picks:ors.map(r=>({id:r.collection==='productCatalog'?(r.sku||r.batchId):r.batchId,qty:+r.qty||0,location:r.storageLocation||''}))};});plan={components:comps,picks:comps.flatMap(c=>c.picks),missing:comps.reduce((a,c)=>a+c.missing,0)};}else plan=own.length?{picks:own.map(r=>({id:r.collection==='productCatalog'?(r.sku||r.batchId):r.batchId,qty:+r.qty||0,location:r.storageLocation||''})),missing:Math.max(0,(+i.quantity||0)-own.reduce((a,r)=>a+(+r.qty||0),0))}:fifoPlan(i.sku,i.quantity,o.id,i.id); const req=getProductionRequest(o,i), stage=orderItemProductionStage(o,i);return `<div style="margin:10px 0"><strong>${esc(i.quantity)} × ${escHtml(i.name)}</strong> ${stage==='ready'?'<span class="badge">'+(pickup(o)?'Abholbereit':'Versandbereit')+'</span>':stage==='made'?'<span class="badge warn">Hergestellt</span>':''} <span class="muted">${escHtml(i.sku||'ohne SKU')}</span><br>${plan.components?plan.components.map(c=>`<div class="muted" style="margin:4px 0">${escHtml(c.label)}: ${c.got}/${c.required} ${c.waiting?'verfügbar · Nicht reserviert':'reserviert'} ${c.missing?`<span class="badge warn">Fehlt ${c.missing}</span>`:'<span class="badge">✓</span>'}</div>`).join(''):''}${plan.picks.map(p=>`<span class="badge">${esc(p.qty)} × ${escHtml(p.id)} · ${escHtml(locName(p.location))}</span>`).join(' ')||'<span class="muted">Kein Bestand zugeordnet.</span>'}${plan.missing?` <span class="badge warn">Fehlen ${plan.missing}</span> ${req?`<span class="badge">${escHtml(req.status)}</span>`:`<button class="primary" onclick="prepareOrderProductionForm(${o.id},${i.id})">Produzieren</button>`}`:''}</div>`}).join('')}</details>`}).join('')).join('');
   const archivedHtml=archived.length?`<details class="card"><summary><strong>Abgeschlossen / archiviert (${archived.length})</strong></summary><p class="muted">Abgeschlossene, stornierte, erstattete oder extern gelöschte WooCommerce-Bestellungen erscheinen nicht mehr in den aktiven Listen. Reservierungen sind freigegeben bzw. bei completed endgültig ausgebucht.</p>${archived.map(o=>`<div style="display:flex;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid #ddd;padding:8px 0"><span><strong>#${escHtml(String(o.number||o.id))}</strong> · ${escHtml(o.customer||'')} <span class="badge">${escHtml(o.externalDeleted?'extern gelöscht':(o.status||'archiviert'))}</span></span><button class="secondary" onclick="deleteLocalWooOrder(${JSON.stringify(o.id)},${JSON.stringify(o.number||o.id)})">Lokal endgültig löschen</button></div>`).join('')}</details>`:'';
   setHTML('wooOrdersRows',(html+archivedHtml)||'<span class="muted">Noch keine Bestellungen abgerufen.</span>');
 }
 function printOrderView(){
   const node=el('wooOrdersRows'); if(!node)return; const title=orderView==='production'?'Produktionsliste – Bestellungen':orderView==='packing'?'Pack-/Versandliste':'Bestellübersicht';
-  const w=window.open('','_blank'); w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:Arial,sans-serif;padding:18px}table{width:100%;border-collapse:collapse;margin-bottom:18px}th,td{border:1px solid #bbb;padding:6px;text-align:left}button{display:none}.card{margin-bottom:18px}summary{font-weight:bold;margin-bottom:8px}.badge{display:inline-block;margin:2px 4px 2px 0}</style></head><body><h1>${title}</h1>${node.innerHTML}</body></html>`);w.document.close();setTimeout(()=>w.print(),250);
+  const w=window.open('','_blank'); w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Arial,sans-serif;padding:18px}table{width:100%;border-collapse:collapse;margin-bottom:18px}th,td{border:1px solid #bbb;padding:6px;text-align:left}button{display:none}.card{margin-bottom:18px}summary{font-weight:bold;margin-bottom:8px}.badge{display:inline-block;margin:2px 4px 2px 0}</style></head><body><h1>${esc(title)}</h1>${node.innerHTML}</body></html>`);w.document.close();setTimeout(()=>w.print(),250);
 }
 function renderSalesBags(){
   // Kompatibilitätsaufruf: Verkaufs-Säcke sind leere Mikrofiltersäcke, keine Produktions-Substratsäcke.
@@ -2181,7 +2181,7 @@ function wooStockBreakdown(sku,forSet=false){
 function wooInternalStock(sku){ return wooStockBreakdown(sku).available; }
 function wooStockBreakdownHtml(sku){
   const x=wooStockBreakdown(sku);
-  return `<strong>${x.available}</strong><br><span class="muted">Physisch ${x.physical} · Bestellungen ${x.reserved} · Produktionsreserve ${x.productionReserve||0}${x.reserve?' · Set-Reserve '+x.reserve:''} · Verfügbar ${x.available}</span>`;
+  return `<strong>${esc(x.available)}</strong><br><span class="muted">Physisch ${x.physical} · Bestellungen ${x.reserved} · Produktionsreserve ${x.productionReserve||0}${x.reserve?' · Set-Reserve '+x.reserve:''} · Verfügbar ${x.available}</span>`;
 }
 function wooGroupForProduct(p){
   const area=String(p?.area||'').trim();
@@ -2215,8 +2215,8 @@ function renderWooGroupManager(){
     const ps=products.filter(p=>wooGroupForProduct(p)===g.key);
     if(!ps.length && term) return '';
     const active=ps.filter(p=>selected.has(p.sku)).length;
-    const rows=ps.map(p=>`<tr><td style="width:90px"><label style="display:flex;gap:7px;align-items:center"><input type="checkbox" ${selected.has(p.sku)?'checked':''} onchange="toggleWooProductSelection('${escJs(p.sku)}',this.checked,true)"> ${selected.has(p.sku)?'<strong>AN</strong>':'AUS'}</label></td><td><strong>${escHtml(p.sku)}</strong></td><td>${escHtml(p.name||'')}</td><td>${escHtml(p._source||'')}</td><td>${wooStockBreakdownHtml(p.sku)}</td></tr>`).join('');
-    return `<details class="card" style="box-shadow:none;margin:8px 0" ${term?'open':''}><summary><strong>${escHtml(g.label)}</strong> <span class="badge">${ps.length} SKU</span> <span class="badge ${active?'ok':''}">${active} Auto-Sync</span></summary><div style="margin-top:10px"><button class="secondary" onclick="setWooGroupSync('${g.key}',true)">Gruppe einschalten</button> <button class="secondary" onclick="setWooGroupSync('${g.key}',false)">Gruppe ausschalten</button><div style="overflow:auto;max-height:360px;margin-top:8px"><table><thead><tr><th>Auto-Sync</th><th>SKU</th><th>Produkt</th><th>Quelle</th><th>Bestand / Reservierung</th></tr></thead><tbody>${rows||'<tr><td colspan="5" class="muted">Keine SKUs in dieser Gruppe.</td></tr>'}</tbody></table></div></div></details>`;
+    const rows=ps.map(p=>`<tr><td style="width:90px"><label style="display:flex;gap:7px;align-items:center"><input type="checkbox" ${selected.has(p.sku)?'checked':''} onchange="toggleWooProductSelection('${escHtml(escJs(p.sku))}',this.checked,true)"> ${selected.has(p.sku)?'<strong>AN</strong>':'AUS'}</label></td><td><strong>${escHtml(p.sku)}</strong></td><td>${escHtml(p.name||'')}</td><td>${escHtml(p._source||'')}</td><td>${wooStockBreakdownHtml(p.sku)}</td></tr>`).join('');
+    return `<details class="card" style="box-shadow:none;margin:8px 0" ${term?'open':''}><summary><strong>${escHtml(g.label)}</strong> <span class="badge">${esc(ps.length)} SKU</span> <span class="badge ${active?'ok':''}">${esc(active)} Auto-Sync</span></summary><div style="margin-top:10px"><button class="secondary" onclick="setWooGroupSync('${g.key}',true)">Gruppe einschalten</button> <button class="secondary" onclick="setWooGroupSync('${g.key}',false)">Gruppe ausschalten</button><div style="overflow:auto;max-height:360px;margin-top:8px"><table><thead><tr><th>Auto-Sync</th><th>SKU</th><th>Produkt</th><th>Quelle</th><th>Bestand / Reservierung</th></tr></thead><tbody>${rows||'<tr><td colspan="5" class="muted">Keine SKUs in dieser Gruppe.</td></tr>'}</tbody></table></div></div></details>`;
   }).join('');
   setHTML('wooGroupManager',html);
 }
@@ -2250,7 +2250,7 @@ function renderWooSyncProducts(){
     const remote=wooRemoteCache[p.sku];
     const remoteStock=remote ? (remote.found ? (remote.stock_quantity ?? '–') : 'nicht gefunden') : '–';
     const remoteStatus=remote ? (remote.found ? `${remote.stock_status||'–'}${remote.manage_stock?' / Lager aktiv':' / Lager aus'}` : (remote.error||'nicht gefunden')) : '–';
-    return `<tr><td><input type="checkbox" class="wooProductCheck" value="${escHtml(p.sku)}" ${st.selectedSkus.includes(p.sku)?'checked':''} onchange="toggleWooProductSelection('${escJs(p.sku)}',this.checked)"></td><td><strong>${escHtml(p.sku)}</strong></td><td>${escHtml(p.name)}</td><td>${wooStockBreakdownHtml(p.sku)}</td><td>${escHtml(String(remoteStock))}</td><td>${escHtml(String(remoteStatus))}</td><td><button class="secondary" onclick="lookupWooSku('${escJs(p.sku)}')">Prüfen</button> <button class="secondary" onclick="syncWooSku('${escJs(p.sku)}')">Synchronisieren</button></td></tr>`;
+    return `<tr><td><input type="checkbox" class="wooProductCheck" value="${escHtml(p.sku)}" ${st.selectedSkus.includes(p.sku)?'checked':''} onchange="toggleWooProductSelection('${escHtml(escJs(p.sku))}',this.checked)"></td><td><strong>${escHtml(p.sku)}</strong></td><td>${escHtml(p.name)}</td><td>${wooStockBreakdownHtml(p.sku)}</td><td>${escHtml(String(remoteStock))}</td><td>${escHtml(String(remoteStatus))}</td><td><button class="secondary" onclick="lookupWooSku('${escHtml(escJs(p.sku))}')">Prüfen</button> <button class="secondary" onclick="syncWooSku('${escHtml(escJs(p.sku))}')">Synchronisieren</button></td></tr>`;
   }).join('');
   setHTML('wooProductRows',rows||'<tr><td colspan="7" class="muted">Keine Produkte in den ausgewählten Gruppen.</td></tr>');
 }
@@ -2683,7 +2683,7 @@ function renderMinVariantOptions(selectedValue=''){
   } else {
     variants=Array.from(new Set(minStockOptions(minArea.value).map(o=>o.variant).filter(Boolean))).sort();
   }
-  node.innerHTML='<option value="">Alle Varianten / keine Variante</option>'+variants.map(v=>`<option value="${String(v).replace(/"/g,'&quot;')}">${v}</option>`).join('');
+  node.innerHTML='<option value="">Alle Varianten / keine Variante</option>'+variants.map(v=>`<option value="${String(v).replace(/"/g,'&quot;')}">${esc(v)}</option>`).join('');
   if(selectedValue && variants.includes(selectedValue)) node.value=selectedValue;
 }
 
@@ -2790,9 +2790,9 @@ function groupMinStocksByArea(rows){
 function renderMinStockAccordions(){
   migrateLegacyMinStockIdentity();
   const warningGroups=groupMinStocksByArea(minStockWarnings());
-  setHTML('minWarningsGroups', warningGroups.length ? warningGroups.map((g,idx)=>`<details class="card" style="box-shadow:none;margin:8px 0" ${idx===0?'open':''}><summary style="cursor:pointer"><strong>${esc(areaLabel(g.area))}</strong> <span class="badge">${g.items.length}</span></summary><table style="margin-top:10px"><thead><tr><th>Produkt / Strain</th><th>Master / Herkunft</th><th>SKU</th><th>Variante</th><th>Bestand</th><th>Mindestmenge</th><th>Fehlt</th></tr></thead><tbody>${g.items.map(x=>`<tr><td>${esc(x.product||'–')}</td><td>${esc(minIdentityText(x)||'–')}${minStockNeedsIdentity(x)?'<br><span class="badge warn">Zuordnung prüfen</span>':''}</td><td>${esc(effectiveMinStockSku(x)||'–')}</td><td>${esc(x.variant||'alle')}</td><td>${x.saleable}${x.saleable!==x.stock?` <span class="muted">(Bestand ${x.stock})</span>`:''}</td><td>${x.qty}</td><td><strong>${Math.max(0,(+x.qty||0)-(+x.saleable||0))}</strong></td></tr>`).join('')}</tbody></table></details>`).join('') : '<span class="muted">Keine aktiven Warnungen.</span>');
+  setHTML('minWarningsGroups', warningGroups.length ? warningGroups.map((g,idx)=>`<details class="card" style="box-shadow:none;margin:8px 0" ${idx===0?'open':''}><summary style="cursor:pointer"><strong>${esc(areaLabel(g.area))}</strong> <span class="badge">${esc(g.items.length)}</span></summary><table style="margin-top:10px"><thead><tr><th>Produkt / Strain</th><th>Master / Herkunft</th><th>SKU</th><th>Variante</th><th>Bestand</th><th>Mindestmenge</th><th>Fehlt</th></tr></thead><tbody>${g.items.map(x=>`<tr><td>${esc(x.product||'–')}</td><td>${esc(minIdentityText(x)||'–')}${minStockNeedsIdentity(x)?'<br><span class="badge warn">Zuordnung prüfen</span>':''}</td><td>${esc(effectiveMinStockSku(x)||'–')}</td><td>${esc(x.variant||'alle')}</td><td>${esc(x.saleable)}${x.saleable!==x.stock?` <span class="muted">(Bestand ${x.stock})</span>`:''}</td><td>${esc(x.qty)}</td><td><strong>${Math.max(0,(+x.qty||0)-(+x.saleable||0))}</strong></td></tr>`).join('')}</tbody></table></details>`).join('') : '<span class="muted">Keine aktiven Warnungen.</span>');
   const groups=groupMinStocksByArea(db.minStocks||[]);
-  setHTML('minGroups', groups.length ? groups.map((g,idx)=>`<details class="card" style="box-shadow:none;margin:8px 0" ${idx===0?'open':''}><summary style="cursor:pointer;display:flex;justify-content:space-between;gap:10px"><strong>${esc(areaLabel(g.area))}</strong><span class="badge">${g.items.length}</span></summary><table style="margin-top:10px"><thead><tr><th>Produkt / Strain</th><th>Master / Herkunft</th><th>SKU</th><th>Variante</th><th>Mindestmenge</th><th>Produktionsreserve</th><th>Set-Reserve</th><th>Aktuell</th><th>Aktion</th></tr></thead><tbody>${g.items.map(x=>{const stock=minStockStock(x),saleable=saleableForMinStock(x);return `<tr><td>${esc(x.product||'–')}</td><td>${esc(minIdentityText(x)||'–')}${minStockNeedsIdentity(x)?'<br><span class="badge warn">Zuordnung prüfen</span>':''}</td><td>${esc(effectiveMinStockSku(x)||'–')}</td><td>${esc(x.variant||'alle')}</td><td>${x.qty}</td><td>${x.reserveActive===false?'inaktiv':(x.reserve||0)}</td><td>${x.sku==='Ppul_Kör_1000g'?skuSetReserve(x.sku):'–'}</td><td>${saleable} <span class="muted">(Bestand ${stock})</span></td><td><button class="secondary" onclick="editMinStock('${x.id}')">Bearbeiten</button> <button class="secondary" onclick="deleteMinStock('${x.id}')">Löschen</button></td></tr>`}).join('')}</tbody></table></details>`).join('') : '<span class="muted">Noch keine Mindestbestände definiert.</span>');
+  setHTML('minGroups', groups.length ? groups.map((g,idx)=>`<details class="card" style="box-shadow:none;margin:8px 0" ${idx===0?'open':''}><summary style="cursor:pointer;display:flex;justify-content:space-between;gap:10px"><strong>${esc(areaLabel(g.area))}</strong><span class="badge">${esc(g.items.length)}</span></summary><table style="margin-top:10px"><thead><tr><th>Produkt / Strain</th><th>Master / Herkunft</th><th>SKU</th><th>Variante</th><th>Mindestmenge</th><th>Produktionsreserve</th><th>Set-Reserve</th><th>Aktuell</th><th>Aktion</th></tr></thead><tbody>${g.items.map(x=>{const stock=minStockStock(x),saleable=saleableForMinStock(x);return `<tr><td>${esc(x.product||'–')}</td><td>${esc(minIdentityText(x)||'–')}${minStockNeedsIdentity(x)?'<br><span class="badge warn">Zuordnung prüfen</span>':''}</td><td>${esc(effectiveMinStockSku(x)||'–')}</td><td>${esc(x.variant||'alle')}</td><td>${esc(x.qty)}</td><td>${x.reserveActive===false?'inaktiv':(x.reserve||0)}</td><td>${x.sku==='Ppul_Kör_1000g'?skuSetReserve(x.sku):'–'}</td><td>${esc(saleable)} <span class="muted">(Bestand ${stock})</span></td><td><button class="secondary" onclick="editMinStock('${x.id}')">Bearbeiten</button> <button class="secondary" onclick="deleteMinStock('${x.id}')">Löschen</button></td></tr>`}).join('')}</tbody></table></details>`).join('') : '<span class="muted">Noch keine Mindestbestände definiert.</span>');
 }
 
 function kbOriginMasterText(x){
@@ -3175,7 +3175,7 @@ function renderStats(){
     ['Petrischalen', statusStats('petri', db.petri, 'durchwachsen'), 'durchwachsen'],
     ['Körnerbrut', statusStats('kb', db.kb, 'im Kühlschrank'), 'im Kühlschrank'],
     ['Flüssigmyzel', statusStats('lc', db.lc, 'im Kühlschrank'), 'im Kühlschrank']
-  ].map(([label,s,target])=>`<tr><td>${label}</td><td>${s.pos} ${badge(target)}</td><td>${s.konti} ${badge('kontaminiert')}</td><td>${s.posPct}</td><td>${s.kontiPct}</td></tr>`).join('');
+  ].map(([label,s,target])=>`<tr><td>${esc(label)}</td><td>${esc(s.pos)} ${badge(target)}</td><td>${esc(s.konti)} ${badge('kontaminiert')}</td><td>${esc(s.posPct)}</td><td>${esc(s.kontiPct)}</td></tr>`).join('');
   setHTML('statusStatsRows', statusRows);
   const rows=[
     ['Dauerkulturen','dk',db.dk],
@@ -3183,7 +3183,7 @@ function renderStats(){
     ['Flüssigmyzel','lc',db.lc],
     ['Körnerbrut','kb',db.kb],
     ['Substratsäcke','sub',db.sub]
-  ].map(([label,type,arr])=>`<tr><td>${label}</td><td>${createdCount(arr,from,to)}</td><td>${archiveCount(type,'kontaminiert',from,to)}</td><td>${type==='sub'?archiveCount('sub','im Fruchtungsraum',from,to):'–'}</td><td>${archiveCount(type,'verkauft',from,to)}</td><td>${archiveCount(type,'archiviert',from,to)+archiveCount(type,'Test beendet',from,to)}</td></tr>`).join('');
+  ].map(([label,type,arr])=>`<tr><td>${esc(label)}</td><td>${createdCount(arr,from,to)}</td><td>${archiveCount(type,'kontaminiert',from,to)}</td><td>${type==='sub'?archiveCount('sub','im Fruchtungsraum',from,to):'–'}</td><td>${archiveCount(type,'verkauft',from,to)}</td><td>${archiveCount(type,'archiviert',from,to)+archiveCount(type,'Test beendet',from,to)}</td></tr>`).join('');
   setHTML('periodStatsRows', rows);
 }
 function render(){
@@ -3215,14 +3215,14 @@ setHTML('testSubRows', applyViewFilter('testsub', testSubs).map(x=>{
   const nextNo = nextHarvestNo(x.id);
   const harvestHtml = db.harv.filter(h=>h.sub==x.id).map(h=>h.no+'.: '+h.weight+'g ('+fmt(h.date)+')').join('<br>')||'–';
   const entryHtml = x.status==='im Fruchtungsraum'
-    ? `<label>${nextNo}. Ernte g</label><input id="harvTest_${hid}" type="number" placeholder="Gewicht g"><button class="secondary" onclick="saveTestHarvest('${x.id}')">Ernte speichern</button>`
+    ? `<label>${esc(nextNo)}. Ernte g</label><input id="harvTest_${hid}" type="number" placeholder="Gewicht g"><button class="secondary" onclick="saveTestHarvest('${x.id}')">Ernte speichern</button>`
     : '<span class="muted">Erst in Fruchtungsraum setzen.</span>';
   return `<tr>
 <td><input type="checkbox" class="testSubBulkCheck" value="${x.id}"></td>
-<td>${x.id}</td>
-<td>${x.strain}</td>
-<td>${sourceCompact('sub',x)}</td>
-<td>${by('mix',x.mix).name||x.mix}</td>
+<td>${esc(x.id)}</td>
+<td>${esc(x.strain)}</td>
+<td>${esc(sourceCompact('sub',x))}</td>
+<td>${esc(by('mix',x.mix).name||x.mix)}</td>
 <td>${x.qty || 1}</td>
 <td>${badge(x.status)}</td>
 <td>${harvestHtml}</td>
@@ -3233,7 +3233,7 @@ setHTML('testSubRows', applyViewFilter('testsub', testSubs).map(x=>{
 
 setHTML('testGroupSummary', (db.testGroups||[]).slice().reverse().map(g=>{
   const stt=testGroupStats(g.id);
-  return `<div class="card" style="box-shadow:none;margin:8px 0"><strong>${g.id}</strong> ${g.name||''}<br><span class="muted">${g.desc||''}</span><br>Gestartet: ${stt.started} | Auswertbar ohne Konti: ${stt.usable} | Fruchtungsraum: ${stt.fruiting} | Konti: ${stt.contam} (${stt.contamPct}%) | Beendet: ${stt.ended}<br>Ø Tage bis Fruchtungsraum: ${stt.daysToFruiting ?? '–'} | Ø Tage bis 1. Ernte: ${stt.daysToFirst ?? '–'} | Ø 1.–2. Ernte: ${stt.daysFirstSecond ?? '–'}<br>Gesamtertrag brutto: ${stt.totalWeight} g | Ø brutto pro gestarteten Sack: ${stt.avgWeight} g<br>Gesamtertrag bereinigt ohne Kontis: ${stt.cleanWeight} g | Ø bereinigt pro auswertbaren Sack: ${stt.avgWeightClean} g</div>`;
+  return `<div class="card" style="box-shadow:none;margin:8px 0"><strong>${esc(g.id)}</strong> ${esc(g.name||'')}<br><span class="muted">${esc(g.desc||'')}</span><br>Gestartet: ${stt.started} | Auswertbar ohne Konti: ${stt.usable} | Fruchtungsraum: ${stt.fruiting} | Konti: ${stt.contam} (${stt.contamPct}%) | Beendet: ${stt.ended}<br>Ø Tage bis Fruchtungsraum: ${stt.daysToFruiting ?? '–'} | Ø Tage bis 1. Ernte: ${stt.daysToFirst ?? '–'} | Ø 1.–2. Ernte: ${stt.daysFirstSecond ?? '–'}<br>Gesamtertrag brutto: ${stt.totalWeight} g | Ø brutto pro gestarteten Sack: ${stt.avgWeight} g<br>Gesamtertrag bereinigt ohne Kontis: ${stt.cleanWeight} g | Ø bereinigt pro auswertbaren Sack: ${stt.avgWeightClean} g</div>`;
 }).join('') || '<span class="muted">Noch keine Testgruppen vorhanden.</span>');
 renderStats();
 
@@ -3261,18 +3261,18 @@ setHTML('archiveRows', (db.archive||[]).slice().reverse().map(x=>{
   const c=archiveCollection(x.type), rec=c?by(c,x.itemId||''):{};
   const safeType=String(x.type||'').replace(/'/g,"\'");
   const safeId=String(x.itemId||'').replace(/'/g,"\'");
-  return `<tr><td>${fmt(x.date)}</td><td>${areaLabel(x.type)||x.type}</td><td>${x.itemId||''}</td><td>${badge(x.action||'')}</td><td>${x.details||''}</td><td>${rec&&rec.id?`<button class="secondary" onclick="showArchiveDetails('${safeType}','${safeId}')">Details</button>`:'–'}</td><td>${rec&&rec.id&&isArchivedStatus(rec.status)?`<button class="secondary" onclick="restoreArchivedItem('${safeType}','${safeId}')">Wiederherstellen</button>`:'–'}</td></tr>`;
+  return `<tr><td>${fmt(x.date)}</td><td>${areaLabel(x.type)||x.type}</td><td>${esc(x.itemId||'')}</td><td>${badge(x.action||'')}</td><td>${esc(x.details||'')}</td><td>${rec&&rec.id?`<button class="secondary" onclick="showArchiveDetails('${safeType}','${safeId}')">Details</button>`:'–'}</td><td>${rec&&rec.id&&isArchivedStatus(rec.status)?`<button class="secondary" onclick="restoreArchivedItem('${safeType}','${safeId}')">Wiederherstellen</button>`:'–'}</td></tr>`;
 }).join('') || '<tr><td colspan="7" class="muted">Noch keine Archiv-Einträge.</td></tr>');
 
 // Dauerkulturen
 let q=(el('searchDk')?.value||'').toLowerCase();
 setHTML('dkRows', applyViewFilter('dk', activeItems(db.dk)).filter(x=>JSON.stringify(x).toLowerCase().includes(q)).map(x=>`<tr>
-<td>${x.id}</td>
-<td>${x.masterCode || x.testId || '–'}</td>
-<td>${x.strain}</td>
-<td>${dkOriginText(x)}</td>
+<td>${esc(x.id)}</td>
+<td>${esc(x.masterCode || x.testId || '–')}</td>
+<td>${esc(x.strain)}</td>
+<td>${esc(dkOriginText(x))}</td>
 <td>${fmt(x.date)}</td>
-<td>${x.count}</td>
+<td>${esc(x.count)}</td>
 <td>${badge(x.status)}</td>
 <td>${old3(x.date)?badge('älter als 3 Jahre'):'–'}</td>
 <td>
@@ -3289,13 +3289,13 @@ ${String(x.type||'').toLowerCase()==='wild'?`<button class="secondary" onclick="
 // Petris
 setHTML('petriRows', applyViewFilter('petri', activeItems(db.petri)).map(x=>{
   const quelle = x.manual
-    ? ('manuell: ' + (x.source || x.manualSource || 'ohne Quelle') + (x.type==='wild' ? '<br><small>Wild: '+(x.fundort||'')+' '+(x.baumart||'')+' '+(x.koordinaten||'')+'</small>' : ''))
-    : (x.source || x.dk || '–');
+    ? ('manuell: ' + esc(x.source || x.manualSource || 'ohne Quelle') + (x.type==='wild' ? '<br><small>Wild: '+esc(x.fundort||'')+' '+esc(x.baumart||'')+' '+esc(x.koordinaten||'')+'</small>' : ''))
+    : esc(x.source || x.dk || '–');
   return `<tr>
-<td>${x.id}</td>
-<td>${x.masterCode || '–'}</td>
-<td>${x.strain || ''}</td>
-<td>${petriOriginText(x)}</td>
+<td>${esc(x.id)}</td>
+<td>${esc(x.masterCode || '–')}</td>
+<td>${esc(x.strain || '')}</td>
+<td>${esc(petriOriginText(x))}</td>
 <td>${quelle}</td>
 <td>${fmt(x.date)}</td>
 <td>${ageDays(x.date)} Tage</td>
@@ -3315,22 +3315,22 @@ ${String(x.type||'').toLowerCase()==='wild'?`<button class="secondary" onclick="
 
 // Flüssigmyzel
 setHTML('lcRows', applyViewFilter('lc', activeItems(db.lc)).map(x=>`<tr>
-<td>${x.id}</td>
-<td>${x.strain}</td>
-<td>${(()=>{const i=cultureIdentityForItem(x); return i.master || i.origin || '–';})()}</td>
-<td>${sourceCompact('lc',x)}</td>
+<td>${esc(x.id)}</td>
+<td>${esc(x.strain)}</td>
+<td>${esc((()=>{const i=cultureIdentityForItem(x); return i.master || i.origin || '–';})())}</td>
+<td>${esc(sourceCompact('lc',x))}</td>
 <td>${fmt(x.date)}</td>
-<td>${x.volume} ml</td>
+<td>${esc(x.volume)} ml</td>
 <td>${ageDays(x.date)} Tage</td>
 <td>${badge(x.status)}</td>
 <td><button class="secondary" onclick="editItem('lc','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('lc','${x.id}')">Historie</button> <button class="secondary" onclick="printOneLabel('lc','${x.id}')">Etikett</button> <button class="secondary" onclick="st('lc','${x.id}','im Kühlschrank')">Kühlschrank</button> <button class="secondary" onclick="st('lc','${x.id}','verbraucht')">verbraucht</button> <button class="secondary" onclick="st('lc','${x.id}','kontaminiert')">Konti</button></td>
 </tr>`).join(''));
 
 // Körnerbrut
-setHTML('kbRows', applyViewFilter('kb', activeItems(db.kb)).map(x=>`<tr><td>${x.id}</td><td>${x.sku||'–'}</td><td>${x.strain}</td><td>${kbOriginMasterText(x)}</td><td>${sourceCompact('kb',x)}</td><td>${x.size || '–'}</td><td>${ageDays(x.date)} Tage</td><td>${badge(x.status)}${sourceUsageBadge(x)}</td><td><button class="secondary" onclick="editItem('kb','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('kb','${x.id}')">Historie</button> <button class="secondary" onclick="printOneLabel('kb','${x.id}')">Etikett</button> <button class="secondary" onclick="st('kb','${x.id}','im Kühlschrank')">Kühlschrank</button> <button class="secondary" onclick="markInoculatedUsed('kb','${x.id}')">beimpft → Archiv</button> <button class="secondary" onclick="st('kb','${x.id}','kontaminiert')">Konti</button></td></tr>`).join(''));
+setHTML('kbRows', applyViewFilter('kb', activeItems(db.kb)).map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.sku||'–')}</td><td>${esc(x.strain)}</td><td>${kbOriginMasterText(x)}</td><td>${esc(sourceCompact('kb',x))}</td><td>${esc(x.size || '–')}</td><td>${ageDays(x.date)} Tage</td><td>${badge(x.status)}${sourceUsageBadge(x)}</td><td><button class="secondary" onclick="editItem('kb','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('kb','${x.id}')">Historie</button> <button class="secondary" onclick="printOneLabel('kb','${x.id}')">Etikett</button> <button class="secondary" onclick="st('kb','${x.id}','im Kühlschrank')">Kühlschrank</button> <button class="secondary" onclick="markInoculatedUsed('kb','${x.id}')">beimpft → Archiv</button> <button class="secondary" onclick="st('kb','${x.id}','kontaminiert')">Konti</button></td></tr>`).join(''));
 
 // Substrate
-setHTML('mixRows', db.mix.map(x=>`<tr><td>${x.id}</td><td>${x.name}</td><td>${x.ing}</td><td>${x.water}%</td><td><button class="secondary" onclick="editItem('mix','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="deleteMix('${x.id}')">Löschen</button></td></tr>`).join(''));
+setHTML('mixRows', db.mix.map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.name)}</td><td>${esc(x.ing)}</td><td>${esc(x.water)}%</td><td><button class="secondary" onclick="editItem('mix','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="deleteMix('${x.id}')">Löschen</button></td></tr>`).join(''));
 
 // Substratsäcke
 let currentSubDate = el('subDateFilter')?.value || '';
@@ -3342,24 +3342,24 @@ setHTML('subSummary', stockSummaryDropdown('sub', subDateFiltered, x=>+x.qty||1)
 let subFilteredRows = applyViewFilter('sub', subDateFiltered);
 setHTML('subRows', subFilteredRows.map(x=>`<tr>
 <td><input type="checkbox" class="subBulkCheck" value="${x.id}"></td>
-<td>${x.id}</td>
-<td>${x.strain}</td>
-<td>${sourceCompact('sub',x)}</td>
-<td>${by('mix',x.mix).name||x.mix}</td>
+<td>${esc(x.id)}</td>
+<td>${esc(x.strain)}</td>
+<td>${esc(sourceCompact('sub',x))}</td>
+<td>${esc(by('mix',x.mix).name||x.mix)}</td>
 <td>${x.qty || 1}</td>
 <td>${x.forTest?badge('Test'):'–'}</td>
 <td>${badge(x.status)}</td>
-<td>${db.harv.filter(h=>h.sub==x.id).map(h=>h.no+'.: '+h.weight+'g').join('<br>')||'–'}</td>
+<td>${db.harv.filter(h=>h.sub==x.id).map(h=>esc(h.no+'.: '+h.weight+'g')).join('<br>')||'–'}</td>
 <td><button class="secondary" onclick="editItem('sub','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('sub','${x.id}')">Historie</button> <button class="secondary" onclick="printOneLabel('sub','${x.id}')">Etikett</button> ${(x.forWebshop||x.orderId)&&x.status==='am durchwachsen'?`<button class="primary" onclick="st('sub','${x.id}','fertig durchwachsen')">durchwachsen</button>`:`<button class="secondary" onclick="moveSubToFruiting('${x.id}')">Fruchtungsraum</button>`} <button class="secondary" onclick="sellItem('sub','${x.id}')">Verkaufen</button> <button class="secondary" onclick="contamItem('sub','${x.id}')">Konti</button></td>
 </tr>`).join(''));
 
 // Bewusst für Webshop / Bestellung produzierte Substratsäcke
-setHTML('webshopSubRows',(db.sub||[]).filter(x=>!isArchivedStatus(x.status)&&(x.forWebshop||x.orderId)).map(x=>`<tr><td>${x.id}</td><td>${x.orderNumber?'#'+escHtml(String(x.orderNumber)):'Webshop-Lager'}</td><td>${escHtml(x.sku||'–')}</td><td>${escHtml(x.strain||'')}</td><td>${+x.qty||1}</td><td>${badge(x.status)} ${orderMadeBadge('sub',x)}</td><td><button class="secondary" onclick="editItem('sub','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="printOneLabel('sub','${x.id}')">Etikett</button> ${x.status==='am durchwachsen'?`<button class="primary" onclick="st('sub','${x.id}','fertig durchwachsen')">durchwachsen</button>`:''} <button class="secondary" onclick="contamItem('sub','${x.id}')">Konti</button></td></tr>`).join('')||'<tr><td colspan="7" class="muted">Keine Webshop-Substratsäcke vorhanden.</td></tr>');
+setHTML('webshopSubRows',(db.sub||[]).filter(x=>!isArchivedStatus(x.status)&&(x.forWebshop||x.orderId)).map(x=>`<tr><td>${esc(x.id)}</td><td>${x.orderNumber?'#'+escHtml(String(x.orderNumber)):'Webshop-Lager'}</td><td>${escHtml(x.sku||'–')}</td><td>${escHtml(x.strain||'')}</td><td>${+x.qty||1}</td><td>${badge(x.status)} ${orderMadeBadge('sub',x)}</td><td><button class="secondary" onclick="editItem('sub','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="printOneLabel('sub','${x.id}')">Etikett</button> ${x.status==='am durchwachsen'?`<button class="primary" onclick="st('sub','${x.id}','fertig durchwachsen')">durchwachsen</button>`:''} <button class="secondary" onclick="contamItem('sub','${x.id}')">Konti</button></td></tr>`).join('')||'<tr><td colspan="7" class="muted">Keine Webshop-Substratsäcke vorhanden.</td></tr>');
 
 // Dörrpilzlager
 
 setHTML('bucketRows', activeItems(db.buckets).map(x=>`<tr>
-<td>${x.id}</td><td>${x.product}</td><td>${fmt(x.date)}</td><td>${badge(x.status)}</td>
+<td>${esc(x.id)}</td><td>${esc(x.product)}</td><td>${fmt(x.date)}</td><td>${badge(x.status)}</td>
 <td><button class="secondary" onclick="editItem('buckets','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="printOneLabel('buckets','${x.id}')">Etikett</button> <button class="secondary" onclick="st('buckets','${x.id}','aufgebraucht')">aufgebraucht</button> <button class="secondary" onclick="st('buckets','${x.id}','archiviert')">Archiv</button></td>
 </tr>`).join(''));
 let lotBase = applyViewFilter('lots', activeItems(db.lots));
@@ -3369,16 +3369,16 @@ setOptions('lotDateFilter', '<option value="">Alle Daten</option>' + lotDates.ma
 let lotRowsData = currentLotDate ? lotBase.filter(x=>x.date===currentLotDate) : lotBase;
 setHTML('lotRows', lotRowsData.map(x=>`<tr>
 <td><input type="checkbox" class="lotBulkCheck" value="${x.id}"></td>
-<td>${x.id}</td><td>${x.sku||'–'}</td><td>${x.bucket}</td><td>${x.product}</td><td>${fmt(x.mhd)}</td><td>${x.qty}</td><td>${badge(x.status)}</td><td><button class="secondary" onclick="editItem('lots','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('lots','${x.id}')">Historie</button> <button class="secondary" onclick="sellItem('lots','${x.id}')">Verkaufen</button> <button class="secondary" onclick="contamItem('lots','${x.id}')">Konti</button></td></tr>`).join(''));
+<td>${esc(x.id)}</td><td>${esc(x.sku||'–')}</td><td>${esc(x.bucket)}</td><td>${esc(x.product)}</td><td>${fmt(x.mhd)}</td><td>${esc(x.qty)}</td><td>${badge(x.status)}</td><td><button class="secondary" onclick="editItem('lots','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('lots','${x.id}')">Historie</button> <button class="secondary" onclick="sellItem('lots','${x.id}')">Verkaufen</button> <button class="secondary" onclick="contamItem('lots','${x.id}')">Konti</button></td></tr>`).join(''));
 
 // Holzstämme
 setHTML('logRows', applyViewFilter('logs', activeItems(db.logs)).map(x=>`<tr>
-<td>${x.id}</td>
-<td>${x.sku||'–'}</td>
-<td>${x.strain}</td>
-<td>${sourceCompact('logs',x)}</td>
-<td>${x.wood}</td>
-<td>${x.diameter} cm / ${x.length} cm</td>
+<td>${esc(x.id)}</td>
+<td>${esc(x.sku||'–')}</td>
+<td>${esc(x.strain)}</td>
+<td>${esc(sourceCompact('logs',x))}</td>
+<td>${esc(x.wood)}</td>
+<td>${esc(x.diameter)} cm / ${x.length} cm</td>
 <td>${x.qty || 1}</td>
 <td>${badge(x.status)}</td>
 <td>
@@ -3396,11 +3396,11 @@ setHTML('dowelsRows', applyViewFilter('dowels', activeItems(db.goods).filter(x=>
   const actions=isSet
     ? `<button class="secondary" onclick="editItem('goods','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('goods','${x.id}')">Historie</button> <button class="secondary" onclick="printOneLabel('goods','${x.id}')">Etikett</button> <button class="secondary" onclick="showDowelSetDetails('${x.id}')">Komponenten</button> <button class="secondary" onclick="sellItem('goods','${x.id}')">Verkaufen</button> <button class="secondary" onclick="contamDowelSet('${x.id}')">Konti</button>`
     : `<button class="secondary" onclick="editItem('goods','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('goods','${x.id}')">Historie</button> <button class="secondary" onclick="printOneLabel('goods','${x.id}')">Etikett</button> <button class="secondary" onclick="st('goods','${x.id}','beimpft')">beimpft</button> <button class="secondary" onclick="st('goods','${x.id}','fertig durchwachsen')">fertig durchwachsen</button> <button class="secondary" onclick="sellItem('goods','${x.id}')">Verkaufen</button> <button class="secondary" onclick="contamItem('goods','${x.id}')">Konti</button>`;
-  return `<tr><td>${x.id}${dowelPackLabel(x)?'<br><strong>'+dowelPackLabel(x)+'</strong>':''}</td><td>${x.type}</td><td>${x.sku||'–'}</td><td>${x.strain}</td><td>${x.source}</td><td>${fmt(x.date)}</td><td>${x.size || x.variant || '–'}</td><td>${x.qty}</td><td>${isSet?dowelSetComponentsHtml(x):'–'}</td><td>${badge(x.status)} ${orderMadeBadge('dowels',x)}${sourceUsageBadge(x)}</td><td>${actions}</td></tr>`;
+  return `<tr><td>${esc(x.id)}${dowelPackLabel(x)?'<br><strong>'+dowelPackLabel(x)+'</strong>':''}</td><td>${esc(x.type)}</td><td>${esc(x.sku||'–')}</td><td>${esc(x.strain)}</td><td>${esc(x.source)}</td><td>${fmt(x.date)}</td><td>${esc(x.size || x.variant || '–')}</td><td>${esc(x.qty)}</td><td>${isSet?dowelSetComponentsHtml(x):'–'}</td><td>${badge(x.status)} ${orderMadeBadge('dowels',x)}${sourceUsageBadge(x)}</td><td>${actions}</td></tr>`;
 }).join(''));
 
-setHTML('syringesRows', applyViewFilter('syringes', activeItems(db.goods).filter(x=>x.type==='Spritzen')).map(x=>`<tr><td>${x.id}</td><td>${x.type}</td><td>${x.sku||'–'}</td><td>${x.strain}</td><td>${(()=>{const i=cultureIdentityForItem(x);return i.master||i.origin||'–';})()}</td><td>${x.source}</td><td>${x.size}</td><td>${x.qty}</td><td><button class="secondary" onclick="editItem('goods','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('goods','${x.id}')">Historie</button> <button class="secondary" onclick="printOneLabel('goods','${x.id}')">Etikett</button> <button class="secondary" onclick="sellItem('goods','${x.id}')">Verkaufen</button> <button class="secondary" onclick="contamItem('goods','${x.id}')">Konti</button> <button class="secondary" onclick="markSyringeUsed('${x.id}')">verbraucht</button></td></tr>`).join(''));
-setHTML('masterSyringesRows', applyViewFilter('mastersyringes', activeItems(db.goods).filter(x=>x.type==='Master-Spritzen')).map(x=>`<tr><td>${x.id}</td><td>${x.strain}</td><td>${x.source}</td><td>${x.size}</td><td>${x.qty}</td><td>${badge(x.status)}</td><td><button class="secondary" onclick="editItem('goods','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('goods','${x.id}')">Historie</button> <button class="secondary" onclick="printOneLabel('goods','${x.id}')">Etikett</button> <button class="secondary" onclick="markSyringeUsed('${x.id}')">verbraucht</button> <button class="secondary" onclick="contamItem('goods','${x.id}')">Konti</button></td></tr>`).join(''));
+setHTML('syringesRows', applyViewFilter('syringes', activeItems(db.goods).filter(x=>x.type==='Spritzen')).map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.type)}</td><td>${esc(x.sku||'–')}</td><td>${esc(x.strain)}</td><td>${esc((()=>{const i=cultureIdentityForItem(x);return i.master||i.origin||'–';})())}</td><td>${esc(x.source)}</td><td>${esc(x.size)}</td><td>${esc(x.qty)}</td><td><button class="secondary" onclick="editItem('goods','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('goods','${x.id}')">Historie</button> <button class="secondary" onclick="printOneLabel('goods','${x.id}')">Etikett</button> <button class="secondary" onclick="sellItem('goods','${x.id}')">Verkaufen</button> <button class="secondary" onclick="contamItem('goods','${x.id}')">Konti</button> <button class="secondary" onclick="markSyringeUsed('${x.id}')">verbraucht</button></td></tr>`).join(''));
+setHTML('masterSyringesRows', applyViewFilter('mastersyringes', activeItems(db.goods).filter(x=>x.type==='Master-Spritzen')).map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.strain)}</td><td>${esc(x.source)}</td><td>${esc(x.size)}</td><td>${esc(x.qty)}</td><td>${badge(x.status)}</td><td><button class="secondary" onclick="editItem('goods','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('goods','${x.id}')">Historie</button> <button class="secondary" onclick="printOneLabel('goods','${x.id}')">Etikett</button> <button class="secondary" onclick="markSyringeUsed('${x.id}')">verbraucht</button> <button class="secondary" onclick="contamItem('goods','${x.id}')">Konti</button></td></tr>`).join(''));
 
 // Selects: zuerst Standard-Quellen
 setOptions('dkPetri', opts(readyItems('petri',db.petri), petriOptionLabel));
@@ -3441,9 +3441,9 @@ let lcType=(el('lcSourceType')?.value||'petri');
 if(lcType==='dk') {
   setOptions('lcSource', opts(dkSourceItems(), cultureOptionLabel));
 } else if(lcType==='lc') {
-  setOptions('lcSource', readyItems('lc',db.lc).map(x=>`<option value="${x.id}">${x.id} – ${x.strain} (${x.status})</option>`).join(''));
+  setOptions('lcSource', readyItems('lc',db.lc).map(x=>`<option value="${x.id}">${esc(x.id)} – ${esc(x.strain)} (${x.status})</option>`).join(''));
 } else if(lcType==='syringe') {
-  setOptions('lcSource', (db.goods||[]).filter(x=>x.type==='Master-Spritzen' && !isArchivedStatus(x.status) && (+x.qty||0)>0).map(x=>`<option value="${x.id}">${x.id} – ${x.strain} (${x.qty} Stk)</option>`).join(''));
+  setOptions('lcSource', (db.goods||[]).filter(x=>x.type==='Master-Spritzen' && !isArchivedStatus(x.status) && (+x.qty||0)>0).map(x=>`<option value="${x.id}">${esc(x.id)} – ${esc(x.strain)} (${x.qty} Stk)</option>`).join(''));
 } else if(lcType==='unknown') {
   setOptions('lcSource', '<option value="unknown">unbekannte Quelle</option>');
 } else {
@@ -3455,7 +3455,7 @@ let kbType=(el('kbSourceType')?.value||'lc');
 if(kbType==='petri'){
   setOptions('kbLc', opts(readyItems('petri',db.petri), petriOptionLabel));
 } else if(kbType==='syringe'){
-  setOptions('kbLc', (db.goods||[]).filter(x=>x.type==='Master-Spritzen' && !isArchivedStatus(x.status) && (+x.qty||0)>0).map(x=>`<option value="${x.id}">${x.id} – ${x.strain} (${x.qty} Stk)</option>`).join(''));
+  setOptions('kbLc', (db.goods||[]).filter(x=>x.type==='Master-Spritzen' && !isArchivedStatus(x.status) && (+x.qty||0)>0).map(x=>`<option value="${x.id}">${esc(x.id)} – ${esc(x.strain)} (${x.qty} Stk)</option>`).join(''));
 } else if(kbType==='kb'){
   setOptions('kbLc', opts(readyItems('kb',db.kb),x=>x.id+' – '+x.strain+' ('+x.status+')'+(x.anbruch?' – ⚠ Angebraucht':'')));
 } else if(kbType==='unknown'){
@@ -3469,7 +3469,7 @@ let subType=(el('subSourceType')?.value||'kb');
 if(subType==='unknown'){
   setOptions('subSource', '<option value="unknown">unbekannte Quelle</option>');
 } else if(subType==='lc'){
-  setOptions('subSource', readyItems('lc',db.lc).map(x=>`<option value="${x.id}">${x.id} – ${x.strain} (${x.status})</option>`).join(''));
+  setOptions('subSource', readyItems('lc',db.lc).map(x=>`<option value="${x.id}">${esc(x.id)} – ${esc(x.strain)} (${x.status})</option>`).join(''));
 } else {
   setOptions('subSource', opts(readyItems('kb',db.kb),x=>x.id+' – '+x.strain+' ('+x.status+')'+(x.anbruch?' – ⚠ Angebraucht':'')));
 }
@@ -3477,13 +3477,13 @@ setOptions('subMix', opts(db.mix,x=>x.id+' – '+x.name));
 
 // Dübel und Spritzen
 setOptions('duebKb', opts(readyItems('kb',db.kb),x=>x.id+' – '+x.strain+' ('+x.status+')'+(x.anbruch?' – ⚠ Angebraucht':'')));
-setOptions('duebDowel', (db.goods||[]).filter(x=>x.type==='Dübel' && isReadyForProduction('dowels',x)).map(x=>`<option value="${x.id}">${x.id}${dowelPackLabel(x)?' · '+dowelPackLabel(x):''} – ${x.strain} – ${x.size||x.variant||''}${x.anbruch?' – ⚠ Angebraucht':''}</option>`).join(''));
+setOptions('duebDowel', (db.goods||[]).filter(x=>x.type==='Dübel' && isReadyForProduction('dowels',x)).map(x=>`<option value="${x.id}">${esc(x.id)}${dowelPackLabel(x)?' · '+dowelPackLabel(x):''} – ${esc(x.strain)} – ${esc(x.size||x.variant||'')}${x.anbruch?' – ⚠ Angebraucht':''}</option>`).join(''));
 
 let sprType=(el('sprSourceType')?.value||'lc');
 if(sprType==='unknown'){
   setOptions('sprSource', '<option value="unknown">unbekannte Quelle</option>');
 } else if(sprType==='lc'){
-  setOptions('sprSource', readyItems('lc',db.lc).map(x=>`<option value="${x.id}">${x.id} – ${x.strain} (${x.status})</option>`).join(''));
+  setOptions('sprSource', readyItems('lc',db.lc).map(x=>`<option value="${x.id}">${esc(x.id)} – ${esc(x.strain)} (${x.status})</option>`).join(''));
 } else {
   setOptions('sprSource', opts(activeItems(db.petri), x=>x.id+' – '+x.strain));
 }
@@ -3492,13 +3492,13 @@ if(sprType==='unknown'){
 setOptions('harvSub', opts(activeItems(db.sub),x=>x.id+' – '+x.strain));
 
 // Dörrpilze
-setOptions('packBucket', (db.buckets||[]).filter(x=>!['archiviert','aufgebraucht','kontaminiert','verkauft','verbraucht'].includes(String(x.status||''))).map(x=>`<option value="${x.id}">${x.id} – ${x.product}</option>`).join(''));
-setOptions('saleLot', db.lots.filter(x=>x.qty>0 && x.status!=='verkauft').map(x=>`<option value="${x.id}">${x.id} Bestand ${x.qty}</option>`).join(''));
+setOptions('packBucket', (db.buckets||[]).filter(x=>!['archiviert','aufgebraucht','kontaminiert','verkauft','verbraucht'].includes(String(x.status||''))).map(x=>`<option value="${x.id}">${esc(x.id)} – ${esc(x.product)}</option>`).join(''));
+setOptions('saleLot', db.lots.filter(x=>x.qty>0 && x.status!=='verkauft').map(x=>`<option value="${x.id}">${esc(x.id)} Bestand ${x.qty}</option>`).join(''));
 
 // Holzstämme
 let logType=(el('logSourceType')?.value||'dowel');
 if(logType==='dowel'){
-  setOptions('logSource', (db.goods||[]).filter(x=>x.type==='Dübel' && isReadyForProduction('dowels',x) && (+x.qty||0)>0).map(x=>`<option value="${x.id}">${x.id} – ${x.strain}</option>`).join(''));
+  setOptions('logSource', (db.goods||[]).filter(x=>x.type==='Dübel' && isReadyForProduction('dowels',x) && (+x.qty||0)>0).map(x=>`<option value="${x.id}">${esc(x.id)} – ${esc(x.strain)}</option>`).join(''));
 }
 else if(logType==='kb'){
   setOptions('logSource', opts(readyItems('kb',db.kb),x=>x.id+' – '+x.strain+' ('+x.status+')'));
@@ -4578,11 +4578,11 @@ function compactCultureLabel(area,item){
   if(area==='master'){
     const m=esc(item.masterCode||item.id||'');
     const strain=esc(item.strain||'');
-    return `<div class="label-title">${m}</div><div class="compact-label-line">${strain}</div><div class="compact-label-date">${date}</div>`;
+    return `<div class="label-title">${m}</div><div class="compact-label-line">${strain}</div><div class="compact-label-date">${esc(date)}</div>`;
   }
   const master=relatedMasterCode(item);
   if(master){
-    return `<div class="label-title">${esc(master)}</div><div class="compact-label-line">${id}</div><div class="compact-label-date">${date}</div>`;
+    return `<div class="label-title">${esc(master)}</div><div class="compact-label-line">${id}</div><div class="compact-label-date">${esc(date)}</div>`;
   }
 
   let code='';
@@ -4593,7 +4593,7 @@ function compactCultureLabel(area,item){
   } else {
     code=labelShortCode(item);
   }
-  return `<div class="compact-label-line">${esc(code)}</div><div class="label-title">${id}</div><div class="compact-label-date">${date}</div>`;
+  return `<div class="compact-label-line">${esc(code)}</div><div class="label-title">${id}</div><div class="compact-label-date">${esc(date)}</div>`;
 }
 
 function standardProductLabel(area,item){
@@ -4614,7 +4614,7 @@ function standardProductLabel(area,item){
     return `${orderMark}<div class="lc-label-stack">
       <div class="label-title">${product || 'Unbekannte Pilzart'}</div>
       <div class="compact-label-line">${sourceOrMaster}</div>
-      <div class="compact-label-date">${date}</div>
+      <div class="compact-label-date">${esc(date)}</div>
       <div class="compact-label-line">${id}</div>
     </div>`;
   }
@@ -4624,23 +4624,23 @@ function standardProductLabel(area,item){
   if(area==='buckets'){
     // Dörrpilz-Eimer: Pilzart prominent, Eimer-ID darunter.
     // So ist auf den grossen L7874-Etiketten zuerst der Inhalt erkennbar.
-    return `${orderMark}${product?`<div class="label-title">${product}</div>`:''}<div class="compact-label-line">${id}</div><div class="compact-label-date">${date}</div>`;
+    return `${orderMark}${product?`<div class="label-title">${product}</div>`:''}<div class="compact-label-line">${id}</div><div class="compact-label-date">${esc(date)}</div>`;
   }
   if(area==='logs'){
-    return `${orderMark}<div class="label-title">${id}</div>${master?`<div class="compact-label-line">${esc(master)}</div>`:''}<div class="compact-label-date">${date}</div>${product?`<div class="compact-label-line">${product}</div>`:''}${qty?`<div class="compact-label-date">Anzahl: ${qty}</div>`:''}`;
+    return `${orderMark}<div class="label-title">${id}</div>${master?`<div class="compact-label-line">${esc(master)}</div>`:''}<div class="compact-label-date">${esc(date)}</div>${product?`<div class="compact-label-line">${product}</div>`:''}${qty?`<div class="compact-label-date">Anzahl: ${qty}</div>`:''}`;
   }
   if(area==='sub' && item._rackLabel){
     const sourceOrMaster=esc(master || originalSourceText(item) || 'Unbekannt');
     const sacks=Math.max(1,parseInt(item.qty||1,10)||1);
-    return `${orderMark}<div class="label-title">${product || 'Substrat-Charge'}</div><div class="compact-label-line">${id}</div><div class="compact-label-line">${sourceOrMaster}</div><div class="compact-label-date">${date} · ${sacks} Säcke</div>`;
+    return `${orderMark}<div class="label-title">${product || 'Substrat-Charge'}</div><div class="compact-label-line">${id}</div><div class="compact-label-line">${sourceOrMaster}</div><div class="compact-label-date">${esc(date)} · ${sacks} Säcke</div>`;
   }
   if(area==='sub' && !item.forTest && !item.orderNumber){
     const sourceOrMaster=esc(master || originalSourceText(item) || 'Unbekannt');
-    return `<div class="label-title">${product || 'Substratsack'}</div><div class="compact-label-line">${id}</div><div class="compact-label-line">${sourceOrMaster}</div><div class="compact-label-date">${date}</div>`;
+    return `<div class="label-title">${product || 'Substratsack'}</div><div class="compact-label-line">${id}</div><div class="compact-label-line">${sourceOrMaster}</div><div class="compact-label-date">${esc(date)}</div>`;
   }
 
   if(area==='sub' && item.forTest){
-    return `${orderMark}${testMark}<div class="label-title">${id}</div>${master?`<div class="compact-label-line">${esc(master)}</div>`:''}<div class="compact-label-date">${date}</div>${product?`<div class="compact-label-line">${product}</div>`:''}${qty?`<div class="compact-label-date">Anzahl: ${qty}</div>`:''}`;
+    return `${orderMark}${testMark}<div class="label-title">${id}</div>${master?`<div class="compact-label-line">${esc(master)}</div>`:''}<div class="compact-label-date">${esc(date)}</div>${product?`<div class="compact-label-line">${product}</div>`:''}${qty?`<div class="compact-label-date">Anzahl: ${qty}</div>`:''}`;
   }
 
   // Körnerbrut: Pilzart gross/fett, darunter Master bzw. Herkunft, dann KB-ID und Datum.
@@ -4653,7 +4653,7 @@ function standardProductLabel(area,item){
       : `<div class="compact-label-date">Stückzahl: 1</div>`;
     const weight=esc(item.size || item.variant || '');
     const weightLine=weight ? `<div class="compact-label-date">Gewicht: ${weight}</div>` : '';
-    return `${orderMark}<div class="label-title">${product || 'Unbekannte Pilzart'}</div><div class="compact-label-line">${sourceOrMaster}</div><div class="compact-label-line">${id}</div><div class="compact-label-date">${date}</div>${weightLine}${batchLine}`;
+    return `${orderMark}<div class="label-title">${product || 'Unbekannte Pilzart'}</div><div class="compact-label-line">${sourceOrMaster}</div><div class="compact-label-line">${id}</div><div class="compact-label-date">${esc(date)}</div>${weightLine}${batchLine}`;
   }
 
   // Dübel L7874: Pilzart zuerst gross, danach Quelle/Master, Datum und Dübel-ID.
@@ -4664,13 +4664,13 @@ function standardProductLabel(area,item){
     const printCount=Math.max(1,parseInt(item._labelCopyCount||item.qty||1,10)||1);
     const printIndex=Math.max(1,parseInt(item._labelCopyIndex||1,10)||1);
     const packLine=printCount>1 ? `Packung ${printIndex}/${printCount} · ${packSize||'Dübel'}` : (packSize||'Stückzahl: 1 Packung');
-    return `${orderMark}<div class="label-title">${product || 'Unbekannte Pilzart'}</div>${sourceOrMaster?`<div class="compact-label-line">${sourceOrMaster}</div>`:''}<div class="compact-label-date">${date}</div><div class="compact-label-line">${id}</div><div class="compact-label-date">${packLine}</div>`;
+    return `${orderMark}<div class="label-title">${product || 'Unbekannte Pilzart'}</div>${sourceOrMaster?`<div class="compact-label-line">${sourceOrMaster}</div>`:''}<div class="compact-label-date">${esc(date)}</div><div class="compact-label-line">${id}</div><div class="compact-label-date">${packLine}</div>`;
   }
 
   if(master){
-    return `${orderMark}${testMark}<div class="label-title">${esc(master)}</div><div class="compact-label-line">${id}</div><div class="compact-label-date">${date}</div>${qty?`<div class="compact-label-date">Anzahl: ${qty}</div>`:''}`;
+    return `${orderMark}${testMark}<div class="label-title">${esc(master)}</div><div class="compact-label-line">${id}</div><div class="compact-label-date">${esc(date)}</div>${qty?`<div class="compact-label-date">Anzahl: ${qty}</div>`:''}`;
   }
-  return `${orderMark}${testMark}<div class="label-title">${id}</div>${code?`<div class="compact-label-line">${code}</div>`:''}<div class="compact-label-date">${date}</div>${product?`<div class="compact-label-date">${product}</div>`:''}${qty?`<div class="compact-label-date">Anzahl: ${qty}</div>`:''}`;
+  return `${orderMark}${testMark}<div class="label-title">${id}</div>${code?`<div class="compact-label-line">${code}</div>`:''}<div class="compact-label-date">${esc(date)}</div>${product?`<div class="compact-label-date">${product}</div>`:''}${qty?`<div class="compact-label-date">Anzahl: ${qty}</div>`:''}`;
 }
 
 function labelDetails(area,item){
@@ -4814,15 +4814,15 @@ function buildLabelCardHtml(r){
   const recordTemplate=labelTemplateForRecord(r.area,r.item);
   const isCompact = recordTemplate==='avery-l7871' || recordTemplate==='herma-4271';
   const useCultureCompact = recordTemplate==='avery-l7871';
-  const cls = isCompact ? `label-card ${r.area}-label` : `label-card print-label ${r.area}-label`;
+  const cls = isCompact ? `label-card ${esc(r.area)}-label` : `label-card print-label ${esc(r.area)}-label`;
   const qrUrl = '/api/qr?data=' + encodeURIComponent(qrPayload(r.area,r.item));
   const core = useCultureCompact ? compactCultureLabel(r.area,r.item) : standardProductLabel(r.area,r.item);
   const content = isCompact ? core : `<div class="label-content">${core}</div>`;
   const qrBlock = labelHasQr(r.area,r.item) ? `<div class="qr-box"><img alt="QR" src="${qrUrl}"></div>` : '';
-  return `<div class="${cls}" data-label-area="${r.area}" data-label-id="${r.id}">
+  return `<div class="${cls}" data-label-area="${esc(r.area)}" data-label-id="${r.id}">
     ${content}
     ${qrBlock}
-    <div class="no-print"><button class="secondary" onclick="markLabelPrinted('${r.area}','${r.id}')">als gedruckt markieren</button> <button class="secondary" onclick="showHistory('${r.area}','${r.id}')">Historie</button></div>
+    <div class="no-print"><button class="secondary" onclick="markLabelPrinted('${esc(r.area)}','${r.id}')">als gedruckt markieren</button> <button class="secondary" onclick="showHistory('${esc(r.area)}','${r.id}')">Historie</button></div>
   </div>`;
 }
 
@@ -5045,39 +5045,39 @@ function openQrAction(area,id){
   }[area] || ['archiviert'];
   const currentStatus=String(item.status||'');
   const statusChoices=(currentStatus && !statuses.includes(currentStatus))?[currentStatus,...statuses]:statuses;
-  const opts=statusChoices.map(st=>`<option ${st===currentStatus?'selected':''}>${st}</option>`).join('');
+  const opts=statusChoices.map(st=>`<option ${st===currentStatus?'selected':''}>${esc(st)}</option>`).join('');
   let actions='';
   if(area==='lc'){
-    actions += `<button class="primary" onclick="scanGoMake('kb','lc','${id}')">Körnerbrut herstellen</button>`;
-    actions += `<button class="secondary" onclick="scanGoMake('syringes','lc','${id}')">Spritzen herstellen</button>`;
+    actions += `<button class="primary" onclick="scanGoMake('kb','lc','${escHtml(escJs(id))}')">Körnerbrut herstellen</button>`;
+    actions += `<button class="secondary" onclick="scanGoMake('syringes','lc','${escHtml(escJs(id))}')">Spritzen herstellen</button>`;
   }
   if(area==='kb'){
-    actions += `<button class="primary" onclick="scanGoMake('sub','kb','${id}')">Substratsäcke herstellen</button>`;
-    actions += `<button class="secondary" onclick="scanGoMake('dowels','kb','${id}')">Dübel herstellen</button>`;
-    actions += `<button class="secondary" onclick="scanGoMake('logs','kb','${id}')">Holzstämme herstellen</button>`;
-    actions += `<div class="card" style="box-shadow:none"><strong>Körnerbrut verkaufen</strong><div class="muted" style="margin-bottom:8px">Es wird ausschliesslich der mit diesem QR-Code gescannte Körnerbrut-Beutel ausgebucht. Andere Beutel derselben SKU bleiben unverändert.</div><button class="primary" onclick="scanSellKb('${id}')">Gescannten Beutel verkaufen</button></div>`;
+    actions += `<button class="primary" onclick="scanGoMake('sub','kb','${escHtml(escJs(id))}')">Substratsäcke herstellen</button>`;
+    actions += `<button class="secondary" onclick="scanGoMake('dowels','kb','${escHtml(escJs(id))}')">Dübel herstellen</button>`;
+    actions += `<button class="secondary" onclick="scanGoMake('logs','kb','${escHtml(escJs(id))}')">Holzstämme herstellen</button>`;
+    actions += `<div class="card" style="box-shadow:none"><strong>Körnerbrut verkaufen</strong><div class="muted" style="margin-bottom:8px">Es wird ausschliesslich der mit diesem QR-Code gescannte Körnerbrut-Beutel ausgebucht. Andere Beutel derselben SKU bleiben unverändert.</div><button class="primary" onclick="scanSellKb('${escHtml(escJs(id))}')">Gescannten Beutel verkaufen</button></div>`;
   }
   if(area==='sub'){
     const test=item.forTest ? true : false;
-    actions += `<div class="card" style="box-shadow:none"><strong>${test?'Test-Substratsack':'Massenaktion Charge'}</strong><div class="form"><div><label>Anzahl</label><input id="scanSubQty" type="number" min="1" value="${test?1:Math.min(qty||1,20)}"></div></div><div class="scan-actions"><button class="primary" onclick="scanSubAction('${id}','fruiting')">In Fruchtungsraum</button><button class="secondary" onclick="scanSubAction('${id}','contam')">Kontaminiert</button><button class="secondary" onclick="scanSubAction('${id}','archive')">Archivieren</button></div></div>`;
-    actions += `<div class="card" style="box-shadow:none"><strong>Ernte eintragen</strong><div class="form"><div><label>Gewicht g</label><input id="scanHarvestWeight" type="number" min="1" placeholder="z.B. 850"></div></div><button class="primary" onclick="scanAddHarvest('${id}')">Ernte speichern</button></div>`;
+    actions += `<div class="card" style="box-shadow:none"><strong>${test?'Test-Substratsack':'Massenaktion Charge'}</strong><div class="form"><div><label>Anzahl</label><input id="scanSubQty" type="number" min="1" value="${test?1:Math.min(qty||1,20)}"></div></div><div class="scan-actions"><button class="primary" onclick="scanSubAction('${escHtml(escJs(id))}','fruiting')">In Fruchtungsraum</button><button class="secondary" onclick="scanSubAction('${escHtml(escJs(id))}','contam')">Kontaminiert</button><button class="secondary" onclick="scanSubAction('${escHtml(escJs(id))}','archive')">Archivieren</button></div></div>`;
+    actions += `<div class="card" style="box-shadow:none"><strong>Ernte eintragen</strong><div class="form"><div><label>Gewicht g</label><input id="scanHarvestWeight" type="number" min="1" placeholder="z.B. 850"></div></div><button class="primary" onclick="scanAddHarvest('${escHtml(escJs(id))}')">Ernte speichern</button></div>`;
   }
   if(area==='goods'){
     if(item.type==='Dübel' && (parseInt(item.size||item.variant||'',10)===1000)){
-      actions += `<button class="secondary" onclick="scanGoMake('dowels','dowel','${id}')">Dübel herstellen</button>`;
+      actions += `<button class="secondary" onclick="scanGoMake('dowels','dowel','${escHtml(escJs(id))}')">Dübel herstellen</button>`;
     }
-    actions += `<div class="card" style="box-shadow:none"><strong>Bestand reduzieren</strong><div class="form"><div><label>Anzahl</label><input id="scanGoodsQty" type="number" min="1" value="1"></div><div><label>Aktion</label><select id="scanGoodsAction"><option value="verkauft">verkauft</option><option value="kontaminiert">kontaminiert</option><option value="aufgebraucht">aufgebraucht</option></select></div></div><button class="primary" onclick="scanReduceGoods('${id}')">Buchen</button></div>`;
+    actions += `<div class="card" style="box-shadow:none"><strong>Bestand reduzieren</strong><div class="form"><div><label>Anzahl</label><input id="scanGoodsQty" type="number" min="1" value="1"></div><div><label>Aktion</label><select id="scanGoodsAction"><option value="verkauft">verkauft</option><option value="kontaminiert">kontaminiert</option><option value="aufgebraucht">aufgebraucht</option></select></div></div><button class="primary" onclick="scanReduceGoods('${escHtml(escJs(id))}')">Buchen</button></div>`;
   }
   if(area==='logs'){
-    actions += `<div class="card" style="box-shadow:none"><strong>Holzstämme verkaufen</strong><div class="form"><div><label>Anzahl verkaufen</label><input id="scanLogsQty" type="number" min="1" max="${Math.max(1,qty)}" value="1"></div></div><button class="primary" onclick="scanSellLogs('${id}')">Verkaufen</button><div class="muted" style="margin-top:8px">Die verkaufte Menge wird vom Bestand abgezogen. Bei Auto-Sync wird der neue verfügbare SKU-Bestand anschließend an WooCommerce übertragen.</div></div>`;
+    actions += `<div class="card" style="box-shadow:none"><strong>Holzstämme verkaufen</strong><div class="form"><div><label>Anzahl verkaufen</label><input id="scanLogsQty" type="number" min="1" max="${Math.max(1,qty)}" value="1"></div></div><button class="primary" onclick="scanSellLogs('${escHtml(escJs(id))}')">Verkaufen</button><div class="muted" style="margin-top:8px">Die verkaufte Menge wird vom Bestand abgezogen. Bei Auto-Sync wird der neue verfügbare SKU-Bestand anschließend an WooCommerce übertragen.</div></div>`;
   }
   if(area==='buckets'){
-    actions += `<button class="primary" onclick="scanGoMake('lager','bucket','${id}')">Dörrpilze abpacken</button>`;
-    actions += `<button class="secondary" onclick="st('buckets','${id}','aufgebraucht'); closeQrAction();">Eimer aufgebraucht</button>`;
+    actions += `<button class="primary" onclick="scanGoMake('lager','bucket','${escHtml(escJs(id))}')">Dörrpilze abpacken</button>`;
+    actions += `<button class="secondary" onclick="st('buckets','${escHtml(escJs(id))}','aufgebraucht'); closeQrAction();">Eimer aufgebraucht</button>`;
   }
   setHTML('qrActionContent', `<div class="qr-action-panel"><strong>${name}</strong><br>ID: ${esc(id)}<br>${item.date?'Datum: '+fmt(item.date)+'<br>':''}Bestand/Anzahl: ${qty}<br>Status: ${badge(item.status||'–')}</div>
     <div class="form"><div><label>Status ändern</label><select id="qrNewStatus">${opts}</select></div></div>
-    <div class="scan-actions"><button class="primary" onclick="st('${area}','${id}',el('qrNewStatus').value); closeQrAction();">Status speichern</button><button class="secondary" onclick="showHistory('${area}','${id}')">Historie anzeigen</button></div>
+    <div class="scan-actions"><button class="primary" onclick="st('${area}','${escHtml(escJs(id))}',el('qrNewStatus').value); closeQrAction();">Status speichern</button><button class="secondary" onclick="showHistory('${area}','${escHtml(escJs(id))}')">Historie anzeigen</button></div>
     <div class="scan-actions">${actions}</div>`);
   const m=el('qrActionModal'); if(m){ m.classList.add('scan-mobile'); m.style.display='flex'; }
 }
@@ -5272,7 +5272,7 @@ function renderToday(){
   let ready=0,missing=0; orders.forEach(o=>{try{const c=orderComputed(o); if(c.missing>0) missing++; else ready++;}catch(_e){}});
   const warnings=minStockWarnings().filter(x=>Math.max(0,(+x.qty||0)-(+x.saleable||0))>0);
   const due=(typeof adminDueItems==='function'?adminDueItems():[]).slice(0,20);
-  const cards=[`<div class="card"><h3>Bestellungen</h3><p><strong>${ready}</strong> packbereit · <strong>${missing}</strong> mit Fehlbestand · <strong>${orders.length}</strong> offen</p><button class="primary" onclick="show('orders');setOrderView('overview')">Bestellungen öffnen</button></div>`, `<div class="card"><h3>Lager / Mindestbestände</h3><p><strong>${warnings.length}</strong> Positionen unter Mindestbestand.</p><button class="secondary" onclick="show('tasks');renderTaskCenter()">Aufgaben öffnen</button></div>`];
+  const cards=[`<div class="card"><h3>Bestellungen</h3><p><strong>${esc(ready)}</strong> packbereit · <strong>${esc(missing)}</strong> mit Fehlbestand · <strong>${esc(orders.length)}</strong> offen</p><button class="primary" onclick="show('orders');setOrderView('overview')">Bestellungen öffnen</button></div>`, `<div class="card"><h3>Lager / Mindestbestände</h3><p><strong>${esc(warnings.length)}</strong> Positionen unter Mindestbestand.</p><button class="secondary" onclick="show('tasks');renderTaskCenter()">Aufgaben öffnen</button></div>`];
   if(due.length) cards.push(`<div class="card"><h3>Dörrpilze – MHD</h3>${renderDueListHtml(due)}</div>`);
   setHTML('todayCenter',cards.join(''));
 }
@@ -5425,7 +5425,7 @@ function exportSqlSchema(){
 
 function showDbPreview(){
   const data=normalizeDbExport();
-  const rows=Object.keys(data.tables).map(t=>`<tr><td>${t}</td><td>${(data.tables[t]||[]).length}</td><td>${(data.tables[t]||[])[0] ? Object.keys((data.tables[t]||[])[0]).join(', ') : '–'}</td></tr>`).join('');
+  const rows=Object.keys(data.tables).map(t=>`<tr><td>${esc(t)}</td><td>${(data.tables[t]||[]).length}</td><td>${(data.tables[t]||[])[0] ? Object.keys((data.tables[t]||[])[0]).join(', ') : '–'}</td></tr>`).join('');
   setHTML('dbPreview', `<table><thead><tr><th>Tabelle</th><th>Datensätze</th><th>Felder Beispiel</th></tr></thead><tbody>${rows}</tbody></table>`);
 }
 
@@ -5466,7 +5466,7 @@ function warningSettingsMeta(){
 }
 function renderWarningSettings(){
   normalizeWarningSettings();
-  const rows=warningSettingsMeta().map(([key,area,label])=>`<tr><td>${area}</td><td>${label}</td><td><input id="warn_${key}" type="number" min="0" value="${esc(db.warningSettings[key])}" style="max-width:120px"></td></tr>`).join('');
+  const rows=warningSettingsMeta().map(([key,area,label])=>`<tr><td>${esc(area)}</td><td>${esc(label)}</td><td><input id="warn_${key}" type="number" min="0" value="${esc(db.warningSettings[key])}" style="max-width:120px"></td></tr>`).join('');
   setHTML('warningSettingsRows', rows);
 }
 async function saveWarningSettings(){
@@ -5502,7 +5502,7 @@ function adminDueItems(){
   const items=[];
   (db.lots||[]).filter(x=>!isArchivedStatus(x.status) && x.mhd).forEach(x=>{
     const daysLeft=Math.round((new Date(x.mhd+'T00:00:00')-new Date(today()+'T00:00:00'))/86400000);
-    if(daysLeft<=w.lotMhd) items.push({level:daysLeft<0?'danger':'warn', text:`${x.id||x.lot||''} ${x.product||''}: MHD ${daysLeft<0?'abgelaufen':'in '+daysLeft+' Tagen'}`, section:'lager', id:x.id||x.lot});
+    if(daysLeft<=w.lotMhd) items.push({level:daysLeft<0?'danger':'warn', text:`${x.id||x.lot||''} ${esc(x.product||'')}: MHD ${daysLeft<0?'abgelaufen':'in '+daysLeft+' Tagen'}`, section:'lager', id:x.id||x.lot});
   });
   return items.sort((a,b)=>String(a.text).localeCompare(String(b.text),'de'));
 }
@@ -5640,7 +5640,7 @@ function editPersonalTask(id){
 }
 async function togglePersonalTask(id,done){if(await persistPersonalTaskChange('toggle',{id,done}))renderTaskCenter();}
 async function deletePersonalTask(id){if(!confirm('Aufgabe wirklich löschen?'))return;if(await persistPersonalTaskChange('delete',{id}))renderTaskCenter();}
-function personalTaskCard(t){return `<details class="card" style="margin:5px 0;padding:8px 11px"><summary style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;list-style-position:inside"><strong style="font-size:1.05rem;flex:1;min-width:110px;${t.done?'text-decoration:line-through;':''}">${escHtml(t.title)}</strong><span style="display:flex;gap:4px;align-items:center"><button type="button" class="secondary" onclick="event.preventDefault();event.stopPropagation();editPersonalTask('${escJs(t.id)}')">Bearbeiten</button><button type="button" class="secondary" onclick="event.preventDefault();event.stopPropagation();deletePersonalTask('${escJs(t.id)}')">Löschen</button></span></summary><div style="padding-top:9px"><p>${escHtml(t.description||'Keine Beschreibung').replace(/\n/g,'<br>')}</p><p class="muted">${escHtml(t.assignee||'Andere')} · ${t.due?'Bis '+escHtml(t.due):'Ohne Enddatum'}</p><label><input type="checkbox" ${t.done?'checked':''} onchange="togglePersonalTask('${escJs(t.id)}',this.checked)"> Erledigt</label></div></details>`;}
+function personalTaskCard(t){return `<details class="card" style="margin:5px 0;padding:8px 11px"><summary style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;list-style-position:inside"><strong style="font-size:1.05rem;flex:1;min-width:110px;${t.done?'text-decoration:line-through;':''}">${escHtml(t.title)}</strong><span style="display:flex;gap:4px;align-items:center"><button type="button" class="secondary" onclick="event.preventDefault();event.stopPropagation();editPersonalTask('${escHtml(escJs(t.id))}')">Bearbeiten</button><button type="button" class="secondary" onclick="event.preventDefault();event.stopPropagation();deletePersonalTask('${escHtml(escJs(t.id))}')">Löschen</button></span></summary><div style="padding-top:9px"><p>${escHtml(t.description||'Keine Beschreibung').replace(/\n/g,'<br>')}</p><p class="muted">${escHtml(t.assignee||'Andere')} · ${t.due?'Bis '+escHtml(t.due):'Ohne Enddatum'}</p><label><input type="checkbox" ${t.done?'checked':''} onchange="togglePersonalTask('${escHtml(escJs(t.id))}',this.checked)"> Erledigt</label></div></details>`;}
 function renderPersonalTasks(){
   refreshPersonalTaskCategories(el('personalTaskCategory')?.value||'Allgemein');
   const tasks=[...(db.personalTasks||[])].sort((a,b)=>Number(a.done)-Number(b.done)||(a.due||'9999').localeCompare(b.due||'9999'));
@@ -5662,7 +5662,7 @@ function printSelectedTasks(){
   const groups=productionTaskGroups().filter(g=>g.items.length && selected.has(g.items[0].area));
   const selectedPersonal=document.querySelector('#printPersonalTasks')?.checked ? (db.personalTasks||[]).filter(t=>!t.done) : [];
   if(!groups.length && !selectedPersonal.length) return alert('Bitte mindestens einen Aufgabenbereich auswählen.');
-  const rows=groups.map(g=>`<section><h2>${escHtml(g.title)}</h2><table><thead><tr><th>Produkt / Strain</th><th>Master / Herkunft</th><th>SKU / Variante</th><th>Bestand</th><th>Mindestbestand</th><th>Herzustellen</th></tr></thead><tbody>${g.items.map(i=>`<tr><td>${escHtml(i.product)}</td><td>${escHtml(i.identity||'–')}</td><td>${i.sku?escHtml(i.sku):'–'}${i.variant?'<br>'+escHtml(i.variant):''}</td><td>${i.saleable}</td><td>${i.minimum}</td><td><strong>${i.missing}</strong></td></tr>`).join('')}</tbody></table></section>`).join('');
+  const rows=groups.map(g=>`<section><h2>${escHtml(g.title)}</h2><table><thead><tr><th>Produkt / Strain</th><th>Master / Herkunft</th><th>SKU / Variante</th><th>Bestand</th><th>Mindestbestand</th><th>Herzustellen</th></tr></thead><tbody>${g.items.map(i=>`<tr><td>${escHtml(i.product)}</td><td>${escHtml(i.identity||'–')}</td><td>${i.sku?escHtml(i.sku):'–'}${i.variant?'<br>'+escHtml(i.variant):''}</td><td>${esc(i.saleable)}</td><td>${esc(i.minimum)}</td><td><strong>${esc(i.missing)}</strong></td></tr>`).join('')}</tbody></table></section>`).join('');
   const personalRows=selectedPersonal.length?`<section><h2>Teamaufgaben</h2><table><thead><tr><th>Erledigt</th><th>Titel / Beschreibung</th><th>Zuständig</th><th>Enddatum</th></tr></thead><tbody>${selectedPersonal.map(t=>`<tr><td>☐</td><td><strong>${escHtml(t.title)}</strong>${t.description?'<div>'+escHtml(t.description).replace(/\n/g,'<br>')+'</div>':''}</td><td>${escHtml(t.assignee)}</td><td>${escHtml(t.due||'–')}</td></tr>`).join('')}</tbody></table></section>`:'';
   const w=window.open('','_blank'); if(!w) return alert('Popup wurde blockiert. Bitte Popups für diese Seite erlauben.');
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Produktionsaufgaben</title><style>@page{size:A4;margin:12mm}body{font-family:Arial,sans-serif;font-size:11px;color:#111}h1{font-size:20px;margin:0 0 4mm}h2{font-size:15px;margin:7mm 0 2mm;border-bottom:1px solid #777;padding-bottom:1mm}table{width:100%;border-collapse:collapse;page-break-inside:auto}th,td{border:1px solid #aaa;padding:2mm;text-align:left;vertical-align:top}th{background:#eee}tr{page-break-inside:avoid}.meta{margin-bottom:5mm;color:#444}</style></head><body><h1>Produktionsaufgaben</h1><div class="meta">Stand: ${new Date().toLocaleString('de-CH')}</div>${rows}${personalRows}<script>window.onload=()=>window.print();<\/script></body></html>`);
@@ -5680,16 +5680,16 @@ function renderTaskCenter(){
   }
   setHTML('taskCenter',groups.map((g,idx)=>`<details class="card" ${idx===0?'open':''}>
     <summary style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;list-style:none">
-      <strong>${esc(g.title)}</strong><span class="badge">${g.items.length} Aufgabe${g.items.length===1?'':'n'}</span>
+      <strong>${esc(g.title)}</strong><span class="badge">${esc(g.items.length)} Aufgabe${g.items.length===1?'':'n'}</span>
     </summary>
     <table style="margin-top:12px"><thead><tr><th>Produkt / Strain</th><th>Master / Herkunft</th><th>SKU / Variante</th><th>Bestand</th><th>Mindestbestand</th><th>Herzustellen</th><th>Aktion</th></tr></thead><tbody>
       ${g.items.map(i=>`<tr>
         <td><strong>${esc(i.product)}</strong></td>
         <td>${esc(i.identity||'–')}</td>
         <td>${i.sku?esc(i.sku):'–'}${i.variant?'<br><span class="muted">'+esc(i.variant)+'</span>':''}</td>
-        <td>${i.saleable}${i.saleable!==i.stock?'<br><span class="muted">Bestand '+i.stock+'</span>':''}</td>
-        <td>${i.minimum}</td>
-        <td><strong>${i.missing}</strong></td>
+        <td>${esc(i.saleable)}${i.saleable!==i.stock?'<br><span class="muted">Bestand '+i.stock+'</span>':''}</td>
+        <td>${esc(i.minimum)}</td>
+        <td><strong>${esc(i.missing)}</strong></td>
         <td><button class="primary" onclick="show('${i.section}')">${esc(i.text)}</button></td>
       </tr>`).join('')}
     </tbody></table>
@@ -5748,7 +5748,7 @@ async function renderAdmin(){
     setText('adminDbSize', bytesFmt(st.dbSize));
     setText('adminLastBackup', st.lastBackup ? fmt(String(st.lastBackup.created_at).slice(0,10)) : 'kein Backup');
     const labels={dk:'Dauerkulturen',petri:'Petrischalen',lc:'Flüssigmyzel',kb:'Körnerbrut',sub:'Substratsäcke',buckets:'Eimer',lots:'Dörrpilz-Lots',goods:'Dübel/Spritzen',logs:'Holzstämme',archive:'Archiv',masterCultures:'Masterkulturen'};
-    setHTML('adminCountRows', Object.entries(st.counts||{}).map(([k,v])=>`<tr><td>${labels[k]||k}</td><td>${v}</td></tr>`).join(''));
+    setHTML('adminCountRows', Object.entries(st.counts||{}).map(([k,v])=>`<tr><td>${labels[k]||k}</td><td>${esc(v)}</td></tr>`).join(''));
     await renderBackupList();
   }catch(e){ console.error(e); setHTML('adminBackupRows','<tr><td colspan="3">Systemstatus konnte nicht geladen werden.</td></tr>'); }
   renderWarningSettings();
@@ -5902,7 +5902,7 @@ function renderDkImportPreview(){
   const petriTotal=data.reduce((a,x)=>a+(mode==='dk'?0:x.petriQty),0);
   const dup=data.filter(x=>x.duplicate).length;
   setHTML('dkImportSummary', `${data.length} Excel-Zeilen erkannt. Geplant: ${dkTotal} Dauerkulturen, ${petriTotal} Petrischalen. Mögliche Duplikate: ${dup}.`);
-  setHTML('dkImportPreviewRows', data.slice(0,200).map(x=>`<tr><td>${x.excelRow}</td><td>${esc(x.strain)}</td><td>${esc(x.type)}</td><td>${esc(x.masterCode||'–')}</td><td>${esc(x.source||'–')}</td><td>${mode==='petri'?0:x.dkQty}</td><td>${mode==='dk'?0:x.petriQty}</td><td>${fmt(x.date)}</td><td>${x.duplicate?'<span class="badge warn">mögliches Duplikat</span>':''}</td></tr>`).join('') || '<tr><td colspan="9" class="muted">Keine importierbaren Zeilen erkannt.</td></tr>');
+  setHTML('dkImportPreviewRows', data.slice(0,200).map(x=>`<tr><td>${esc(x.excelRow)}</td><td>${esc(x.strain)}</td><td>${esc(x.type)}</td><td>${esc(x.masterCode||'–')}</td><td>${esc(x.source||'–')}</td><td>${mode==='petri'?0:x.dkQty}</td><td>${mode==='dk'?0:x.petriQty}</td><td>${fmt(x.date)}</td><td>${x.duplicate?'<span class="badge warn">mögliches Duplikat</span>':''}</td></tr>`).join('') || '<tr><td colspan="9" class="muted">Keine importierbaren Zeilen erkannt.</td></tr>');
 }
 
 function clearDkImportPreview(){ dkImportPreviewData=[]; setHTML('dkImportSummary','Noch keine Datei geladen.'); setHTML('dkImportPreviewRows',''); }
@@ -6037,7 +6037,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.26'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.27'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

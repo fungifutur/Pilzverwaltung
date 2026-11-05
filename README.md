@@ -1,3 +1,11 @@
+# Version 1.5.27 – Absicherung der Oberfläche gegen eingeschleusten Code (SEC-04)
+
+- **Escaping im Frontend:** Texte aus Daten (Sorte, SKU, Quelle, Notiz, Herkunft, Statusanzeigen, Etiketten, QR-Seite, Zusammenfassungs-Schaltflächen) werden jetzt überall maskiert, bevor sie in die Seite geschrieben werden. Werte in `onclick`-Attributen werden zusätzlich für HTML-Attribute maskiert.
+- Geprüft mit Testdaten, die in allen Textfeldern Schadcode enthielten: vorher wurde er an 24 Stellen ausgeführt, jetzt an keiner mehr. Mit normalen Daten sieht die Oberfläche in 16 verglichenen Bereichen identisch aus.
+- Nicht geändert: IDs (`x.id`) werden weiterhin direkt eingesetzt, sie entstehen in der App selbst (`next()`), nicht aus freien Texteingaben. Bei einem Import von Fremddaten mit ungewöhnlichen IDs sollte dies nachgezogen werden.
+- Weiterhin offen: SheetJS (CDN) lokal ausliefern bzw. mit Prüfsumme (SRI) absichern (SEC-05).
+- Keine Änderung an Server, Datenbank oder Datenformat.
+
 # Version 1.5.26 – Vorauskasse reserviert Bestand
 
 - Vorauskasse: Bestellungen im Status «wartend» (on-hold) reservieren jetzt ebenfalls Bestand; Storno/Ablehnung gibt ihn wieder frei. Bezahlte Bestellungen haben bei knappem Bestand Vorrang. Für wartende Bestellungen werden noch keine Produktionsaufträge ausgelöst.
