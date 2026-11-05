@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.36';
+const APP_VERSION = '1.5.37';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -479,9 +479,10 @@ async function writeData(data, kind = 'change_limited') {
   let broken = false;
   try {
     await client.query('BEGIN');
-    const old = await client.query('SELECT data FROM app_state WHERE id = 1 FOR UPDATE');
+    const old = await client.query('SELECT 1 FROM app_state WHERE id = 1 FOR UPDATE');
     if (old.rows.length) {
-      await client.query('INSERT INTO app_backups(data, backup_kind) VALUES($1, $2)', [old.rows[0].data, kind]);
+      // Tempo: Die Vorher-Kopie entsteht in der Datenbank selbst (kein Hin- und Herschicken von rund 1,7 MB).
+      await client.query('INSERT INTO app_backups(data, backup_kind) SELECT data, $1::text FROM app_state WHERE id = 1', [kind]);
       // Nur die ab Version 1.5.17 angelegten Änderungs-Backups begrenzen.
       await client.query(`DELETE FROM app_backups WHERE backup_kind=$1 AND id NOT IN (SELECT id FROM app_backups WHERE backup_kind=$1 ORDER BY id DESC LIMIT 50)`, [kind]);
     }
@@ -1162,8 +1163,19 @@ function rebuildProcessingReservations(db) {
   // Bezahlte Bestellungen (processing) haben Vorrang vor wartenden (on-hold, z. B. Vorauskasse); innerhalb gleich nach Bestelldatum.
   const rank=o=>o.status==='processing'?0:1;
   const processing=(db.wooOrders||[]).filter(o=>['processing','on-hold'].includes(o.status)&&!o.archived&&!o.externalDeleted).sort((a,b)=>rank(a)-rank(b)||String(a.date_created||'').localeCompare(String(b.date_created||''))||Number(a.id||0)-Number(b.id||0));
-  for(const r of (db.wooReservations||[])) if(r.status==='reserved') { r.status='replaced'; r.releasedAt=new Date().toISOString(); }
+  const prevReserved=(db.wooReservations||[]).filter(r=>r.status==='reserved'); const prevSet=new Set(prevReserved);
+  for(const r of prevReserved) { r.status='replaced'; r.releasedAt=new Date().toISOString(); }
   for(const o of processing) reserveOrderFifo(db,o);
+  // Tempo: Eine unveränderte Reservierung behält ihren bisherigen Datensatz (sonst entstehen bei jedem Speichern neue «ersetzte» Einträge,
+  // die das Dokument aufblähen und jedes Speichern verlangsamen).
+  const keyOf=r=>[r.orderId,r.itemId,r.sku,r.parentSku||'',r.collection,r.batchId,r.qty,r.storageLocation||''].join('|');
+  const pool=new Map(); for(const r of prevReserved){ const k=keyOf(r); if(!pool.has(k)) pool.set(k,[]); pool.get(k).push(r); }
+  const drop=new Set();
+  for(const r of (db.wooReservations||[])) if(r.status==='reserved' && !prevSet.has(r)) {
+    const list=pool.get(keyOf(r));
+    if(list && list.length) { const old=list.shift(); old.status='reserved'; delete old.releasedAt; drop.add(r); }
+  }
+  if(drop.size) db.wooReservations=db.wooReservations.filter(r=>!drop.has(r));
 }
 
 function consumeOrderReservations(db, orderId) {

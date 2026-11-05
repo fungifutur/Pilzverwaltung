@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.36</title>
+<title>Pilzverwaltung Serverversion 1.5.37</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.36</h1>
+<h1>Pilzverwaltung – Version 1.5.37</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -1126,8 +1126,10 @@ function startLiveUpdates(){ setInterval(pollLiveUpdates,5000); document.addEven
 const DB_ARRAY_KEYS=['dk','petri','lc','kb','mix','sub','harv','buckets','lots','goods','logs','archive','minStocks','testGroups','masterCultures','productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks'];
 // Speichert den ganzen Datenbestand. Der Server prüft den mitgesendeten Datenstand (409 bei veraltetem Stand)
 // und verlangt für Massenlöschungen (Reset) das Admin-Passwort (403 ADMIN_CONFIRM_REQUIRED).
+// Bestellungen, Reservierungen und Sync-Protokoll gehören dem Server (er ersetzt sie beim Speichern ohnehin); sie werden nicht mehr hochgeladen. Das spart pro Speichern rund 1 MB.
+function dbForUpload(){const {wooOrders,wooReservations,wooSyncLog,...rest}=db;return rest;}
 async function postData(){
-  const send=()=>fetch(API_DATA,{method:'POST',headers:apiHeaders({'Content-Type':'application/json','X-Data-Version':DATA_VERSION}),body:JSON.stringify(db)});
+  const send=()=>fetch(API_DATA,{method:'POST',headers:apiHeaders({'Content-Type':'application/json','X-Data-Version':DATA_VERSION}),body:JSON.stringify(dbForUpload())});
   let r=await send();
   if(r.status===403){
     const j=await r.clone().json().catch(()=>({}));
@@ -1199,7 +1201,7 @@ async function initApp(){
 }
 function localIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 // INT-10 (c): Datum in Schweizer Zeit, nicht UTC (zwischen 00:00 und 02:00 Uhr entstand sonst das Vortagesdatum)
-function today(){try{return new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Zurich'}).format(new Date())}catch(e){return localIso(new Date())}}
+function today(){try{const f=today._f||(today._f=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Zurich'}));return f.format(new Date())}catch(e){return localIso(new Date())}}
 function addYearsIso(iso,years){const p=String(iso).split('-').map(Number);return new Date(Date.UTC(p[0]+years,p[1]-1,p[2])).toISOString().slice(0,10)}
 // INT-10 (b): fehlende Menge zählt als 1, eine ausdrückliche 0 bleibt 0
 function qtyOrOne(v){if(v===undefined||v===null||v==='')return 1;const n=Number(v);return Number.isFinite(n)?Math.max(0,n):1}
@@ -1378,7 +1380,15 @@ function next(prefix,arr){
   do{ id=`${prefix}-${y}-${String(n).padStart(4,'0')}`; n++; }while(used.has(id));
   return id;
 }
-function by(a,id){const list=db[a]||[];const f=list.find(x=>x.id==id);if(f)return f;
+// Schnelles Nachschlagen per ID: Index je Sammlung, nur innerhalb des laufenden Arbeitsschritts gültig (wird danach verworfen).
+// Gleiches Ergebnis wie die frühere lineare Suche (erster Treffer, lockerer ID-Vergleich); ohne ID oder bei geänderter Liste wird neu gesucht.
+function by(a,id){const list=db[a]||[];
+  if(id!=null){
+    let cache=by._c; if(!cache){cache=by._c={}; queueMicrotask(()=>{by._c=null;});}
+    let c=cache[a];
+    if(!c||c.list!==list||c.len!==list.length){c=cache[a]={list,len:list.length,map:new Map()};for(let i=list.length-1;i>=0;i--){const x=list[i];if(x&&x.id!==undefined&&x.id!==null)c.map.set(String(x.id),x);}}
+    const f=c.map.get(String(id)); if(f&&f.id==id)return f;
+  } else { const f=list.find(x=>x.id==id); if(f)return f; }
   // INT-08: Etiketten/Bezüge auf eine früher aufgeteilte Dübel-ID führen zur ersten Packung
   if(a==='goods'){const s=list.find(x=>x.splitFrom==id&&(+x.packIndex||1)===1);if(s)return s;}
   return {}}
@@ -1411,7 +1421,7 @@ function restoreSkuForAssignment(sku){
 }
 function skuProductByCode(sku){ return allSkuProducts().find(p=>p.sku===sku)||null; }
 
-function normTxt(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+function normTxt(v){const k=String(v||'');const m=normTxt._m||(normTxt._m=new Map());let r=m.get(k);if(r===undefined){r=k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();if(m.size>5000)m.clear();m.set(k,r);}return r;}
 function masterForStrain(strain){
   const n=normTxt(strain);
   if(!n) return null;
@@ -6062,7 +6072,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.36'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.37'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
