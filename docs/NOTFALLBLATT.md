@@ -44,11 +44,8 @@ Stand: Version 1.5.36. Für den Fall, dass die Pilzverwaltung, WooCommerce oder 
 
 Passwörter stehen **nicht** auf diesem Blatt, sondern im Passwortmanager. Dort liegen: App-Passwort, Rescue-Passwort, Render, GitHub, Google Drive, Backup-Passphrase, WooCommerce, bexio, UptimeRobot.
 
-## Kontakte (ausfüllen)
+## Zuständigkeiten
 
-| Rolle | Name | Telefon |
-|---|---|---|
-| Technik / Render | | |
-| Shop / WooCommerce | | |
-| Buchhaltung / bexio | | |
-| Stellvertretung | | |
+Das Team besteht aus zwei Personen, die Informatik liegt bei **einer** Person (Render, GitHub, Backups, Wiederherstellung). Die zweite Person übernimmt Shop und Buchhaltung (WooCommerce, bexio) und hält Papiernotizen bei einem Ausfall.
+
+**Fällt die Person für die Informatik aus:** Passwortmanager mit allen Zugängen an einem sicheren zweiten Ort verfügbar halten (z. B. Notfallumschlag oder Zugriff der zweiten Person). Die Schritte für Neustart und Wiederherstellung stehen hier und in `docs/NOTFALL_WIEDERHERSTELLUNG.md`, sodass sie auch die zweite Person oder externe Hilfe nachvollziehen kann.

@@ -12,8 +12,8 @@ Die Pilzverwaltung speichert von Kundinnen und Kunden **nur Vor- und Nachname** 
 |---|---|---|---|
 | Name in offener Bestellung (bezahlt/Vorauskasse) | Pilzverwaltung | solange die Bestellung offen ist | – |
 | Name in abgeschlossener/stornierter Bestellung | Pilzverwaltung | **90 Tage** nach Abschluss, danach gelöscht (Bestellnummer, Artikel, Mengen bleiben) | automatisch bei jedem Speichern (`ORDER_NAME_KEEP_DAYS`, Standard 90) |
-| Bestellung mit Adresse, E-Mail, Telefon | WooCommerce | gesetzliche Aufbewahrung (Geschäftsunterlagen, 10 Jahre) – **prüfen** | ausserhalb der App |
-| Rechnung, Zahlungen | bexio | gesetzliche Aufbewahrung, 10 Jahre – **prüfen** | ausserhalb der App |
+| Bestellung mit Adresse, E-Mail, Telefon | WooCommerce | liegt ausserhalb dieses Projekts, wird dort geregelt | – |
+| Rechnung, Zahlungen | bexio | liegt ausserhalb dieses Projekts, wird dort geregelt | – |
 | Webhook-Eingang (Bestellung als Rohdaten) | Pilzverwaltung | nach erfolgreicher Verarbeitung nur noch Nummer und Status, Eintrag nach 7 Tagen gelöscht; **fehlgeschlagene** Einträge (mit vollständigen Daten, für die Wiederholung) nach 30 Tagen | automatisch |
 | Freitext «Interne Bemerkung» zur Bestellung | Pilzverwaltung | wird von Hand geführt: **keine Personendaten hineinschreiben** | Hinweis an das Team |
 | Reservierungsdatensätze | Pilzverwaltung | ersetzte nach 7 Tagen, freigegebene nach 90 Tagen | automatisch |
@@ -37,8 +37,8 @@ Folge: **Spätestens 90 Tage** nach einer Löschung in der App sind die Namen au
 ## 4. Auskunfts- oder Löschbegehren bearbeiten
 
 1. **Eingang notieren** (Datum, Person, Anliegen) und die Identität prüfen. Frist für die Antwort: in der Regel 30 Tage.
-2. **WooCommerce:** Kunde und Bestellungen suchen. Auskunft: Daten exportieren. Löschung: Kundenkonto löschen; Bestellungen mit Aufbewahrungspflicht nur anonymisieren oder sperren, nicht löschen – **prüfen**.
-3. **bexio:** Kontakt und Belege suchen. Belege unterliegen der Aufbewahrungspflicht; nicht mehr benötigte Kontaktangaben anonymisieren – **prüfen**.
+2. **WooCommerce:** Kunde und Bestellungen suchen. Auskunft: Daten exportieren. Löschung: Kundenkonto löschen; Bestellungen mit Aufbewahrungspflicht nur anonymisieren oder sperren, nicht löschen (Regeln dort, ausserhalb dieses Projekts).
+3. **bexio:** Kontakt und Belege suchen. Belege unterliegen der Aufbewahrungspflicht; nicht mehr benötigte Kontaktangaben anonymisieren (Regeln dort, ausserhalb dieses Projekts).
 4. **Pilzverwaltung, Auskunft:** In der Bestellliste nach dem Namen suchen (Bestellungen sind Name, Nummer, Artikel). Mehr Daten gibt es zur Person nicht.
 5. **Pilzverwaltung, sofortige Löschung des Namens** (statt 90 Tage zu warten): in pgAdmin (Render-Datenbank) die folgende Abfrage ausführen. Zuerst `beispiel` durch den **Nachnamen** (Kleinbuchstaben genügen) ersetzen und mit der SELECT-Zeile prüfen, welche Bestellungen betroffen sind:
 
