@@ -40,6 +40,7 @@ Neu sind nur die zwei Tabellen `app_sessions` und `app_webhook_queue`, die beim 
 - **INT-08, INT-10 (b)(c):** in Version 1.5.28 umgesetzt (siehe README.md). **INT-10 (a)** erledigt: Dübel-Sets bestehen nur noch aus Einzelprodukten.
 - **INT-07 (Vorbereitung):** in Version 1.5.29 Server/Browser-Vergleich mit 0 Abweichungen, zwei Serverfehler behoben.
 - **INT-07 (Hauptschritt):** in Version 1.5.31 umgesetzt: Bestand rechnet der Server, WooCommerce bekommt nur noch Serverzahlen. Rest: FIFO-Vorschau im Browser.
+- **COD-02/M16 (Teil), INT-07 (Rest):** in Version 1.5.32: Set-Rezepte in den Daten, FIFO-Zuteilung nur noch auf dem Server.
 - **INT-07, COD-01, COD-02, M14–M18** (doppelte Bestandslogik, IDs, Stammdaten, Zielarchitektur): gehören in die Migration.
 - **OPS-04 Lock-Datei:** `package-lock.json` ist eingecheckt.
 - Organisatorisches (ORG-*, DSG-02/03, FIN-*, WOO-03/04, OPS-05): nicht Sache des Codes.

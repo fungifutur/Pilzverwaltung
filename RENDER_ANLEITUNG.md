@@ -1,3 +1,10 @@
+# Version 1.5.32 – Stammdaten in den Daten, FIFO-Zuteilung nur noch auf dem Server (COD-02, M16, INT-07)
+
+- **Set-Rezepte in den Daten:** Die Stücklisten der Sets (z. B. Ppul_Exp_*, Trio_Düb_*, Star_Düb_*) stehen jetzt in den Daten (`setBoms`) statt fest im Programm. Beim ersten Start werden die bisherigen Rezepte eingetragen, Inhalt und Verhalten bleiben gleich. Der Server verwaltet sie; ein Browser kann sie nicht überschreiben. Die Bearbeitung über die Oberfläche folgt später.
+- **FIFO nur auf dem Server:** Welche Charge zu welcher Bestellung gehört, entscheidet allein der Server beim Reservieren. Die Oberfläche zeigt nur noch die Reservierungen und die Fehlmenge. Die eigene FIFO-Berechnung im Browser (und eine nicht mehr genutzte Vorschau für wartende Bestellungen) ist entfernt.
+- Geprüft mit den anonymisierten Echtdaten: Bestellliste (7 aktive Bestellungen) ist Zeichen für Zeichen identisch zur Vorversion. Neuer Test; Suite 34/34 grün.
+- Offen: Rezepte in der Oberfläche bearbeiten; SKU-Katalog (COD-02) weiter in die Daten verlagern.
+
 # Version 1.5.31 – Bestand wird nur noch vom Server gerechnet (INT-07, Hauptschritt)
 
 - **Server rechnet:** Neue Abfrage `/api/stock` und jede Antwort beim Speichern liefern den Bestand pro Artikel (Physisch, Bestellungen, Produktionsreserve, Set-Reserve, Verfügbar). Die Oberfläche zeigt diese Zahlen an, statt selbst zu rechnen. Nur wenn die Serverzahlen fehlen oder nicht zum Datenstand passen, rechnet der Browser notfalls wie bisher.
