@@ -30,7 +30,7 @@ Die Pilzverwaltung speichert von Kundinnen und Kunden **nur Vor- und Nachname** 
 | «Rückgängig»-Sicherung | Datenbank | **7 Tage** (höchstens 10) | automatisch |
 | Manuelle Backups | Datenbank | **90 Tage** (die neuesten 2 bleiben) | automatisch |
 | Nächtliche Sicherung (verschlüsselt) | Google Drive `Pilzverwaltung-Backups` | **30 Tage** (`BACKUP_KEEP_DAYS`) | automatisch durch den Backup-Lauf |
-| Datenbank-Backups des Hosters | Render | je nach Tarif – **prüfen**, welche Frist gilt | ausserhalb der App |
+| Datenbank-Backups des Hosters | Render (bezahlte Datenbank, 6 USD/Monat) | Export-Backups 7 Tage; Wiederherstellung auf einen Zeitpunkt: 3 Tage (Hobby-Arbeitsbereich) bzw. 7 Tage (Pro) – Arbeitsbereich in Render **prüfen** | ausserhalb der App (Stand Render-Dokumentation, Nov. 2026) |
 
 Folge: **Spätestens 90 Tage** nach einer Löschung in der App sind die Namen auch aus allen Sicherungen verschwunden (manuelle Backups sind die längsten; die übrigen früher). Bei einem Löschbegehren wird die Sicherung nicht einzeln bereinigt, sondern läuft ab; stellt man ein altes Backup wieder her, muss die Löschung danach erneut ausgeführt werden.
 
@@ -65,5 +65,5 @@ WHERE id = 1;
 
 - Geräteverwaltung: nicht mehr benutzte Geräte entfernen.
 - Google Drive: Ordner `Pilzverwaltung-Backups` enthält nur Dateien der letzten 30 Tage.
-- Render: Backup-Frist des Datenbank-Tarifs prüfen und hier eintragen.
+- Render: Arbeitsbereich-Tarif (Hobby oder Pro) prüfen; er bestimmt, ob die Wiederherstellung auf einen Zeitpunkt 3 oder 7 Tage zurückreicht.
 - Dieses Dokument aktuell halten, wenn Fristen oder Systeme ändern.
