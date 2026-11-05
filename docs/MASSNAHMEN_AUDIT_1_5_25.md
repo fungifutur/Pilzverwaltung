@@ -35,7 +35,7 @@ Neu sind nur die zwei Tabellen `app_sessions` und `app_webhook_queue`, die beim 
 
 ## Was bewusst NICHT geändert wurde
 
-- **INT-04 / M8** (Wer führt den Bestand, Umgang mit on-hold): Entscheid des Auftraggebers, keine reine Code-Frage.
+- **INT-04 / M8:** Umgang mit on-hold ist entschieden und umgesetzt (Vorauskasse reserviert, Storno gibt frei). Offen bleibt die grundsätzliche Frage, welches System den Bestand führt.
 - **SEC-04** (Escaping im Frontend, `innerHTML`) und **SEC-05 SRI**: erfordern eine Durchsicht der rund 6000 Zeilen Oberfläche. SheetJS konnte in dieser Umgebung nicht heruntergeladen werden, um es lokal auszuliefern oder mit Prüfsumme zu sichern.
 - **INT-07, INT-08, INT-10, COD-01, COD-02, M14–M18** (doppelte Bestandslogik, IDs, Stammdaten, Zielarchitektur): gehören in die Migration.
 - **OPS-04 Lock-Datei:** konnte hier nicht erzeugt werden (kein Zugriff auf das npm-Register). Einmal `npm install` ausführen und `package-lock.json` einchecken.

@@ -1,4 +1,10 @@
+# Version 1.5.26 – Vorauskasse reserviert Bestand
+
+- Vorauskasse: Bestellungen im Status «wartend» (on-hold) reservieren jetzt ebenfalls Bestand; Storno/Ablehnung gibt ihn wieder frei. Bezahlte Bestellungen haben bei knappem Bestand Vorrang. Für wartende Bestellungen werden noch keine Produktionsaufträge ausgelöst.
+- Bereits vorhandene wartende Bestellungen werden nach dem Update beim ersten «Mit WooCommerce abgleichen» nachträglich reserviert.
+
 # Version 1.5.25 – Massnahmen aus dem IT-Audit (Phase 0 und Teile von Phase 1)
+
 
 # Version 1.5.24 – Wunschdatum je Bestellung
 
