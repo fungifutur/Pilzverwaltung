@@ -1,4 +1,8 @@
-# Version 1.5.37 – Schneller speichern und anzeigen
+# Version 1.5.38 – Excel-Bibliothek lokal (SEC-05)
+
+Die Excel-Bibliothek SheetJS (Version 0.20.3) liegt jetzt in `public/vendor/xlsx.full.min.js` und wird von der Pilzverwaltung selbst ausgeliefert. Die Seite lädt keine Programme mehr von fremden Servern, und `https://cdn.sheetjs.com` ist aus der Sicherheitsregel (CSP) entfernt. Damit ist SEC-05 erledigt. Excel-Import und -Export funktionieren wie bisher.
+
+Vorherige Version 1.5.37:
 
 Anlass: Beim Scannen mehrerer QR-Codes mit Statusänderungen dauerte das Speichern spürbar lange. Gemessen mit den anonymisierten Echtdaten (1,7 MB Datenbestand):
 
