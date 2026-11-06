@@ -1,6 +1,6 @@
 # Version 1.5.39 – Produzieren aus der Bestellung wählt die Quelle vor
 
-Wenn bei einer Bestellung ein Fehlbestand besteht und «Produzieren» gedrückt wird, wählt die Pilzverwaltung jetzt automatisch die passende Quelle vor: den ältesten fertigen Eintrag mit gleichem Strain (Substratsack und Dübel: Körnerbrut, bei Substrat sonst Flüssigmyzel; Holzstämme: Dübel, sonst Körnerbrut; Körnerbrut: Flüssigmyzel). Gibt es keine passende fertige Quelle, steht ein Hinweis im Formular. Die Auswahl kann wie bisher von Hand geändert werden.
+Wenn bei einer Bestellung ein Fehlbestand besteht und «Produzieren» gedrückt wird, wählt die Pilzverwaltung jetzt automatisch die passende Quelle vor: den ältesten fertigen Eintrag mit gleichem Strain (Substratsack und Dübel: Körnerbrut, bei Substrat sonst Flüssigmyzel; Holzstämme: Körnerbrut, sonst Dübel; Körnerbrut: Flüssigmyzel). Gibt es keine passende fertige Quelle, steht ein Hinweis im Formular. Die Auswahl kann wie bisher von Hand geändert werden.
 
 Vorherige Version 1.5.38:
 

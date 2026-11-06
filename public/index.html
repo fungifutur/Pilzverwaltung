@@ -2072,7 +2072,7 @@ function preselectOrderSource(area,sku){
   const options={
     sub:[['subSourceType','kb','subSource',kbs,'Körnerbrut'],['subSourceType','lc','subSource',lcs,'Flüssigmyzel']],
     dowels:[['duebSourceType','kb','duebKb',kbs,'Körnerbrut']],
-    logs:[['logSourceType','dowel','logSource',dowels,'Dübel'],['logSourceType','kb','logSource',kbs,'Körnerbrut']],
+    logs:[['logSourceType','kb','logSource',kbs,'Körnerbrut'],['logSourceType','dowel','logSource',dowels,'Dübel']],
     kb:[['kbSourceType','lc','kbLc',lcs,'Flüssigmyzel']]
   }[area]||[];
   for(const [typeId,type,selId,items] of options){
