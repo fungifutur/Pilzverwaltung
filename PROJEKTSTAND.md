@@ -1,4 +1,8 @@
-# Version 1.5.39 – Produzieren aus der Bestellung wählt die Quelle vor
+# Version 1.5.40 – Produktkatalog: nicht zugeordnete Produkte zuerst
+
+Unter Einstellungen → WooCommerce Sync → «Lokaler Produktkatalog / Bestandsart» zeigt die Tabelle jetzt standardmässig nur Produkte, die noch keinem Bereich zugeordnet sind, mit Zähler («55 nicht zugeordnet · 65 im Katalog insgesamt»). Mit dem Haken «Nur nicht zugeordnete Produkte zeigen» lassen sich alle Katalogeinträge anzeigen. Ein Produkt bleibt nach der Zuordnung sichtbar, bis die Tabelle neu gezeichnet wird. Zusätzlich behoben: Die Prüfung «SKU ist schon im Katalog» erkannte Katalogeinträge nicht, ein zweiter Import konnte dieselben SKUs doppelt anlegen.
+
+Vorherige Version 1.5.39:
 
 Wenn bei einer Bestellung ein Fehlbestand besteht und «Produzieren» gedrückt wird, wählt die Pilzverwaltung jetzt automatisch die passende Quelle vor: den ältesten fertigen Eintrag mit gleichem Strain (Substratsack und Dübel: Körnerbrut, bei Substrat sonst Flüssigmyzel; Holzstämme: Körnerbrut, sonst Dübel; Körnerbrut: Flüssigmyzel). Gibt es keine passende fertige Quelle, steht ein Hinweis im Formular. Die Auswahl kann wie bisher von Hand geändert werden.
 

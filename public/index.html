@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.39</title>
+<title>Pilzverwaltung Serverversion 1.5.40</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.39</h1>
+<h1>Pilzverwaltung – Version 1.5.40</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -807,6 +807,7 @@ nav button.top-link{font-weight:bold}
 <div class="card">
 <h3>Lokaler Produktkatalog / Bestandsart</h3>
 <p class="muted">Zusätzliche/importierte Produkte werden hier Bereich und Bestandsart zugeordnet. Auto-Sync wird zentral oben für alle SKUs verwaltet.</p>
+<div id="localCatalogFilter" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:6px 0"></div>
 <div id="localCatalogRows"></div>
 </div>
 <div class="card">
@@ -1879,7 +1880,7 @@ function renderStorageLocations(){
   setHTML('storageRows',`<table><thead><tr><th>Raum</th><th>Regal</th><th>Kiste</th><th>Status</th><th>Aktion</th></tr></thead><tbody>${rows||'<tr><td colspan="5" class="muted">Noch keine Lagerplätze.</td></tr>'}</tbody></table>`);
 }
 async function toggleStorageLocation(id){const l=(db.storageLocations||[]).find(x=>x.id===id);if(l){l.active=l.active===false?true:false;await save();renderStorageLocations();}}
-function localCatalogExistingSkus(){return new Set([...WC_PRODUCTS.map(p=>p.sku),(db.productCatalog||[]).map(p=>p.sku)]);}
+function localCatalogExistingSkus(){return new Set([...WC_PRODUCTS.map(p=>p.sku),...(db.productCatalog||[]).map(p=>p.sku)]);}
 async function loadWooCatalogPreview(){
   try{const d=await wooApi('/api/woo/catalog'); wooCatalogPreview=d.products||[]; renderWooCatalogPreview();}
   catch(e){alert(e.message);}
@@ -1938,13 +1939,18 @@ async function deleteSetBom(n){
   const j=await setBomRequest({action:'delete',sku}); if(!j) return;
   render(); showLiveToast('Rezept gelöscht','Set '+sku+' gelöscht.');
 }
+let localCatalogOnlyUnassigned=true; const localCatalogKeep=new Set();
 function renderLocalCatalog(){
   try{ renderSetBomEditor(); }catch(e){ console.warn(e); }
   ensureCatalogState();
-  const rows=(db.productCatalog||[]).map(p=>`<tr><td><strong>${escHtml(p.sku)}</strong><br><span class="muted">${escHtml(p.name||'')}</span></td><td><select onchange="updateCatalogField('${p.id}','area',this.value)"><option value="unassigned">nicht zugeordnet</option><option value="rawmaterials" ${p.area==='rawmaterials'?'selected':''}>Rohstoffe</option><option value="labmaterials" ${p.area==='labmaterials'?'selected':''}>Labormaterialien</option><option value="syringes" ${p.area==='syringes'?'selected':''}>Verkaufsspritzen</option><option value="kb" ${p.area==='kb'?'selected':''}>Körnerbrut</option><option value="microfilterbags" ${p.area==='microfilterbags'?'selected':''}>Mikrofiltersäcke</option><option value="sub" ${p.area==='sub'?'selected':''}>Substratsäcke / Pilzzuchtsets</option><option value="dowels" ${p.area==='dowels'?'selected':''}>Dübel</option><option value="lots" ${p.area==='lots'?'selected':''}>Dörrpilze</option><option value="other" ${p.area==='other'?'selected':''}>Sonstige</option></select></td><td><select onchange="updateCatalogField('${p.id}','stockMode',this.value)"><option value="none" ${p.stockMode==='none'?'selected':''}>nicht lagergeführt</option><option value="simple" ${p.stockMode==='simple'?'selected':''}>einfacher Stückbestand</option><option value="batch" ${p.stockMode==='batch'?'selected':''}>Chargen/FIFO</option></select></td><td><select onchange="updateCatalogField('${p.id}','syncActive',this.value==='yes')"><option value="no" ${!p.syncActive?'selected':''}>Sync aus</option><option value="yes" ${p.syncActive?'selected':''}>Sync aktiv</option></select></td></tr>`).join('');
-  setHTML('localCatalogRows',`<table><thead><tr><th>Produkt</th><th>Bereich</th><th>Bestandsart</th><th>Woo Sync</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="muted">Noch keine neuen WooCommerce-Produkte importiert.</td></tr>'}</tbody></table>`);
+  const isUn=p=>!p.area||p.area==='unassigned';
+  const all=db.productCatalog||[], unCount=all.filter(isUn).length;
+  const list=all.filter(p=>!localCatalogOnlyUnassigned||isUn(p)||localCatalogKeep.has(p.id)).sort((x,y)=>(isUn(y)?1:0)-(isUn(x)?1:0)||String(x.name||x.sku).localeCompare(String(y.name||y.sku),'de'));
+  setHTML('localCatalogFilter',`<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" ${localCatalogOnlyUnassigned?'checked':''} onchange="localCatalogOnlyUnassigned=this.checked;localCatalogKeep.clear();renderLocalCatalog()"> Nur nicht zugeordnete Produkte zeigen</label><span class="muted">${unCount} nicht zugeordnet · ${all.length} im Katalog insgesamt</span>`);
+  const rows=list.map(p=>`<tr><td><strong>${escHtml(p.sku)}</strong><br><span class="muted">${escHtml(p.name||'')}</span></td><td><select onchange="updateCatalogField('${p.id}','area',this.value)"><option value="unassigned">nicht zugeordnet</option><option value="rawmaterials" ${p.area==='rawmaterials'?'selected':''}>Rohstoffe</option><option value="labmaterials" ${p.area==='labmaterials'?'selected':''}>Labormaterialien</option><option value="syringes" ${p.area==='syringes'?'selected':''}>Verkaufsspritzen</option><option value="kb" ${p.area==='kb'?'selected':''}>Körnerbrut</option><option value="microfilterbags" ${p.area==='microfilterbags'?'selected':''}>Mikrofiltersäcke</option><option value="sub" ${p.area==='sub'?'selected':''}>Substratsäcke / Pilzzuchtsets</option><option value="dowels" ${p.area==='dowels'?'selected':''}>Dübel</option><option value="lots" ${p.area==='lots'?'selected':''}>Dörrpilze</option><option value="other" ${p.area==='other'?'selected':''}>Sonstige</option></select></td><td><select onchange="updateCatalogField('${p.id}','stockMode',this.value)"><option value="none" ${p.stockMode==='none'?'selected':''}>nicht lagergeführt</option><option value="simple" ${p.stockMode==='simple'?'selected':''}>einfacher Stückbestand</option><option value="batch" ${p.stockMode==='batch'?'selected':''}>Chargen/FIFO</option></select></td><td><select onchange="updateCatalogField('${p.id}','syncActive',this.value==='yes')"><option value="no" ${!p.syncActive?'selected':''}>Sync aus</option><option value="yes" ${p.syncActive?'selected':''}>Sync aktiv</option></select></td></tr>`).join('');
+  setHTML('localCatalogRows',`<table><thead><tr><th>Produkt</th><th>Bereich</th><th>Bestandsart</th><th>Woo Sync</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="muted">'+(localCatalogOnlyUnassigned&&all.length?'Alle importierten Produkte sind zugeordnet.':'Noch keine neuen WooCommerce-Produkte importiert.')+'</td></tr>'}</tbody></table>`);
 }
-async function updateCatalogField(id,key,value){const p=(db.productCatalog||[]).find(x=>x.id===id);if(!p)return;p[key]=value;if(key==='syncActive'&&p.sku){const st=ensureWooSyncSettings(),set=new Set(st.selectedSkus);value?set.add(p.sku):set.delete(p.sku);st.selectedSkus=Array.from(set);}await save();renderWooGroupManager();}
+async function updateCatalogField(id,key,value){const p=(db.productCatalog||[]).find(x=>x.id===id);if(!p)return;p[key]=value;if(key==='area')localCatalogKeep.add(id);if(key==='syncActive'&&p.sku){const st=ensureWooSyncSettings(),set=new Set(st.selectedSkus);value?set.add(p.sku):set.delete(p.sku);st.selectedSkus=Array.from(set);}await save();renderWooGroupManager();}
 function simpleStockProducts(area){return (db.productCatalog||[]).filter(p=>p.active!==false&&p.area===area&&p.stockMode==='simple');}
 function renderSimpleStock(area){
   ensureCatalogState(); const items=simpleStockProducts(area);
@@ -6096,7 +6102,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.39'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.40'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
