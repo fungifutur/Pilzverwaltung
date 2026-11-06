@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.38</title>
+<title>Pilzverwaltung Serverversion 1.5.39</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.38</h1>
+<h1>Pilzverwaltung – Version 1.5.39</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -2059,18 +2059,42 @@ function setOrderHint(area){
   ['kb','sub','dueb','spr','log'].forEach(k=>{const n=el(k+'OrderHint'); if(n)n.innerHTML='';});
   if(!orderProductionContext)return;
   const id=area==='dowels'?'dueb':area==='syringes'?'spr':area; const n=el(id+'OrderHint');
-  if(n)n.innerHTML='<span class="badge warn">Für Bestellung #'+escHtml(String(orderProductionContext.orderNumber))+' · Fehlmenge '+orderProductionContext.qty+'</span>';
+  if(n)n.innerHTML='<span class="badge warn">Für Bestellung #'+escHtml(String(orderProductionContext.orderNumber))+' · Fehlmenge '+orderProductionContext.qty+'</span>'+(orderProductionContext.sourceNote?' <span class="muted">'+escHtml(orderProductionContext.sourceNote)+'</span>':'');
+}
+// Bestellung → Produzieren: passende Quelle (gleicher Strain, ältester fertiger Eintrag) vorwählen
+function preselectOrderSource(area,sku){
+  const strain=strainFromSku(sku); if(!strain||!orderProductionContext)return;
+  const m=STRAIN_MASTER.find(x=>x.name===strain);
+  const names=[strain,m&&m.de].filter(Boolean).map(normTxt);
+  const dateOf=x=>String(x.date||x.created||x.createdAt||'');
+  const kbs=readyItems('kb',db.kb), lcs=readyItems('lc',db.lc);
+  const dowels=(db.goods||[]).filter(x=>x.type==='Dübel'&&isReadyForProduction('dowels',x)&&(+x.qty||0)>0);
+  const options={
+    sub:[['subSourceType','kb','subSource',kbs,'Körnerbrut'],['subSourceType','lc','subSource',lcs,'Flüssigmyzel']],
+    dowels:[['duebSourceType','kb','duebKb',kbs,'Körnerbrut']],
+    logs:[['logSourceType','dowel','logSource',dowels,'Dübel'],['logSourceType','kb','logSource',kbs,'Körnerbrut']],
+    kb:[['kbSourceType','lc','kbLc',lcs,'Flüssigmyzel']]
+  }[area]||[];
+  for(const [typeId,type,selId,items] of options){
+    const hit=items.filter(x=>names.includes(normTxt(x.strain))).sort((a,b)=>dateOf(a).localeCompare(dateOf(b))||String(a.id).localeCompare(String(b.id)))[0];
+    if(!hit)continue;
+    if(el(typeId)){el(typeId).value=type; render();}
+    setSelectValueWhenReady(selId,hit.id);
+    orderProductionContext.sourceNote='Quelle vorgewählt: '+hit.id+' ('+strain+')';
+    return;
+  }
+  orderProductionContext.sourceNote='Keine fertige Quelle für '+strain+' gefunden – bitte Quelle selbst wählen.';
 }
 function prepareOrderProductionForm(orderId,itemId){
   ensureCatalogState(); const o=(db.wooOrders||[]).find(x=>x.id==orderId); const i=o?.items?.find(x=>x.id==itemId); if(!o||!i)return;
   const plan=itemMissing(o,i); if(plan.missing<=0)return alert('Für diese Position besteht aktuell keine Fehlmenge.');
   const area=productionAreaForSku(i.sku);
   orderProductionContext={orderId:o.id,orderNumber:o.number||o.id,itemId:i.id,sku:i.sku,name:i.name,qty:plan.missing,area};
-  if(area==='sub'){ show('sub'); if(el('subCount'))subCount.value=plan.missing; render(); setTimeout(()=>{if(el('subSku')){subSku.value=i.sku;} setOrderHint('sub');},50); return; }
-  if(area==='kb'){ show('kb'); if(el('kbCount'))kbCount.value=plan.missing; const v=skuVariant(i.sku); if(v&&el('kbSize'))kbSize.value=v; render(); setTimeout(()=>{if(el('kbSku'))kbSku.value=i.sku; setOrderHint('kb');},50); return; }
-  if(area==='dowels'){ show('dowels'); if(el('duebCount'))duebCount.value=plan.missing; const v=skuVariant(i.sku); if(v&&el('duebSize'))duebSize.value=v; render(); setTimeout(()=>{if(el('duebSku'))duebSku.value=i.sku; setOrderHint('dowels');},50); return; }
+  if(area==='sub'){ show('sub'); if(el('subCount'))subCount.value=plan.missing; render(); setTimeout(()=>{preselectOrderSource('sub',i.sku); renderProductionSkuOptions(true); if(el('subSku')){subSku.value=i.sku;} setOrderHint('sub');},50); return; }
+  if(area==='kb'){ show('kb'); if(el('kbCount'))kbCount.value=plan.missing; const v=skuVariant(i.sku); if(v&&el('kbSize'))kbSize.value=v; render(); setTimeout(()=>{preselectOrderSource('kb',i.sku); renderProductionSkuOptions(true); if(el('kbSku'))kbSku.value=i.sku; setOrderHint('kb');},50); return; }
+  if(area==='dowels'){ show('dowels'); if(el('duebCount'))duebCount.value=plan.missing; const v=skuVariant(i.sku); if(v&&el('duebSize'))duebSize.value=v; render(); setTimeout(()=>{preselectOrderSource('dowels',i.sku); renderProductionSkuOptions(true); if(el('duebSku'))duebSku.value=i.sku; setOrderHint('dowels');},50); return; }
   if(area==='syringes'){ show('syringes'); if(el('sprQty'))sprQty.value=plan.missing; const v=skuVariant(i.sku), ml=parseInt(v,10); if(ml&&el('sprMl'))sprMl.value=ml; if(el('sprPurpose'))sprPurpose.value='sale'; render(); setTimeout(()=>{if(el('sprSku'))sprSku.value=i.sku; setOrderHint('syringes');},50); return; }
-  if(area==='logs'){ show('logs'); if(el('logCount'))logCount.value=plan.missing; render(); setTimeout(()=>setOrderHint('logs'),50); return; }
+  if(area==='logs'){ show('logs'); if(el('logCount'))logCount.value=plan.missing; render(); setTimeout(()=>{preselectOrderSource('logs',i.sku); setOrderHint('logs');},50); return; }
   createOrderProduction(orderId,itemId);
 }
 function orderFields(area){
@@ -6072,7 +6096,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.38'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.39'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
