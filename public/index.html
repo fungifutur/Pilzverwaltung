@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.40</title>
+<title>Pilzverwaltung Serverversion 1.5.41</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.40</h1>
+<h1>Pilzverwaltung – Version 1.5.41</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -1190,10 +1190,11 @@ async function initApp(){
   if(!db.masterCounters || typeof db.masterCounters !== 'object' || Array.isArray(db.masterCounters)) db.masterCounters={};
   ensureWooSyncSettings();
   ensureCatalogState();
+  const syncDefaultsChanged=autoEnableAssignedSync();
   normalizeWarningSettings();
   const minIdentityMigrated=migrateLegacyMinStockIdentity();
   const wildPetriMinimumsAdded=ensureWildPetriMinimums();
-  if(minIdentityMigrated || wildPetriMinimumsAdded){
+  if(minIdentityMigrated || wildPetriMinimumsAdded || syncDefaultsChanged){
     try{ const rr=await postData(); if(rr.ok){ const j=await rr.json().catch(()=>({})); if(j.version) DATA_VERSION=j.version; } else console.warn('Automatische Mindestbestand-Anpassung wurde nicht gespeichert (Status '+rr.status+').'); }catch(e){ console.warn('Automatische Mindestbestand-Anpassung konnte noch nicht gespeichert werden.',e); }
   }
   render();
@@ -1950,7 +1951,7 @@ function renderLocalCatalog(){
   const rows=list.map(p=>`<tr><td><strong>${escHtml(p.sku)}</strong><br><span class="muted">${escHtml(p.name||'')}</span></td><td><select onchange="updateCatalogField('${p.id}','area',this.value)"><option value="unassigned">nicht zugeordnet</option><option value="rawmaterials" ${p.area==='rawmaterials'?'selected':''}>Rohstoffe</option><option value="labmaterials" ${p.area==='labmaterials'?'selected':''}>Labormaterialien</option><option value="syringes" ${p.area==='syringes'?'selected':''}>Verkaufsspritzen</option><option value="kb" ${p.area==='kb'?'selected':''}>Körnerbrut</option><option value="microfilterbags" ${p.area==='microfilterbags'?'selected':''}>Mikrofiltersäcke</option><option value="sub" ${p.area==='sub'?'selected':''}>Substratsäcke / Pilzzuchtsets</option><option value="dowels" ${p.area==='dowels'?'selected':''}>Dübel</option><option value="lots" ${p.area==='lots'?'selected':''}>Dörrpilze</option><option value="other" ${p.area==='other'?'selected':''}>Sonstige</option></select></td><td><select onchange="updateCatalogField('${p.id}','stockMode',this.value)"><option value="none" ${p.stockMode==='none'?'selected':''}>nicht lagergeführt</option><option value="simple" ${p.stockMode==='simple'?'selected':''}>einfacher Stückbestand</option><option value="batch" ${p.stockMode==='batch'?'selected':''}>Chargen/FIFO</option></select></td><td><select onchange="updateCatalogField('${p.id}','syncActive',this.value==='yes')"><option value="no" ${!p.syncActive?'selected':''}>Sync aus</option><option value="yes" ${p.syncActive?'selected':''}>Sync aktiv</option></select></td></tr>`).join('');
   setHTML('localCatalogRows',`<table><thead><tr><th>Produkt</th><th>Bereich</th><th>Bestandsart</th><th>Woo Sync</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="muted">'+(localCatalogOnlyUnassigned&&all.length?'Alle importierten Produkte sind zugeordnet.':'Noch keine neuen WooCommerce-Produkte importiert.')+'</td></tr>'}</tbody></table>`);
 }
-async function updateCatalogField(id,key,value){const p=(db.productCatalog||[]).find(x=>x.id===id);if(!p)return;p[key]=value;if(key==='area')localCatalogKeep.add(id);if(key==='syncActive'&&p.sku){const st=ensureWooSyncSettings(),set=new Set(st.selectedSkus);value?set.add(p.sku):set.delete(p.sku);st.selectedSkus=Array.from(set);}await save();renderWooGroupManager();}
+async function updateCatalogField(id,key,value){const p=(db.productCatalog||[]).find(x=>x.id===id);if(!p)return;p[key]=value;if(key==='area'){localCatalogKeep.add(id);autoEnableAssignedSync();}if(key==='syncActive'&&p.sku){const st=ensureWooSyncSettings(),set=new Set(st.selectedSkus);value?set.add(p.sku):set.delete(p.sku);st.selectedSkus=Array.from(set);}await save();renderWooGroupManager();}
 function simpleStockProducts(area){return (db.productCatalog||[]).filter(p=>p.active!==false&&p.area===area&&p.stockMode==='simple');}
 function renderSimpleStock(area){
   ensureCatalogState(); const items=simpleStockProducts(area);
@@ -2228,9 +2229,10 @@ const WOO_GROUPS=[
 ]
 let wooRemoteCache={};
 function ensureWooSyncSettings(){
-  if(!db.wooSync || typeof db.wooSync!=='object' || Array.isArray(db.wooSync)) db.wooSync={groups:['syringes'],selectedSkus:[]};
+  if(!db.wooSync || typeof db.wooSync!=='object' || Array.isArray(db.wooSync)) db.wooSync={groups:['syringes'],selectedSkus:[],disabledSkus:[]};
   if(!Array.isArray(db.wooSync.groups)) db.wooSync.groups=['syringes'];
   if(!Array.isArray(db.wooSync.selectedSkus)) db.wooSync.selectedSkus=[];
+  if(!Array.isArray(db.wooSync.disabledSkus)) db.wooSync.disabledSkus=[];
   return db.wooSync;
 }
 function productionReserveForSkuUi(sku){return (db.minStocks||[]).filter(m=>String(m.sku||'')===String(sku||'')&&m.reserveActive!==false&&m.reserveActive!=='nein').reduce((mx,m)=>Math.max(mx,Math.max(0,+m.reserve||0)),0);}
@@ -2289,8 +2291,8 @@ function renderWooGroupManager(){
 }
 async function setWooGroupSync(group,enabled){
   const st=ensureWooSyncSettings(), set=new Set(st.selectedSkus);
-  wooAllProductsMerged().filter(p=>wooGroupForProduct(p)===group).forEach(p=>enabled?set.add(p.sku):set.delete(p.sku));
-  st.selectedSkus=Array.from(set); await save(); renderWooGroupManager(); renderWooSyncProducts();
+  wooAllProductsMerged().filter(p=>wooGroupForProduct(p)===group).forEach(p=>setWooSkuEnabled(st,p.sku,!!enabled));
+  await save(); renderWooGroupManager(); renderWooSyncProducts();
 }
 function renderWooSync(){
   ensureCatalogState();
@@ -2321,15 +2323,31 @@ function renderWooSyncProducts(){
   }).join('');
   setHTML('wooProductRows',rows||'<tr><td colspan="7" class="muted">Keine Produkte in den ausgewählten Gruppen.</td></tr>');
 }
+// Auto-Sync ist Standard: Jedes Produkt mit zugeordnetem Bereich wird synchronisiert, ausser es wurde bewusst ausgeschaltet (disabledSkus).
+function autoEnableAssignedSync(){
+  const st=ensureWooSyncSettings(); const sel=new Set(st.selectedSkus), off=new Set(st.disabledSkus); let changed=false;
+  wooAllProductsMerged().forEach(p=>{
+    const sku=String(p.sku||'').trim(); if(!sku||p.internalOnly||p.active===false) return;
+    if(wooGroupForProduct(p)==='other') return;
+    if(!sel.has(sku)&&!off.has(sku)){sel.add(sku);changed=true;}
+  });
+  if(changed) st.selectedSkus=Array.from(sel);
+  return changed;
+}
+function setWooSkuEnabled(st,sku,on){
+  const sel=new Set(st.selectedSkus), off=new Set(st.disabledSkus);
+  if(on){sel.add(sku);off.delete(sku);}else{sel.delete(sku);off.add(sku);}
+  st.selectedSkus=Array.from(sel); st.disabledSkus=Array.from(off);
+}
 async function toggleWooProductSelection(sku,checked,rerenderGroups=false){
   const st=ensureWooSyncSettings(); const set=new Set(st.selectedSkus);
-  checked?set.add(sku):set.delete(sku); st.selectedSkus=Array.from(set);
+  setWooSkuEnabled(st,sku,!!checked);
   const cat=(db.productCatalog||[]).find(p=>p.sku===sku); if(cat) cat.syncActive=!!checked;
   await save(); if(rerenderGroups) renderWooGroupManager();
 }
 async function selectAllWooProducts(checked){
   const st=ensureWooSyncSettings(); const visible=wooCandidates().map(p=>p.sku); const set=new Set(st.selectedSkus);
-  visible.forEach(s=>checked?set.add(s):set.delete(s)); st.selectedSkus=Array.from(set); await save(); renderWooSyncProducts();
+  visible.forEach(s=>setWooSkuEnabled(st,s,!!checked)); await save(); renderWooSyncProducts();
 }
 async function wooApi(path,opts={}){
   const r=await fetch(path,{...opts,headers:apiHeaders({'Content-Type':'application/json',...(opts.headers||{})})});
@@ -6102,7 +6120,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.40'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.41'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

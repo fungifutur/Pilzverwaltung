@@ -1,4 +1,8 @@
-# Version 1.5.40 – Produktkatalog: nicht zugeordnete Produkte zuerst
+# Version 1.5.41 – Auto-Sync ist Standard für zugeordnete Produkte
+
+Jedes Produkt mit zugeordnetem Bereich (alles ausser «Sonstige / nicht zugeordnet») hat jetzt automatisch Auto-Sync an. Das gilt für Stammdaten und für importierte Produkte, sobald ihnen ein Bereich zugeordnet wird. Beim Start der App werden fehlende Einschaltungen nachgeholt und gespeichert. Aus bleibt Auto-Sync nur, wenn du ein Produkt oder eine Gruppe bewusst ausschaltest. Die App merkt sich das und schaltet es nicht wieder ein. Interne Komponenten (INT_…) werden nie synchronisiert.
+
+Vorherige Version 1.5.40:
 
 Unter Einstellungen → WooCommerce Sync → «Lokaler Produktkatalog / Bestandsart» zeigt die Tabelle jetzt standardmässig nur Produkte, die noch keinem Bereich zugeordnet sind, mit Zähler («55 nicht zugeordnet · 65 im Katalog insgesamt»). Mit dem Haken «Nur nicht zugeordnete Produkte zeigen» lassen sich alle Katalogeinträge anzeigen. Ein Produkt bleibt nach der Zuordnung sichtbar, bis die Tabelle neu gezeichnet wird. Zusätzlich behoben: Die Prüfung «SKU ist schon im Katalog» erkannte Katalogeinträge nicht, ein zweiter Import konnte dieselben SKUs doppelt anlegen.
 
