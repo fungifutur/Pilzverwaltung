@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.41';
+const APP_VERSION = '1.5.42';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -340,7 +340,9 @@ function anonymizeOldOrders(db, now = Date.now()) {
     const t = Date.parse(o.archivedAt || o.date_modified || o.date_created || '');
     if (!Number.isFinite(t) || now - t < ORDER_NAME_KEEP_DAYS * 86400000) continue;
     o.customer = ''; o.billing = { first_name: '', last_name: '' }; o.shipping = { first_name: '', last_name: '' };
-    o.customer_note = ''; o.anonymized = true; o.anonymizedAt = new Date(now).toISOString();
+    o.customer_note = ''; if (o.courseContact) o.courseContact = { email: '', phone: '' };
+    for (const it of (o.items || [])) if (Array.isArray(it.meta)) it.meta = [];
+    o.anonymized = true; o.anonymizedAt = new Date(now).toISOString();
   }
 }
 // Bereinigung (INT-09): überholte Reservierungsdatensätze wachsen sonst bei jedem Speichern.
@@ -815,8 +817,54 @@ async function wooDeliveryDaysForItem(item) {
     wooProductDeliveryCache.set(key,{value,at:Date.now()});return value;
   }catch(e){console.warn('Woo Lieferzeit nicht verfügbar:',key,e.message);return null;}
 }
+// Kurse: Produkte der WooCommerce-Kategorie WC_COURSE_CATEGORY (Standard «Kurse») sind Kursbuchungen. Ihre Bestellungen werden
+// nicht reserviert und erscheinen im Reiter «Kurse» statt in den normalen Bestellungen. Schlägt die Abfrage fehl, bleibt alles wie bisher.
+const WC_COURSE_CATEGORY = String(process.env.WC_COURSE_CATEGORY || 'Kurse').trim();
+let wooCourseCache = { ids: null, at: 0 };
+async function wooCourseProductIds() {
+  if (!WC_COURSE_CATEGORY || !wooConfigured()) return null;
+  if (wooCourseCache.ids && Date.now() - wooCourseCache.at < WOO_DELIVERY_CACHE_MS) return wooCourseCache.ids;
+  try {
+    const wanted = WC_COURSE_CATEGORY.toLowerCase();
+    const cats = await wooRequest(`/products/categories?per_page=100&search=${encodeURIComponent(WC_COURSE_CATEGORY)}`, { method: 'GET' });
+    const root = (Array.isArray(cats) ? cats : []).find(c => String(c.name || '').toLowerCase() === wanted || String(c.slug || '').toLowerCase() === wanted);
+    if (!root) { wooCourseCache = { ids: new Set(), at: Date.now() }; console.warn('Kurse: Kategorie nicht gefunden:', WC_COURSE_CATEGORY); return wooCourseCache.ids; }
+    const catIds = [root.id, ...(Array.isArray(cats) ? cats : []).filter(c => Number(c.parent) === Number(root.id)).map(c => c.id)];
+    const ids = new Set();
+    for (const cid of catIds) {
+      for (let page = 1; page <= 10; page++) {
+        const list = await wooRequest(`/products?category=${cid}&per_page=100&page=${page}&status=any`, { method: 'GET' });
+        if (!Array.isArray(list) || !list.length) break;
+        for (const pr of list) ids.add(Number(pr.id));
+        if (list.length < 100) break;
+      }
+    }
+    wooCourseCache = { ids, at: Date.now() };
+    return ids;
+  } catch (err) {
+    console.warn('Kurse: Kategorie konnte nicht gelesen werden:', err.message);
+    return wooCourseCache.ids;   // alter Stand oder null
+  }
+}
+function applyCourseInfo(normalized, raw, courseIds) {
+  if (!courseIds || !courseIds.size) return normalized;
+  const rawItems = raw.line_items || [];
+  let any = false;
+  normalized.items = (normalized.items || []).map((it, i) => {
+    if (!courseIds.has(Number(it.product_id))) return it;
+    any = true;
+    const meta = (rawItems[i]?.meta_data || []).filter(m => m && m.key && !String(m.key).startsWith('_') && m.value !== undefined && m.value !== null && typeof m.value !== 'object')
+      .map(m => ({ key: String(m.display_key || m.key).slice(0, 80), value: String(m.display_value ?? m.value).replace(/<[^>]*>/g, '').slice(0, 300) })).slice(0, 20);
+    return { ...it, course: true, meta };
+  });
+  if (!any) return normalized;
+  normalized.courseOnly = normalized.items.length > 0 && normalized.items.every(it => it.course);
+  normalized.courseContact = { email: String(raw.billing?.email || '').slice(0, 200), phone: String(raw.billing?.phone || '').slice(0, 60) };
+  return normalized;
+}
 async function enrichWooOrder(o){
   const normalized=normalizeWooOrder(o);
+  applyCourseInfo(normalized, o, await wooCourseProductIds());
   const explicit=o.latest_shipping_date || (o.meta_data||[]).find(m=>m.key==='latest_shipping_date'||m.key==='_mykothek_latest_shipping_date')?.value;
   if(explicit){const value=String(explicit);normalized.latest_shipping_date=/^\d{2}\.\d{2}\.\d{4}$/.test(value)?value.slice(6)+'-'+value.slice(3,5)+'-'+value.slice(0,2):value;return normalized;}
   const lengths=await Promise.all((o.line_items||[]).map(wooDeliveryDaysForItem));
@@ -1094,7 +1142,9 @@ function reserveOrderFifo(db, order) {
   // INT-07: Die alten Reservierungen dieser Bestellung sind jetzt 'replaced'. Alle Verfügbarkeitsrechnungen unten zählen deshalb
   // auch die Reservierungen mit, die in dieser Schleife für frühere Positionen derselben Bestellung entstehen (kein doppeltes Reservieren derselben Charge).
   const created=[];
+  if (order.courseOnly) return created;
   for (const item of (order.items||[])) {
+    if (item.course) continue;
     let need = Number(item.quantity)||0;
     const bom=setBom(db,item.sku);
     if(bom){

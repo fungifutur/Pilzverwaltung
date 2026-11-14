@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.41</title>
+<title>Pilzverwaltung Serverversion 1.5.42</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.41</h1>
+<h1>Pilzverwaltung – Version 1.5.42</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -165,6 +165,7 @@ nav button.top-link{font-weight:bold}
 <button onclick="show('labmaterials',this); renderSimpleStock('labmaterials')">Labormaterialien</button>
 </div>
 <button class="top-link" onclick="show('orders',this); renderWooOrders()">Bestellungen</button>
+<button class="top-link" onclick="show('courses',this); renderCourses()">Kurse</button>
 <button class="nav-group-title" onclick="toggleNavGroup('researchGroup')">▶ Forschung & Zucht</button>
 <div id="researchGroup" class="nav-group">
 <button onclick="show('mastercultures',this)">Masterkulturen</button>
@@ -737,6 +738,12 @@ nav button.top-link{font-weight:bold}
 <button class="secondary" onclick="setOrderView('packing')">Pack-/Versandliste</button>
 <button class="secondary" onclick="printOrderView()">Aktuelle Liste drucken</button></div>
 <div id="wooOrdersRows"></div>
+</section>
+<section id="courses" class="section">
+<h2>Kurse</h2>
+<div class="card"><p class="muted">Kursbuchungen aus WooCommerce (Produktkategorie «Kurse»). Sie erscheinen nicht in den normalen Bestellungen und reservieren keinen Bestand. Eine Bestellung bleibt hier, bis du sie in WooCommerce abschliesst. Angezeigt werden bezahlte und wartende Buchungen, gebündelt pro Kurs.</p>
+<button class="primary" onclick="fetchWooOrders()">Mit WooCommerce abgleichen</button> <button class="secondary" onclick="printCourses()">Teilnehmerlisten drucken</button></div>
+<div id="courseRows"></div>
 </section>
 <section id="mastercultures" class="section">
 <h2>Masterkulturen</h2>
@@ -2178,6 +2185,7 @@ async function saveOrderManualDate(id){
   finally{LIVE_SAVE_BUSY=false;}
 }
 function renderWooOrders(){
+  try{if(el('courses')&&el('courses').classList.contains('active'))renderCourses();}catch(_e){}
   ensureCatalogState(); const locName=id=>storageLocationLabel((db.storageLocations||[]).find(x=>x.id===id)||{id:id||'–'});
   if(orderView==='production'){
     const rs=(db.productionRequests||[]).filter(r=>r.status!=='erledigt');
@@ -2187,23 +2195,62 @@ function renderWooOrders(){
     return setHTML('wooOrdersRows',html||'<span class="muted">Keine bestellbezogenen Produktionsaufträge.</span>');
   }
   if(orderView==='packing'){
-    const ready=(db.wooOrders||[]).filter(o=>isWooActiveOrder(o)&&String(o.status||'').toLowerCase()==='processing').map(o=>({o,c:orderComputed(o)})).filter(x=>x.c.ready);
+    const ready=(db.wooOrders||[]).filter(o=>isWooActiveOrder(o)&&!o.courseOnly&&String(o.status||'').toLowerCase()==='processing').map(o=>({o,c:orderComputed(o)})).filter(x=>x.c.ready);
     const rows=[];
     ready.forEach(({o,c})=>{c.picks.forEach(p=>{const loc=(db.storageLocations||[]).find(x=>x.id===p.location);const lp=storageLocationParts(loc||{});rows.push({...p,orderNumber:o.number||o.id,customer:o.customer||'',room:lp.room||'',shelf:lp.shelf||'',box:lp.box||''});});});
     rows.sort((a,b)=>[a.room,a.shelf,a.box,String(a.orderNumber)].join('\u0000').localeCompare([b.room,b.shelf,b.box,String(b.orderNumber)].join('\u0000'),'de',{numeric:true,sensitivity:'base'}));
     const html=rows.length?`<div class="card"><h3>Pack-/Versandliste nach Lagerort</h3><table><thead><tr><th>1. Raum</th><th>2. Regal</th><th>3. Kiste</th><th>Bestellung</th><th>Kunde</th><th>Menge</th><th>Produkt</th><th>SKU</th><th>Charge</th></tr></thead><tbody>${rows.map(p=>`<tr><td><strong>${escHtml(p.room||'–')}</strong></td><td>${escHtml(p.shelf||'–')}</td><td>${escHtml(p.box||'–')}</td><td>#${escHtml(String(p.orderNumber))}</td><td>${escHtml(p.customer)}</td><td>${esc(p.qty)}</td><td>${escHtml(p.name)}</td><td>${escHtml(p.sku||'–')}</td><td>${escHtml(p.id)}</td></tr>`).join('')}</tbody></table></div>`:'';
     return setHTML('wooOrdersRows',html||'<span class="muted">Momentan ist keine Bestellung vollständig packbereit.</span>');
   }
-  const active=(db.wooOrders||[]).filter(o=>isWooActiveOrder(o)&&['processing','on-hold'].includes(String(o.status||'').toLowerCase()));
+  const active=(db.wooOrders||[]).filter(o=>isWooActiveOrder(o)&&!o.courseOnly&&['processing','on-hold'].includes(String(o.status||'').toLowerCase()));
   const pickup=o=>(o.shipping_lines||[]).some(l=>/local_pickup|abholung|pickup/i.test([l.method_id,l.method_title,l.method].join(' '))) || /local_pickup|abholung|pickup/i.test(o.shipping_method||'');
   const group=o=>String(o.status||'').toLowerCase()==='on-hold'?2:pickup(o)?1:0;
   const sortDate=o=>String(o.manual_shipping_date||o.latest_shipping_date||'') || '9999-12-31';
   active.sort((a,b)=>group(a)-group(b)||sortDate(a).localeCompare(sortDate(b))||String(a.date_created||'').localeCompare(String(b.date_created||'')));
   const groups=[['In Bearbeitung – Versand',active.filter(o=>group(o)===0)],['In Bearbeitung – Abholung',active.filter(o=>group(o)===1)],['In Wartestellung',active.filter(o=>group(o)===2)]];
-  const archived=(db.wooOrders||[]).filter(o=>!isWooActiveOrder(o));
+  const archived=(db.wooOrders||[]).filter(o=>!isWooActiveOrder(o)&&!o.courseOnly);
   const html=groups.map(([heading,orders])=>`<h3>${escHtml(heading)} (${orders.length})</h3>`+orders.map(o=>{const c=orderComputed(o);const dateLabel=pickup(o)?'Späteste Bereitstellung':'Spätester Versand';const rawDate=String(o.latest_shipping_date||'');const dateText=/^\d{4}-\d{2}-\d{2}$/.test(rawDate)?rawDate.slice(8,10)+'.'+rawDate.slice(5,7)+'.'+rawDate.slice(0,4):'nicht verfügbar';const hasNote=Boolean(String(o.customer_note||'').trim()||String(o.internal_note||'').trim());const manualDate=String(o.manual_shipping_date||'');const effectiveDate=manualDate||rawDate;const effectiveText=/^\d{4}-\d{2}-\d{2}$/.test(effectiveDate)?effectiveDate.slice(8,10)+'.'+effectiveDate.slice(5,7)+'.'+effectiveDate.slice(0,4):'nicht verfügbar';return `<details class="card${hasNote?' woo-order-has-note':''}"><summary style="display:flex;justify-content:space-between;gap:12px;align-items:center"><span><strong>#${escHtml(String(o.number||o.id))}</strong> · ${escHtml(o.customer||'')} · Woo: ${escHtml(o.status||'')} · <strong>${escHtml(pickup(o)&&c.status==='Versandbereit'?'Abholbereit':c.status)}</strong>${hasNote?'<span class="woo-order-note-indicator">✎ Bemerkung vorhanden</span>':''}</span><span style="margin-left:auto;white-space:nowrap;${manualDate?'background:#fff3cd;border:1px solid #e5b94d;border-radius:8px;padding:6px 10px;':''}">${manualDate?'<strong>★ Wunschdatum · </strong>':''}${manualDate?(pickup(o)?'Gewünschte Bereitstellung':'Gewünschter Versand'):dateLabel}: <strong>${escHtml(effectiveText)}</strong></span></summary><div style="margin:12px 0;padding:10px;border:1px solid #e5e7eb;border-radius:10px"><strong>${pickup(o)?'Gewünschte Bereitstellung':'Gewünschter Versand'} (nur Pilzverwaltung)</strong><div class="muted" style="margin:4px 0 8px">Automatisch berechnet: ${escHtml(dateText)}. Ein Wunschdatum hat für Anzeige und Sortierung Vorrang.</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input type="date" id="woo-manual-date-${o.id}" value="${escHtml(manualDate)}" style="width:auto;margin:0"><button class="secondary" id="woo-manual-date-save-${o.id}" onclick="saveOrderManualDate(${JSON.stringify(o.id)})">Datum speichern</button><button class="secondary" onclick="document.getElementById('woo-manual-date-${o.id}').value='';saveOrderManualDate(${JSON.stringify(o.id)})">Datum entfernen</button></div></div><div style="margin:12px 0;padding:10px;background:#f8fafc;border-radius:10px"><strong>Kundenbemerkung (WooCommerce)</strong><div style="white-space:pre-wrap;margin-top:6px">${escHtml(o.customer_note||'Keine Kundenbemerkung vorhanden.')}</div></div><div style="margin:12px 0"><label for="woo-note-${o.id}"><strong>Interne Bemerkung (Pilzverwaltung)</strong></label><textarea id="woo-note-${o.id}" rows="3" style="width:100%;box-sizing:border-box" placeholder="Eigene Bemerkung zur Bestellung …">${escHtml(o.internal_note||'')}</textarea><button class="secondary" id="woo-note-save-${o.id}" onclick="saveOrderInternalNote(${JSON.stringify(o.id)})">Bemerkung speichern</button></div>${(o.items||[]).map(i=>{const own=(db.wooReservations||[]).filter(r=>String(r.orderId)===String(o.id)&&String(r.itemId)===String(i.id)&&r.status==='reserved'); const bom=setBom(i.sku); const waiting=false; let plan;if(bom){const comps=bom.map(c=>{const ors=waiting?[]:own.filter(r=>r.sku===c.sku),reserved=ors.reduce((a,r)=>a+(+r.qty||0),0),required=(+i.quantity||0)*(+c.qty||1),got=reserved;return {...c,required,got,missing:Math.max(0,required-got),waiting,picks:ors.map(r=>({id:r.collection==='productCatalog'?(r.sku||r.batchId):r.batchId,qty:+r.qty||0,location:r.storageLocation||''}))};});plan={components:comps,picks:comps.flatMap(c=>c.picks),missing:comps.reduce((a,c)=>a+c.missing,0)};}else plan=own.length?{picks:own.map(r=>({id:r.collection==='productCatalog'?(r.sku||r.batchId):r.batchId,qty:+r.qty||0,location:r.storageLocation||''})),missing:Math.max(0,(+i.quantity||0)-own.reduce((a,r)=>a+(+r.qty||0),0))}:{picks:[],missing:+i.quantity||0}; const req=getProductionRequest(o,i), stage=orderItemProductionStage(o,i);return `<div style="margin:10px 0"><strong>${esc(i.quantity)} × ${escHtml(i.name)}</strong> ${stage==='ready'?'<span class="badge">'+(pickup(o)?'Abholbereit':'Versandbereit')+'</span>':stage==='made'?'<span class="badge warn">Hergestellt</span>':''} <span class="muted">${escHtml(i.sku||'ohne SKU')}</span><br>${plan.components?plan.components.map(c=>`<div class="muted" style="margin:4px 0">${escHtml(c.label)}: ${c.got}/${c.required} ${c.waiting?'verfügbar · Nicht reserviert':'reserviert'} ${c.missing?`<span class="badge warn">Fehlt ${c.missing}</span>`:'<span class="badge">✓</span>'}</div>`).join(''):''}${plan.picks.map(p=>`<span class="badge">${esc(p.qty)} × ${escHtml(p.id)} · ${escHtml(locName(p.location))}</span>`).join(' ')||'<span class="muted">Kein Bestand zugeordnet.</span>'}${plan.missing?` <span class="badge warn">Fehlen ${plan.missing}</span> ${req?`<span class="badge">${escHtml(req.status)}</span>`:`<button class="primary" onclick="prepareOrderProductionForm(${o.id},${i.id})">Produzieren</button>`}`:''}</div>`}).join('')}</details>`}).join('')).join('');
   const archivedHtml=archived.length?`<details class="card"><summary><strong>Abgeschlossen / archiviert (${archived.length})</strong></summary><p class="muted">Abgeschlossene, stornierte, erstattete oder extern gelöschte WooCommerce-Bestellungen erscheinen nicht mehr in den aktiven Listen. Reservierungen sind freigegeben bzw. bei completed endgültig ausgebucht.</p>${archived.map(o=>`<div style="display:flex;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid #ddd;padding:8px 0"><span><strong>#${escHtml(String(o.number||o.id))}</strong> · ${escHtml(o.customer||'')} <span class="badge">${escHtml(o.externalDeleted?'extern gelöscht':(o.status||'archiviert'))}</span></span><button class="secondary" onclick="deleteLocalWooOrder(${JSON.stringify(o.id)},${JSON.stringify(o.number||o.id)})">Lokal endgültig löschen</button></div>`).join('')}</details>`:'';
   setHTML('wooOrdersRows',(html+archivedHtml)||'<span class="muted">Noch keine Bestellungen abgerufen.</span>');
+}
+// --- Kurse ---
+let courseEmailGroups=[];
+function courseGroups(){
+  const groups=new Map();
+  (db.wooOrders||[]).filter(o=>isWooActiveOrder(o)&&['processing','on-hold'].includes(String(o.status||'').toLowerCase())).forEach(o=>{
+    (o.items||[]).filter(i=>i.course).forEach(i=>{
+      const key=String(i.name||'Kurs'); if(!groups.has(key))groups.set(key,[]);
+      groups.get(key).push({o,i});
+    });
+  });
+  return Array.from(groups.entries()).sort((a,b)=>a[0].localeCompare(b[0],'de')).map(([name,rows])=>({name,rows:rows.sort((x,y)=>String(x.o.date_created||'').localeCompare(String(y.o.date_created||''))||Number(x.o.id||0)-Number(y.o.id||0))}));
+}
+function courseTableHtml(g,gi,forPrint){
+  const people=g.rows.reduce((a,r)=>a+(+r.i.quantity||0),0);
+  const emails=Array.from(new Set(g.rows.map(r=>String(r.o.courseContact?.email||'').trim()).filter(Boolean)));
+  courseEmailGroups[gi]=emails;
+  const body=g.rows.map(({o,i})=>{
+    const c=o.courseContact||{}; const paid=String(o.status||'').toLowerCase()==='processing';
+    const meta=(i.meta||[]).map(m=>escHtml(m.key)+': '+escHtml(m.value)).join('<br>');
+    return `<tr><td>#${escHtml(String(o.number||o.id))}</td><td>${escHtml(o.customer||'–')}</td><td>${c.email?escHtml(c.email):'–'}</td><td>${c.phone?escHtml(c.phone):'–'}</td><td>${escHtml(String(i.quantity))}</td><td>${paid?'bezahlt':'wartet auf Zahlung'}</td><td>${meta||'–'}</td><td>${o.customer_note?escHtml(o.customer_note):'–'}</td></tr>`;
+  }).join('');
+  const copyBtn=forPrint?'':` <button class="secondary" onclick="copyCourseEmails(${gi})">E-Mail-Adressen kopieren (${emails.length})</button>`;
+  return `<h3>${escHtml(g.name)}</h3><p><strong>${people}</strong> Teilnehmer in <strong>${g.rows.length}</strong> Bestellung(en)${copyBtn}</p><div style="overflow:auto"><table><thead><tr><th>Bestellung</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th>Anzahl</th><th>Zahlung</th><th>Angaben</th><th>Bemerkung</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function renderCourses(){
+  courseEmailGroups=[]; const groups=courseGroups();
+  setHTML('courseRows',groups.length?groups.map((g,gi)=>`<div class="card">${courseTableHtml(g,gi,false)}</div>`).join(''):'<div class="card muted">Keine offenen Kursbuchungen. Falls Kurse fehlen: «Mit WooCommerce abgleichen» drücken. Die Kurse werden über die WooCommerce-Produktkategorie «Kurse» erkannt.</div>');
+}
+async function copyCourseEmails(gi){
+  const list=(courseEmailGroups[gi]||[]).join('; ');
+  try{await navigator.clipboard.writeText(list);alert((courseEmailGroups[gi]||[]).length+' E-Mail-Adressen kopiert.');}
+  catch(e){prompt('E-Mail-Adressen zum Kopieren:',list);}
+}
+function printCourses(){
+  const groups=courseGroups(); if(!groups.length){alert('Keine offenen Kursbuchungen.');return;}
+  const w=window.open('','_blank'); if(!w)return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Teilnehmerlisten Kurse</title><style>body{font-family:Arial,sans-serif;padding:18px}table{width:100%;border-collapse:collapse;margin-bottom:18px}td,th{border:1px solid #999;padding:5px 7px;font-size:12px;text-align:left;vertical-align:top}h3{margin-bottom:4px}</style></head><body><h2>Teilnehmerlisten Kurse – ${esc(fmt(today()))}</h2>${groups.map((g,gi)=>courseTableHtml(g,gi,true)).join('')}</body></html>`);
+  w.document.close(); w.print();
 }
 function printOrderView(){
   const node=el('wooOrdersRows'); if(!node)return; const title=orderView==='production'?'Produktionsliste – Bestellungen':orderView==='packing'?'Pack-/Versandliste':'Bestellübersicht';
@@ -3277,12 +3324,12 @@ document.querySelectorAll('input[type=date]').forEach(e=>{if(!e.value)e.value=to
 
 // Dashboard
 setText('sDk', db.dk.reduce((a,c)=>a+Number(c.count||1),0));
-setText('sOrdersOpen', (db.wooOrders||[]).filter(isWooActiveOrder).length);
+setText('sOrdersOpen', (db.wooOrders||[]).filter(o=>isWooActiveOrder(o)&&!o.courseOnly).length);
 setText('sLc', (db.lc||[]).filter(x=>!['verbraucht','archiviert','kontaminiert'].includes(x.status)).length);
 setText('sKb', db.kb.filter(x=>!['beimpft','archiviert','kontaminiert'].includes(x.status)).length);
 setText('sLots', db.lots.filter(x=>x.status!=='archiviert' && x.status!=='verkauft').length);
 setText('sTestSubs', (db.sub||[]).filter(x=>x.forTest && !isArchivedStatus(x.status)).reduce((a,x)=>a+qtyOrOne(x.qty),0));
-const _activeOrders=(db.wooOrders||[]).filter(isWooActiveOrder);
+const _activeOrders=(db.wooOrders||[]).filter(o=>isWooActiveOrder(o)&&!o.courseOnly);
 const _orderStates=_activeOrders.map(orderComputed);
 setText('sOrdersReady', _activeOrders.filter((o,i)=>String(o.status||'').toLowerCase()==='processing'&&_orderStates[i].ready).length);
 setText('sOrdersMissing', _orderStates.filter(x=>x.missing>0).length);
@@ -5351,7 +5398,7 @@ function exportRestockList(){
 }
 
 function renderToday(){
-  const orders=(db.wooOrders||[]).filter(o=>String(o.status)==='processing'&&!o.archived&&!o.externalDeleted);
+  const orders=(db.wooOrders||[]).filter(o=>String(o.status)==='processing'&&!o.archived&&!o.externalDeleted&&!o.courseOnly);
   let ready=0,missing=0; orders.forEach(o=>{try{const c=orderComputed(o); if(c.missing>0) missing++; else ready++;}catch(_e){}});
   const warnings=minStockWarnings().filter(x=>Math.max(0,(+x.qty||0)-(+x.saleable||0))>0);
   const due=(typeof adminDueItems==='function'?adminDueItems():[]).slice(0,20);
@@ -6120,7 +6167,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.41'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.42'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

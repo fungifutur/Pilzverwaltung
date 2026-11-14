@@ -67,3 +67,7 @@ WHERE id = 1;
 - Google Drive: Ordner `Pilzverwaltung-Backups` enthält nur Dateien der letzten 30 Tage.
 - Render: Arbeitsbereich-Tarif (derzeit Hobby = 3 Tage Wiederherstellung auf einen Zeitpunkt; Pro wären 7 Tage) bei Änderungen nachführen.
 - Dieses Dokument aktuell halten, wenn Fristen oder Systeme ändern.
+
+## Kursbuchungen (ab 1.5.42)
+
+Für Bestellungen mit Produkten der WooCommerce-Kategorie «Kurse» werden zusätzlich E-Mail-Adresse und Telefonnummer gespeichert, damit die Teilnehmer vorab informiert werden können. Zweck: Kursorganisation. Löschung: 90 Tage nach der Archivierung der Bestellung (zusammen mit den Namen), ebenso die Zusatzangaben der Kursposition.

@@ -1,4 +1,8 @@
-# Version 1.5.41 – Auto-Sync ist Standard für zugeordnete Produkte
+# Version 1.5.42 – Reiter «Kurse»
+
+Neuer Menüpunkt **Kurse**. Bestellungen mit Produkten der WooCommerce-Kategorie «Kurse» (Name oder Slug, einstellbar mit der Render-Variable `WC_COURSE_CATEGORY`, Standard `Kurse`) erscheinen nicht mehr in den normalen Bestellungen, auf dem Dashboard und auf «Heute», und sie reservieren keinen Bestand. Der Reiter zeigt sie gebündelt pro Kurs mit Teilnehmerzahl, Bestellnummer, Name, E-Mail, Telefon, Zahlungsstand, Angaben aus der Bestellung (Zusatzfelder des Kursprodukts) und Kundenbemerkung. Pro Kurs gibt es «E-Mail-Adressen kopieren» für die Vorabinfo, oben «Teilnehmerlisten drucken». Eine Bestellung bleibt im Reiter, bis sie in WooCommerce abgeschlossen wird. Enthält eine Bestellung Kurs und normale Produkte, erscheint sie in beiden Reitern, die Kursposition wird nicht reserviert. Nur für Kursbestellungen werden E-Mail und Telefon gespeichert und 90 Tage nach der Archivierung wie die Namen gelöscht. Die Kategorie wird einmal pro Stunde aus WooCommerce gelesen. Ist sie nicht erreichbar, bleibt alles wie bisher.
+
+Vorherige Version 1.5.41:
 
 Jedes Produkt mit zugeordnetem Bereich (alles ausser «Sonstige / nicht zugeordnet») hat jetzt automatisch Auto-Sync an. Das gilt für Stammdaten und für importierte Produkte, sobald ihnen ein Bereich zugeordnet wird. Beim Start der App werden fehlende Einschaltungen nachgeholt und gespeichert. Aus bleibt Auto-Sync nur, wenn du ein Produkt oder eine Gruppe bewusst ausschaltest. Die App merkt sich das und schaltet es nicht wieder ein. Interne Komponenten (INT_…) werden nie synchronisiert.
 
