@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.43</title>
+<title>Pilzverwaltung Serverversion 1.5.44</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.43</h1>
+<h1>Pilzverwaltung – Version 1.5.44</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -291,6 +291,7 @@ nav button.top-link{font-weight:bold}
 <div><label>Anzahl</label><input id="dkCount" type="text" inputmode="numeric" pattern="[0-9]*" value="1"></div>
 <div><label>Status</label><select id="dkStatus"><option>am durchwachsen</option><option>fertig durchwachsen</option><option>kontaminiert</option></select></div>
 <div><label>Fundort</label><input id="dkPlace"></div>
+<div><label>Funddatum</label><input id="dkFundDate" type="date"></div>
 <div><label>Koordinaten</label><input id="dkCoords"></div>
 <div><label>Holzart</label><input id="dkWood"></div>
 </div>
@@ -1598,6 +1599,7 @@ function ensureMasterCulture(strain, sourceType, sourceId, extra={}){
     place: extra.place || '',
     coords: extra.coords || '',
     wood: extra.wood || '',
+    fundDate: extra.fundDate || '',
     kbStatus:'nicht geprüft',
     kbNote:'',
     lcStatus:'nicht geprüft',
@@ -1677,7 +1679,7 @@ function renderMasterCultures(){
   const fSub=masterFilterValue('masterFilterSub');
   const all=(db.masterCultures||[]).filter(isActiveMasterCulture).slice().sort((a,b)=>String(a.masterCode).localeCompare(String(b.masterCode)));
   const filtered=all.filter(m=>{
-    const text=[m.masterCode,m.strain,m.sourceType,m.sourceId,m.date,m.note,m.kbNote,m.lcNote,m.subNote,m.fruitNote].join(' ').toLowerCase();
+    const text=[m.masterCode,m.strain,m.sourceType,m.sourceId,m.date,m.place,m.wood,m.fundDate,m.note,m.kbNote,m.lcNote,m.subNote,m.fruitNote].join(' ').toLowerCase();
     if(q && !text.includes(q)) return false;
     if(fHome && m.homepageStatus!==fHome) return false;
     if(fDna && m.dnaStatus!==fDna) return false;
@@ -1709,6 +1711,9 @@ function renderMasterCultures(){
         <div><label>Fruchtung</label>${masterStatusSelect(m.id,'fruitStatus',fruitOpts)}${masterInput(m.id,'fruitNote','Notiz')}</div>
         <div><label>DNA</label>${masterStatusSelect(m.id,'dnaStatus',dnaOpts)}</div>
         <div><label>Homepage</label>${masterStatusSelect(m.id,'homepageStatus',homeOpts)}</div>
+        <div><label>Fundort</label>${masterInput(m.id,'place','z.B. Zürichsee')}</div>
+        <div><label>Funddatum</label><input type="date" value="${escHtml(m.fundDate||'')}" onchange="updateMasterCulture('${m.id}','fundDate',this.value)"></div>
+        <div><label>Baumart</label>${masterInput(m.id,'wood','z.B. Buche')}</div>
         <div><label>Allgemeine Notiz</label>${masterInput(m.id,'note','allgemeine Notiz')}</div>
       </div>
     </div></td></tr>` : '';
@@ -3706,7 +3711,8 @@ for(let i=0; i<count; i++){
     status:dkStatus.value,
     place:placeValue,
     coords:coordsValue,
-    wood:woodValue
+    wood:woodValue,
+    fundDate:(typeof dkFundDate!=='undefined'&&dkFundDate.value)||''
   };
   db.dk.push(item);
   if(t==='wild'){
@@ -3715,7 +3721,7 @@ for(let i=0; i<count; i++){
       // Ein Wildfund / ein Erstellvorgang = ein gemeinsamer Master-Code.
       // Mehrere gleichzeitig erstellte Dauerkulturen bleiben einzeln sichtbar,
       // verweisen aber alle auf denselben Master.
-      sharedWildMasterCode = ensureMasterCulture(item.strain,'dk',item.id,{date:item.date,place:item.place,coords:item.coords,wood:item.wood,webshopRelevant:webshopActive});
+      sharedWildMasterCode = ensureMasterCulture(item.strain,'dk',item.id,{date:item.date,place:item.place,coords:item.coords,wood:item.wood,fundDate:item.fundDate,webshopRelevant:webshopActive});
     }
     item.masterCode = sharedWildMasterCode;
   }
@@ -5985,13 +5991,13 @@ function ensureMasterRecordForCode(strain, masterCode, meta={}){
     m={
       id:'MC-'+Date.now()+'-'+Math.random().toString(16).slice(2), masterCode:code, strain:scientificName(strain)||strain,
       sourceType:meta.sourceType||'import', sourceId:meta.sourceId||'', date:meta.date||today(),
-      place:meta.place||'', coords:meta.coords||'', wood:meta.wood||'', note:meta.note||'',
+      place:meta.place||'', coords:meta.coords||'', wood:meta.wood||'', fundDate:meta.fundDate||'', note:meta.note||'',
       kbStatus:'nicht geprüft', lcStatus:'nicht geprüft', subStatus:'nicht geprüft', fruitStatus:'nicht geprüft', dnaStatus:'nicht durchgeführt', homepageStatus:'nicht aufgeschaltet', active:true
     };
     db.masterCultures.push(m);
   } else {
     if(strain && !m.strain) m.strain=scientificName(strain)||strain;
-    ['place','coords','wood','note','date'].forEach(k=>{ if(meta[k] && !m[k]) m[k]=meta[k]; });
+    ['place','coords','wood','fundDate','note','date'].forEach(k=>{ if(meta[k] && !m[k]) m[k]=meta[k]; });
     m.active=true;
   }
   const pref=masterPrefixFromCode(code), no=masterNoFromCode(code);
@@ -6063,7 +6069,7 @@ async function runDkExcelImport(){
     const sci=scientificName(row.strain)||row.strain;
     let masterCode='';
     if(row.type==='wild'){
-      masterCode = ensureMasterRecordForCode(sci, row.masterCode || nextMasterCode(sci), {sourceType:'import', date:row.date, place:row.fundort, coords:row.coords, wood:row.wood, note:row.source});
+      masterCode = ensureMasterRecordForCode(sci, row.masterCode || nextMasterCode(sci), {sourceType:'import', date:row.date, place:row.fundort, coords:row.coords, wood:row.wood, fundDate:row.fundDate, note:row.source});
       masterMade++;
     }
     const dkIds=[];
@@ -6149,7 +6155,7 @@ async function rebuildMasterFromWild(){
     let m=result.find(x=>x.masterCode===code) || byCode[code];
     if(!m){ m={id:'MC-'+Date.now()+'-'+Math.random().toString(16).slice(2), masterCode:code, strain:item.strain||'', sourceType, sourceId:item.id, date:item.date||today(), kbStatus:'nicht geprüft', lcStatus:'nicht geprüft', subStatus:'nicht geprüft', fruitStatus:'nicht geprüft', dnaStatus:'nicht durchgeführt', homepageStatus:'nicht aufgeschaltet', active:true}; }
     m.masterCode=code; m.strain=m.strain||item.strain||''; m.sourceType=m.sourceType||sourceType; m.sourceId=m.sourceId||item.id; m.date=m.date||item.date||today();
-    m.place=m.place||item.place||item.fundort||''; m.coords=m.coords||item.coords||item.koordinaten||''; m.wood=m.wood||item.wood||item.baumart||''; m.note=m.note||item.source||''; m.active=true;
+    m.place=m.place||item.place||item.fundort||''; m.coords=m.coords||item.coords||item.koordinaten||''; m.wood=m.wood||item.wood||item.baumart||''; m.fundDate=m.fundDate||item.fundDate||''; m.note=m.note||item.source||''; m.active=true;
     if(!result.find(x=>x.masterCode===code)) result.push(m);
   }
   (db.dk||[]).forEach(x=>addFrom(x,'dk'));
@@ -6181,7 +6187,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.43'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.44'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
