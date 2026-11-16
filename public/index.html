@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.42</title>
+<title>Pilzverwaltung Serverversion 1.5.43</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.42</h1>
+<h1>Pilzverwaltung – Version 1.5.43</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -1156,7 +1156,21 @@ async function rejectedSaveReload(message){
   render();
   alert((message||'Die Änderung wurde nicht gespeichert.')+'\n\nDie aktuellen Serverdaten wurden geladen.');
 }
+// Datum «in den Fruchtungsraum» nachtragen, wenn es fehlt: aus dem ersten Archiv-Protokolleintrag «im Fruchtungsraum» des Sacks.
+// Massenbearbeitung, Bearbeiten und QR-Scan setzten bisher kein Datum, dadurch fehlte «Ø Tage bis Fruchtungsraum».
+function fillFruitingDates(){
+  const first=new Map();
+  for(const r of (db.archive||[])){ if(r&&r.type==='sub'&&r.action==='im Fruchtungsraum'&&r.date&&(!first.has(r.itemId)||r.date<first.get(r.itemId))) first.set(r.itemId,r.date); }
+  let changed=false;
+  for(const x of (db.sub||[])){
+    if(!x||x.fruitingDate) continue;
+    const d=first.get(x.id);
+    if(d){x.fruitingDate=d;changed=true;}
+  }
+  return changed;
+}
 async function save(successMessage=''){
+  fillFruitingDates();
   LIVE_SAVE_BUSY=true;
   let rejected=null;
   try{
@@ -1197,7 +1211,7 @@ async function initApp(){
   if(!db.masterCounters || typeof db.masterCounters !== 'object' || Array.isArray(db.masterCounters)) db.masterCounters={};
   ensureWooSyncSettings();
   ensureCatalogState();
-  const syncDefaultsChanged=autoEnableAssignedSync();
+  const syncDefaultsChanged=autoEnableAssignedSync()|fillFruitingDates();
   normalizeWarningSettings();
   const minIdentityMigrated=migrateLegacyMinStockIdentity();
   const wildPetriMinimumsAdded=ensureWildPetriMinimums();
@@ -1795,7 +1809,7 @@ async function saveItemEditor(){
     const key=inp.dataset.editKey; let next=inp.value;
     if(inp.type==='number') next=Number(next||0);
     const old=item[key]??'';
-    if(String(old)!==String(next)){ item[key]=next; changes.push(`${key}: ${old||'leer'} → ${next||'leer'}`); }
+    if(String(old)!==String(next)){ item[key]=next; changes.push(`${key}: ${old||'leer'} → ${next||'leer'}`); if(collection==='sub'&&key==='status'&&next==='im Fruchtungsraum'&&!item.fruitingDate) item.fruitingDate=today(); }
   });
   if(!changes.length){ closeItemEditor(); return; }
   archiveLog(collection,id,'bearbeitet',changes.join('; '));
@@ -6167,7 +6181,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.42'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.43'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
