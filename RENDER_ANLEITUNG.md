@@ -1,4 +1,8 @@
-# Version 1.5.42 – Reiter «Kurse»
+# Version 1.5.43 – Testgruppen: Tage bis Fruchtungsraum
+
+In der Testgruppen-Auswertung fehlte «Ø Tage bis Fruchtungsraum», wenn ein Sack über Massenbearbeitung, Bearbeiten oder QR-Scan in den Fruchtungsraum kam, weil dabei kein Datum gespeichert wurde. Jetzt wird das Datum bei jeder Speicherung und beim Start aus dem Archiv-Protokoll nachgetragen (erster Eintrag «im Fruchtungsraum» des Sacks). Beim Bearbeiten eines Sacks auf «im Fruchtungsraum» wird das Datum sofort gesetzt. Ein schon vorhandenes Datum wird nie überschrieben. Säcke ohne Protokolleintrag bleiben ohne Datum, die App rät nichts. «Ø Tage bis 1. Ernte» zählt weiterhin ab Impfdatum.
+
+Vorherige Version 1.5.42:
 
 Neuer Menüpunkt **Kurse**. Bestellungen mit Produkten der WooCommerce-Kategorie «Kurse» (Name oder Slug, einstellbar mit der Render-Variable `WC_COURSE_CATEGORY`, Standard `Kurse`) erscheinen nicht mehr in den normalen Bestellungen, auf dem Dashboard und auf «Heute», und sie reservieren keinen Bestand. Der Reiter zeigt sie gebündelt pro Kurs mit Teilnehmerzahl, Bestellnummer, Name, E-Mail, Telefon, Zahlungsstand, Angaben aus der Bestellung (Zusatzfelder des Kursprodukts) und Kundenbemerkung. Pro Kurs gibt es «E-Mail-Adressen kopieren» für die Vorabinfo, oben «Teilnehmerlisten drucken». Eine Bestellung bleibt im Reiter, bis sie in WooCommerce abgeschlossen wird. Enthält eine Bestellung Kurs und normale Produkte, erscheint sie in beiden Reitern, die Kursposition wird nicht reserviert. Nur für Kursbestellungen werden E-Mail und Telefon gespeichert und 90 Tage nach der Archivierung wie die Namen gelöscht. Die Kategorie wird einmal pro Stunde aus WooCommerce gelesen. Ist sie nicht erreichbar, bleibt alles wie bisher.
 
