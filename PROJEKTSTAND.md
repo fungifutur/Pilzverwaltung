@@ -1,4 +1,8 @@
-# Version 1.5.43 – Testgruppen: Tage bis Fruchtungsraum
+# Version 1.5.44 – Masterkulturen: Fundort, Funddatum, Baumart
+
+In den Details jeder Masterkultur (Forschung & Zucht → Masterkulturen → Details) gibt es drei interne Felder: **Fundort**, **Funddatum** und **Baumart**. Fundort und Baumart waren schon gespeichert (aus dem Formular «Dauerkultur», Typ wild, und aus dem Excel-Import als Fundort/Holzart) und werden jetzt angezeigt und sind bearbeitbar. Das Funddatum ist neu: Das Formular «Dauerkultur» hat ein Feld «Funddatum», und der Excel-Import übernimmt die Spalte «Funddatum». Die drei Felder sind in der Masterkulturen-Suche enthalten.
+
+Vorherige Version 1.5.43:
 
 In der Testgruppen-Auswertung fehlte «Ø Tage bis Fruchtungsraum», wenn ein Sack über Massenbearbeitung, Bearbeiten oder QR-Scan in den Fruchtungsraum kam, weil dabei kein Datum gespeichert wurde. Jetzt wird das Datum bei jeder Speicherung und beim Start aus dem Archiv-Protokoll nachgetragen (erster Eintrag «im Fruchtungsraum» des Sacks). Beim Bearbeiten eines Sacks auf «im Fruchtungsraum» wird das Datum sofort gesetzt. Ein schon vorhandenes Datum wird nie überschrieben. Säcke ohne Protokolleintrag bleiben ohne Datum, die App rät nichts. «Ø Tage bis 1. Ernte» zählt weiterhin ab Impfdatum.
 
