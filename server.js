@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.44';
+const APP_VERSION = '1.5.45';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -121,6 +121,16 @@ function send(res, status, body, contentType = 'text/plain; charset=utf-8', head
   res.end(body);
 }
 
+// Zeitmessung einer Anfrage (Server-Timing-Header). Hilft zu sehen, wo beim Speichern Zeit verloren geht.
+function makeTimer() {
+  const t0 = process.hrtime.bigint(); let last = t0; const parts = [];
+  return {
+    mark(name) { const now = process.hrtime.bigint(); parts.push([name, Number(now - last) / 1e6]); last = now; },
+    total() { return Number(process.hrtime.bigint() - t0) / 1e6; },
+    header() { return parts.map(([n, d]) => `${n};dur=${d.toFixed(0)}`).join(', ') + `, gesamt;dur=${this.total().toFixed(0)}`; },
+    log(label) { if (this.total() > 3000) console.warn(`Langsame Anfrage ${label}: ${this.header()}`); }
+  };
+}
 function sendJson(res, status, obj, headers = {}) {
   send(res, status, JSON.stringify(obj), 'application/json; charset=utf-8', headers);
 }
@@ -994,7 +1004,37 @@ function catalogItem(db, sku) {
 }
 // Angebrochene 1000er-Dübelpakete und angebrochene Körnerbrut sind keine vollständigen Verkaufsprodukte mehr (nicht verkäuflich).
 function is1000Dowel(x) { return !!x && x.type==='Dübel' && /(^|\D)1000(\D|$)/.test(String(x.size||x.variant||'')); }
+// Tempo: Während reiner Leseberechnungen (Bestandsliste, Woo-Vergleich) werden Chargen und Reservierungen einmal indexiert.
+// Der Cache gilt nur innerhalb von withStockCache() und wird nie gespeichert.
+const STOCK_CACHE = new WeakMap();
+function withStockCache(db, fn) {
+  const had = STOCK_CACHE.has(db);
+  if (!had) STOCK_CACHE.set(db, { rows:new Map(), batch:null, simple:null });
+  try { return fn(); } finally { if (!had) STOCK_CACHE.delete(db); }
+}
+function reservationIndex(c, db) {
+  if (!c.batch) {
+    c.batch = new Map(); c.simple = new Map();
+    for (const r of (db.wooReservations || [])) {
+      if (r.status !== 'reserved') continue;
+      const q = Number(r.qty) || 0;
+      if (r.collection === 'productCatalog') { const k = String(r.sku || ''); c.simple.set(k, (c.simple.get(k) || 0) + q); }
+      const k2 = r.collection + '|' + String(r.batchId || ''); c.batch.set(k2, (c.batch.get(k2) || 0) + q);
+    }
+  }
+  return c;
+}
 function batchRowsForSku(db, sku) {
+  const c = STOCK_CACHE.get(db);
+  if (c) {
+    const key = String(sku || '');
+    let rows = c.rows.get(key);
+    if (!rows) { rows = batchRowsForSkuRaw(db, sku); c.rows.set(key, rows); }
+    return rows.slice();
+  }
+  return batchRowsForSkuRaw(db, sku);
+}
+function batchRowsForSkuRaw(db, sku) {
   const rows = [];
   const add = (collection, list, filter = () => true, dateKey = 'date') => {
     for (const x of (list || [])) {
@@ -1015,9 +1055,13 @@ function activeReservations(db, exceptOrderId = null) {
   return (db.wooReservations || []).filter(r => r.status === 'reserved' && (exceptOrderId == null || String(r.orderId) !== String(exceptOrderId)));
 }
 function reservedQtyForBatch(db, collection, id, exceptOrderId = null) {
+  const c = STOCK_CACHE.get(db);
+  if (c && exceptOrderId == null) return reservationIndex(c, db).batch.get(collection + '|' + String(id || '')) || 0;
   return activeReservations(db, exceptOrderId).filter(r => r.collection === collection && String(r.batchId || '') === String(id || '')).reduce((a,r)=>a+(Number(r.qty)||0),0);
 }
 function reservedSimpleQty(db, sku, exceptOrderId = null) {
+  const c = STOCK_CACHE.get(db);
+  if (c && exceptOrderId == null) return reservationIndex(c, db).simple.get(String(sku || '')) || 0;
   return activeReservations(db, exceptOrderId).filter(r => r.collection === 'productCatalog' && String(r.sku || '') === String(sku || '')).reduce((a,r)=>a+(Number(r.qty)||0),0);
 }
 function productionReserveForSku(db, sku) {
@@ -1056,7 +1100,8 @@ function stockBreakdown(db, sku) {
   const reserved = (db.wooReservations||[]).filter(r=>r.status==='reserved' && String(r.sku||'')===String(sku||'')).reduce((a,r)=>a+(Number(r.qty)||0),0);
   return { physical: Math.max(0,physical), reserved: Math.max(0,reserved), productionReserve: productionReserveForSku(db, sku), reserve: Math.max(0, Number(cat?.setReserve)||0), available };
 }
-function stockMap(db) {
+function stockMap(db) { return withStockCache(db, () => stockMapRaw(db)); }
+function stockMapRaw(db) {
   const skus = new Set();
   for (const k of ['productCatalog','minStocks','dk','kb','sub','lots','logs','goods','petri','buckets']) for (const x of (db[k]||[])) if (x && x.sku) skus.add(String(x.sku));
   for (const sku of Object.keys(db.setBoms||{})) skus.add(sku);
@@ -1102,6 +1147,9 @@ async function syncChangedSkus(oldDb, newDb, reason='Bestandsänderung') {
   const oldSync = new Set(allSyncSkus(oldDb));
   const newSync = new Set(allSyncSkus(newDb));
   const candidates = new Set([...oldSync, ...newSync]);
+  return withStockCache(oldDb, () => withStockCache(newDb, () => syncChangedSkusInner(oldDb, newDb, reason, oldSync, newSync, candidates)));
+}
+async function syncChangedSkusInner(oldDb, newDb, reason, oldSync, newSync, candidates) {
   // Neu aktivierte Auto-Sync-SKUs werden sofort initial nach WooCommerce geschrieben,
   // auch wenn sich der interne Bestand beim Einschalten selbst nicht verändert hat.
   const changed = [...candidates].filter(sku =>
@@ -1209,6 +1257,15 @@ function reserveOrderFifo(db, order) {
   return created;
 }
 
+// Tempo: Alles, was die Reservierungen beeinflusst. Ist es vor und nach dem Speichern gleich (z. B. neue Petrischale,
+// neue Flüssigmyzel-Flasche), muss nichts neu verteilt werden.
+function reservationInputSig(db) {
+  return JSON.stringify([
+    db.goods, db.kb, db.sub, db.lots, db.logs, db.productCatalog, db.minStocks, db.setBoms,
+    (db.wooOrders||[]).map(o=>[o.id,o.status,o.archived,o.externalDeleted,o.courseOnly,o.date_created,o.items]),
+    (db.wooReservations||[]).filter(r=>r.status==='reserved').map(r=>[r.orderId,r.itemId,r.sku,r.collection,r.batchId,r.qty])
+  ]);
+}
 function rebuildProcessingReservations(db) {
   // Bezahlte Bestellungen (processing) haben Vorrang vor wartenden (on-hold, z. B. Vorauskasse); innerhalb gleich nach Bestelldatum.
   const rank=o=>o.status==='processing'?0:1;
@@ -1769,11 +1826,15 @@ async function handleApi(req, res) {
       catch (err) { console.error(err); return sendJson(res, 500, { error: 'Daten konnten nicht gelesen werden.' }); }
     }
     if (req.method === 'POST') {
+      const tm = makeTimer();
       try {
         const parsed = normalizeDb(await readJson(req, MAX_BODY));
+        tm.mark('empfangen');
         const baseVersion = String(req.headers['x-data-version'] || '');
         const out = await withStateLock(async () => {
+          tm.mark('warten');
           const { db: previous, version } = await readState();
+          tm.mark('lesen');
           // INT-01/INT-03: Nur wer auf dem aktuellen Stand aufbaut, darf speichern. Sonst würde ein Browser mit
           // älterem Stand fremde Änderungen (andere Geräte, ausgebuchte Chargen durch Webhooks) überschreiben.
           if (baseVersion !== version) throw httpError(409, 'Die Daten wurden inzwischen geändert (anderes Gerät oder WooCommerce-Bestellung). Ihre letzte Änderung wurde NICHT gespeichert. Die aktuellen Daten werden jetzt geladen; bitte die Änderung danach wiederholen.', 'STALE_DATA');
@@ -1788,14 +1849,22 @@ async function handleApi(req, res) {
           parsed.setBoms = previous.setBoms;
           parsed.wooReservations = previous.wooReservations || [];
           parsed.wooSyncLog = previous.wooSyncLog || [];
-          rebuildProcessingReservations(parsed);
+          tm.mark('pruefen');
+          const sigVorher = reservationInputSig(previous);
+          if (reservationInputSig(parsed) !== sigVorher) rebuildProcessingReservations(parsed);
+          tm.mark('reservieren');
           // Erst speichern, dann an WooCommerce melden (INT-05).
           const saved = await writeData(parsed, 'change_limited');
+          tm.mark('schreiben');
           const syncResults = await syncChangedSkus(previous, parsed, 'Pilzverwaltung geändert');
+          tm.mark('woo');
           if (syncResults.length) await persistSyncLog(parsed);
           return { saved, syncResults, prevVersion: version };
         });
-        return sendJson(res, 200, { ok: true, savedAt: new Date().toISOString(), syncResults: out.syncResults, wooOrders: parsed.wooOrders, wooReservations: parsed.wooReservations, wooSyncLog: parsed.wooSyncLog, stock: stockMap(parsed), version: out.saved.version, prevVersion: out.prevVersion });
+        const stockNow = stockMap(parsed);
+        tm.mark('bestand');
+        tm.log('POST /api/data');
+        return sendJson(res, 200, { ok: true, savedAt: new Date().toISOString(), syncResults: out.syncResults, wooOrders: parsed.wooOrders, wooReservations: parsed.wooReservations, wooSyncLog: parsed.wooSyncLog, stock: stockNow, version: out.saved.version, prevVersion: out.prevVersion }, { 'Server-Timing': tm.header() });
       } catch (err) {
         return failJson(res, err, 500, 'Daten konnten nicht gespeichert werden.');
       }

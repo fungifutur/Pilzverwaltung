@@ -1,4 +1,17 @@
-# Version 1.5.44 – Masterkulturen: Fundort, Funddatum, Baumart
+# Version 1.5.45 – Speichern deutlich schneller + Zeitmessung
+
+Beim Speichern (z. B. neue Petrischale oder neue Flüssigmyzel-Flasche) hat der Server jedes Mal alle Reservierungen neu berechnet und den Bestand aller Produkte mehrfach durchgerechnet, auch wenn sich am Bestand gar nichts geändert hat. Jetzt:
+
+- Die Reservierungen werden nur noch neu verteilt, wenn sich etwas ändert, das sie beeinflusst (Waren, Katalog, Mindestbestände, Set-Rezepte, Bestellungen). Petrischalen, Flüssigmyzel usw. lösen das nicht mehr aus.
+- Die Bestandsberechnung (Anzeige und WooCommerce-Vergleich) arbeitet mit einem Index statt jedes Mal alles zu durchsuchen.
+- Im Testlauf mit einer grossen Datenbank (1,3 MB): Speichern von 927 ms auf 273 ms, davon der Rechenteil von ca. 660 ms auf ca. 60 ms.
+- Neu: Der Server misst jeden Speichervorgang in Schritten (Header «Server-Timing»). Anfragen über 3 Sekunden stehen mit der Aufteilung im Render-Log («Langsame Anfrage …»). Im Browser: F12 → Netzwerk → «data» (POST) → Timing.
+
+Verhalten und Zahlen bleiben gleich (43 Tests, Golden Master unverändert).
+
+Vorherige Version 1.5.44:
+
+**Version 1.5.44 – Masterkulturen: Fundort, Funddatum, Baumart**
 
 In den Details jeder Masterkultur (Forschung & Zucht → Masterkulturen → Details) gibt es drei interne Felder: **Fundort**, **Funddatum** und **Baumart**. Fundort und Baumart waren schon gespeichert (aus dem Formular «Dauerkultur», Typ wild, und aus dem Excel-Import als Fundort/Holzart) und werden jetzt angezeigt und sind bearbeitbar. Das Funddatum ist neu: Das Formular «Dauerkultur» hat ein Feld «Funddatum», und der Excel-Import übernimmt die Spalte «Funddatum». Die drei Felder sind in der Masterkulturen-Suche enthalten.
 
