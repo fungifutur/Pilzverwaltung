@@ -1,4 +1,10 @@
-# Version 1.5.47 – Dörrpilz-Etiketten: Vorderseite, Rückseite, QR für Behälter
+# Version 1.5.48 – Dörrpilz-Vorderseite wie die HERMA-3427-Vorlage
+
+Die Vorderseite der Dörrpilz-Etiketten ist jetzt wie deine Vorlage um 90° gedreht (Text läuft von unten nach oben; oben Bio-Suisse- und Fungi-Futuri-Logo, darunter Name, wissenschaftlicher Name und Beschreibung). Das war in 1.5.47 noch quer.
+
+Vorherige Version 1.5.47:
+
+**Version 1.5.47 – Dörrpilz-Etiketten: Vorderseite, Rückseite, QR für Behälter**
 
 Neu im Reiter Dörrpilze (Karte «Dörrpilz-Etiketten drucken», auch über den Knopf «Etiketten» bei jedem Lot):
 

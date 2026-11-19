@@ -48,7 +48,7 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.47 gegen PostgreSQL', { skip }, () => {
+describe('Pilzverwaltung 1.5.48 gegen PostgreSQL', { skip }, () => {
   let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
@@ -209,7 +209,7 @@ describe('Pilzverwaltung 1.5.47 gegen PostgreSQL', { skip }, () => {
     const doc = a.json; doc.productCatalog.find(p => p.sku === 'SIMPLE_1').qty = 7;
     const ok = await A.req('POST', '/api/data', { body: doc, headers: { 'x-data-version': version } });
     assert.equal(ok.status, 200); version = ok.json.version;
-    // WooCommerce wird seit 1.5.47 nach der Antwort im Hintergrund informiert.
+    // WooCommerce wird seit 1.5.48 nach der Antwort im Hintergrund informiert.
     const logHas = async st => (await db.query(`SELECT data->'wooSyncLog' AS l FROM app_state`)).rows[0].l.some(e => e.sku === 'SIMPLE_1' && e.status === st);
     await until(async () => wooStock.SIMPLE_1 === 7 && await logHas('ok'));
     wooFail = true;
