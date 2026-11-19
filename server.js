@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.49';
+const APP_VERSION = '1.5.50';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -51,7 +51,7 @@ const MIME = {
 
 const DEFAULT_DB = {
   dk: [], petri: [], lc: [], kb: [], mix: [], sub: [], harv: [], buckets: [], lots: [], goods: [], logs: [],
-  archive: [], minStocks: [], testGroups: [], masterCultures: [], productCatalog: [], storageLocations: [], stockTransactions: [], wooOrders: [], wooReservations: [], wooSyncLog: [], productionRequests: [], personalTasks: [], personalTaskCategories: [], driedSpecies: [], masterCounters: {}
+  archive: [], minStocks: [], testGroups: [], masterCultures: [], productCatalog: [], storageLocations: [], stockTransactions: [], wooOrders: [], wooReservations: [], wooSyncLog: [], productionRequests: [], personalTasks: [], personalTaskCategories: [], driedSpecies: [], contamDismissed: [], contamSettings: {}, masterCounters: {}
 };
 // Sammlungen, die der Server führt bzw. die der Browser nicht überschreiben darf.
 const SERVER_OWNED_KEYS = ['wooOrders', 'wooReservations', 'wooSyncLog'];
