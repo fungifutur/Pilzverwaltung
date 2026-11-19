@@ -8,7 +8,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.45';
+const APP_VERSION = '1.5.46';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -1163,6 +1163,25 @@ async function syncChangedSkusInner(oldDb, newDb, reason, oldSync, newSync, cand
   }
   return results;
 }
+// WooCommerce im Hintergrund informieren: Die Antwort an den Browser wartet nicht darauf. Die Meldungen laufen nacheinander,
+// das Protokoll wird danach kurz unter der Sperre an den aktuellen Stand angehängt (nichts anderes wird überschrieben).
+let wooSyncChain = Promise.resolve();
+function scheduleWooSync(oldDb, newDb, reason) {
+  if (!wooConfigured()) return;
+  wooSyncChain = wooSyncChain.then(async () => {
+    try {
+      const known = new Set((newDb.wooSyncLog || []).map(e => e.id));
+      const results = await syncChangedSkus(oldDb, newDb, reason);
+      if (!results.length) return;
+      const added = (newDb.wooSyncLog || []).filter(e => !known.has(e.id));
+      await withStateLock(async () => {
+        const cur = await readData();
+        cur.wooSyncLog = [...added, ...(cur.wooSyncLog || [])].slice(0, 500);
+        await persistSyncLog(cur);
+      });
+    } catch (err) { console.error('WooCommerce-Meldung im Hintergrund fehlgeschlagen:', err); }
+  });
+}
 function normalizeWooOrder(o) {
   return {
     id:o.id, number:o.number, status:o.status, date_created:o.date_created, date_modified:o.date_modified||'',
@@ -1856,14 +1875,14 @@ async function handleApi(req, res) {
           // Erst speichern, dann an WooCommerce melden (INT-05).
           const saved = await writeData(parsed, 'change_limited');
           tm.mark('schreiben');
-          const syncResults = await syncChangedSkus(previous, parsed, 'Pilzverwaltung geändert');
+          // Tempo: WooCommerce wird erst NACH der Antwort informiert (früher blockierte das Speichern bis zu 45 s).
           tm.mark('woo');
-          if (syncResults.length) await persistSyncLog(parsed);
-          return { saved, syncResults, prevVersion: version };
+          return { saved, syncResults: [], prevVersion: version, previous };
         });
         const stockNow = stockMap(parsed);
         tm.mark('bestand');
         tm.log('POST /api/data');
+        scheduleWooSync(out.previous, parsed, 'Pilzverwaltung geändert');
         return sendJson(res, 200, { ok: true, savedAt: new Date().toISOString(), syncResults: out.syncResults, wooOrders: parsed.wooOrders, wooReservations: parsed.wooReservations, wooSyncLog: parsed.wooSyncLog, stock: stockNow, version: out.saved.version, prevVersion: out.prevVersion }, { 'Server-Timing': tm.header() });
       } catch (err) {
         return failJson(res, err, 500, 'Daten konnten nicht gespeichert werden.');
