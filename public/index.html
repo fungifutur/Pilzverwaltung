@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.50</title>
+<title>Pilzverwaltung Serverversion 1.5.51</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -129,7 +129,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.50</h1>
+<h1>Pilzverwaltung – Version 1.5.51</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -4376,6 +4376,12 @@ function computeContamWarnings(){
     if(!e.bad.length) continue;
     out.push({key:'w:syringe-lc:'+sy,kind:'syringe',type:'syringe',id:sy,reasons:[`${e.bad.length} von ${e.all.length} daraus hergestellten Flüssigmyzelen kontaminiert oder auffällig`],lcs:e.all,badLc:new Set(e.bad.map(l=>l.id)),count:e.bad.length});
   }
+  // Ist die Quelle selbst schon weg (kontaminiert, verbraucht, archiviert oder gelöscht), gibt es nichts mehr zu kontrollieren.
+  const srcList={lc:db.lc,petri:db.petri,syringe:db.goods,kb:db.kb,dk:db.dk};
+  for(let i=out.length-1;i>=0;i--){
+    const w=out[i]; const rec=(srcList[w.type]||[]).find(x=>x.id===w.id);
+    if(!rec || isArchivedStatus(rec.status)) out.splice(i,1);
+  }
   // ausgeblendete Warnungen
   const dis=new Map((db.contamDismissed||[]).map(d=>[d.key,d]));
   const active=[], hidden=[];
@@ -6481,7 +6487,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.50'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.51'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

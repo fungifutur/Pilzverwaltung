@@ -1,4 +1,10 @@
-# Version 1.5.50 – Warnungen bei Kontaminationen in der Herkunft
+# Version 1.5.51 – Warnungen verschwinden, wenn die Quelle schon weg ist
+
+Eine Kontaminations-Warnung wird nicht mehr angezeigt, wenn die Quelle selbst (Flüssigmyzel, Petrischale, Masterspritze …) schon kontaminiert, verbraucht, aufgebraucht, archiviert oder gelöscht ist. Ist die Quelle noch im Einsatz, bleibt die Warnung stehen, auch wenn alle ihre Körnerbruten schon kontaminiert sind.
+
+Vorherige Version 1.5.50:
+
+**Version 1.5.50 – Warnungen bei Kontaminationen in der Herkunft**
 
 Neuer Menüpunkt **Warnungen** (mit roter Zahl, wenn etwas offen ist).
 
