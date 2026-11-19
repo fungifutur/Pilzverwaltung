@@ -1,4 +1,10 @@
-# Version 1.5.56 – Warn-Popup funktioniert auch mit dem Suchfeld
+# Version 1.5.57 – Warnungen berücksichtigen Dübel
+
+Dübel, die aus einer betroffenen Körnerbrut hergestellt wurden (auch über grössere Dübel-Gebinde hinweg), erscheinen jetzt im Stammbaum der Warnung: «Dübel daraus: x Chargen, im Lager y» mit den IDs und dem Hinweis «Dübel kontrollieren». Die Karte zeigt zusätzlich «y Dübel aus dieser Quelle noch im Lager – vor dem Verkauf prüfen». Wählst du einen solchen Dübel als Quelle für kleinere Gebinde, kommt das Popup «Zuerst kontrollieren». Für den Prozentsatz zählen weiterhin nur Körnerbruten und Substratsäcke.
+
+Vorherige Version 1.5.56:
+
+**Version 1.5.56 – Warn-Popup funktioniert auch mit dem Suchfeld**
 
 Das Popup «Zuerst kontrollieren» kam nicht, wenn die Quelle über das Suchfeld («Suche ID / Name …») gewählt wurde, weil das Suchfeld die Auswahl ohne Klick wechselt. Jetzt erscheint es auch kurz nach dem Tippen. Zusätzlich fragt die App beim Speichern (neues Flüssigmyzel, neue Körnerbrut, neue Substratsäcke) nach, wenn die gewählte Quelle kritisch ist («Trotzdem daraus herstellen?»), egal wie die Quelle ausgewählt wurde.
 
