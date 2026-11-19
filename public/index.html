@@ -4188,9 +4188,9 @@ function dlMatchSpecies(product){
   return (db.driedSpecies||[]).findIndex(s=>s.de && p.includes(stem(s.de)));
 }
 function dlLotNr(lot){
-  // Auf dem Etikett genügt der Eimer-Code (z. B. EIM-2026-0099). Ohne Eimer (unbekannte Quelle) die Lot-Nummer ohne «LOT-».
+  // Auf dem Etikett genügt der Eimer-Code ohne «EIM-» (z. B. 2026-0099). Ohne Eimer (unbekannte Quelle) die Lot-Nummer ohne «LOT-».
   const b=String(lot?.bucket||'');
-  if(b && b!=='unbekannt') return b;
+  if(b && b!=='unbekannt') return b.replace(/^EIM-/,'');
   return String(lot?.id||'').replace(/^LOT-/,'');
 }
 function renderDriedLabels(){

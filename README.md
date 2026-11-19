@@ -1,6 +1,6 @@
 # Version 1.5.49 – Lot-Nr. auf Dörrpilz-Etiketten = Eimer-Code
 
-Auf den Dörrpilz-Etiketten steht als Lot-Nr. nur noch der Eimer-Code (z. B. «CH-BIO-006 ¦ Lot Nr. EIM-2026-0099»), ohne Datum. So bleibt es auf den Eimer rückverfolgbar. Bei unbekannter Quelle (kein Eimer) steht die Lot-Nummer ohne «LOT-». Die Lot-Nr. bleibt im Feld änderbar.
+Auf den Dörrpilz-Etiketten steht als Lot-Nr. nur noch der Eimer-Code (z. B. «CH-BIO-006 ¦ Lot Nr. 2026-0099»), ohne Datum und ohne «EIM-». So bleibt es auf den Eimer rückverfolgbar. Bei unbekannter Quelle (kein Eimer) steht die Lot-Nummer ohne «LOT-». Die Lot-Nr. bleibt im Feld änderbar.
 
 Vorherige Version 1.5.48:
 
