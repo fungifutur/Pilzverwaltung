@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.56</title>
+<title>Pilzverwaltung Serverversion 1.5.57</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -129,7 +129,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.56</h1>
+<h1>Pilzverwaltung – Version 1.5.57</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -4348,6 +4348,14 @@ function computeContamWarnings(){
   const set=cwSettings(), idx=cwArchiveIndex(), roots=new Map();
   const root=(type,id)=>{ const key=type+':'+id; if(!roots.has(key)) roots.set(key,{key,type,id,kbs:[],subs:[],lcs:[]}); return roots.get(key); };
   const kbById=new Map((db.kb||[]).map(k=>[k.id,k]));
+  // Dübel: Körnerbrut als Ursprung (auch über grössere Dübel-Gebinde hinweg)
+  const goodsById=new Map((db.goods||[]).map(g=>[g.id,g])); const dowelsByKb=new Map();
+  for(const g of (db.goods||[])){
+    if(g.type!=='Dübel') continue;
+    let cur=g, hops=0;
+    while(cur && cur.sourceType==='dowel' && hops++<6) cur=goodsById.get(cur.source);
+    if(cur && cur.sourceType==='kb' && cur.source){ if(!dowelsByKb.has(cur.source)) dowelsByKb.set(cur.source,[]); dowelsByKb.get(cur.source).push(g); }
+  }
   for(const k of (db.kb||[])){ const r=cwRootOfKb(k); if(!r.type||!r.id||r.id==='unbekannt') continue; root(r.type,r.id).kbs.push(k); }
   for(const x of (db.sub||[])){
     let r=null;
@@ -4365,7 +4373,9 @@ function computeContamWarnings(){
     if(kbTotal>=set.minKb && kbContam*100>=set.pct*kbTotal) reasons.push(`${kbContam} von ${kbTotal} Körnerbruten kontaminiert (${Math.round(kbContam*100/kbTotal)} %)`);
     if(subTotal>=set.minSub && subContam*100>=set.pct*subTotal) reasons.push(`${subContam} von ${subTotal} Substratsäcken kontaminiert (${Math.round(subContam*100/subTotal)} %)`);
     if(!reasons.length) continue;
-    out.push({key:'w:'+R.key,kind:'source',type:R.type,id:R.id,reasons,kbs:R.kbs,perKb,kbTotal,kbContam,subTotal,subContam,count:kbContam+subContam});
+    const dowels=[]; const dowelsPerKb=new Map();
+    for(const k of R.kbs){ const list=(dowelsByKb.get(k.id)||[]); if(list.length){ dowelsPerKb.set(k.id,list); dowels.push(...list); } }
+    out.push({key:'w:'+R.key,kind:'source',type:R.type,id:R.id,reasons,kbs:R.kbs,perKb,kbTotal,kbContam,subTotal,subContam,dowels,dowelsPerKb,count:kbContam+subContam});
   }
   // Masterspritzen: schon ein kontaminiertes Flüssigmyzel (oder eine Warnung beim Flüssigmyzel) genügt.
   const warnedLc=new Set(out.filter(w=>w.type==='lc').map(w=>w.id));
@@ -4405,6 +4415,12 @@ function cwInfoHtml(w){
   if(r.date) rows.push(['Hergestellt am',fmt(r.date)]);
   return `<p class="muted" style="margin:4px 0">${rows.map(([k,v])=>`<b>${e(k)}:</b> ${e(v)}`).join(' &nbsp;·&nbsp; ')}</p>`;
 }
+function cwDowelAvail(g){ return !isArchivedStatus(g.status) && qtyOrOne(g.qty)>0; }
+function cwDowelText(w,kbId){
+  const list=(w.dowelsPerKb&&w.dowelsPerKb.get(kbId))||[]; if(!list.length) return '';
+  const avail=list.filter(cwDowelAvail); const n=avail.reduce((a,g)=>a+qtyOrOne(g.qty),0);
+  return `<span class="muted"> · Dübel daraus: ${list.length} Charge${list.length===1?'':'n'}, im Lager ${n}${avail.length?' ('+avail.map(g=>escHtml(g.id)).join(', ')+')':''}</span>${n?' <span class="badge warn">Dübel kontrollieren</span>':''}`;
+}
 function cwKbAvailable(k){return !isArchivedStatus(k.status)&&k.status!=='beimpft';}
 function cwStatusBadge(st){return badge(st||'–');}
 function cwTreeHtml(w){
@@ -4415,7 +4431,7 @@ function cwTreeHtml(w){
   const kbRows=(w.kbs||[]).map(k=>{
     const st=w.perKb.get(k.id);
     const still=cwKbAvailable(k);
-    return `<li>Körnerbrut ${e(k.id)} ${cwStatusBadge(k.status)}${still?' <span class="badge warn">noch vorhanden – kontrollieren</span>':''}${st?`<span class="muted"> · Substratsäcke: ${st.total}, davon kontaminiert ${st.contam} (${st.total?Math.round(st.contam*100/st.total):0} %)</span>`:''}</li>`;
+    return `<li>Körnerbrut ${e(k.id)} ${cwStatusBadge(k.status)}${still?' <span class="badge warn">noch vorhanden – kontrollieren</span>':''}${st?`<span class="muted"> · Substratsäcke: ${st.total}, davon kontaminiert ${st.contam} (${st.total?Math.round(st.contam*100/st.total):0} %)</span>`:''}${cwDowelText(w,k.id)}</li>`;
   }).join('');
   return `<ul class="cwtree"><li><b>${e(CW_ROOT_NAMES[w.type]||w.type)} ${e(w.id)}</b><ul>
 <li>Körnerbruten: ${w.kbTotal} hergestellt, ${w.kbContam} kontaminiert</li>
@@ -4426,7 +4442,8 @@ function cwCardHtml(w,hidden){
   const e=escHtml;
   const title=w.kind==='syringe'?`Masterspritze ${e(w.id)} kontrollieren`:`${e(CW_ROOT_NAMES[w.type]||w.type)} ${e(w.id)} kontrollieren`;
   const still=(w.kbs||[]).filter(cwKbAvailable).length;
-  const hint=w.kind==='source'&&still?`<p><b>${still} Körnerbrut${still===1?'':'en'} aus dieser Quelle noch vorhanden</b> – vor der Weiterverwendung prüfen.</p>`:'';
+  const dAvail=(w.dowels||[]).filter(cwDowelAvail).reduce((a,g)=>a+qtyOrOne(g.qty),0);
+  const hint=(w.kind==='source'&&still?`<p><b>${still} Körnerbrut${still===1?'':'en'} aus dieser Quelle noch vorhanden</b> – vor der Weiterverwendung prüfen.</p>`:'')+(dAvail?`<p><b>${dAvail} Dübel aus dieser Quelle noch im Lager</b> – vor dem Verkauf prüfen.</p>`:'');
   return `<div class="card" style="border-left:6px solid ${hidden?'#9ca3af':'#dc2626'}"><h3>${hidden?'':'⚠ '}${title}</h3>${cwInfoHtml(w)}<p>${w.reasons.map(e).join('<br>')}</p>${hint}${cwTreeHtml(w)}<div style="margin-top:8px">${hidden?`<button class="secondary" onclick="cwRestore('${e(w.key)}')">Warnung wieder anzeigen</button> <span class="muted">ausgeblendet am ${fmt(w.dismissed.date)}${w.dismissed.note?' – '+e(w.dismissed.note):''}</span>`:`<button class="primary" onclick="cwDismiss('${e(w.key)}')">Kontrolliert – Warnung ausblenden</button>`}</div></div>`;
 }
 function renderContam(){
@@ -4452,7 +4469,7 @@ function cwRestore(key){ db.contamDismissed=(db.contamDismissed||[]).filter(d=>d
 
 
 // Popup beim Auswählen einer kritischen Quelle (Teil einer offenen Kontaminations-Warnung)
-const CW_SOURCE_SELECTS=['lcSource','kbLc','subSource','duebKb','sprSource','logSource'];
+const CW_SOURCE_SELECTS=['lcSource','kbLc','subSource','duebKb','sprSource','logSource','duebDowel'];
 function cwWarningText(id){
   if(!id||id==='unbekannt') return '';
   let active; try{ active=computeContamWarnings().active; }catch(e){ return ''; }
@@ -4461,11 +4478,12 @@ function cwWarningText(id){
     if(w.id===id) hits.push({w,role:'selbst'});
     else if((w.kbs||[]).some(k=>k.id===id&&cwKbAvailable(k))) hits.push({w,role:'kb'});
     else if((w.lcs||[]).some(l=>l.id===id)) hits.push({w,role:'lc'});
+    else if((w.dowels||[]).some(g=>g.id===id&&cwDowelAvail(g))) hits.push({w,role:'dowel'});
   }
   if(!hits.length) return '';
   return hits.map(({w,role})=>{
     const q=(w.kind==='syringe'?'Masterspritze ':(CW_ROOT_NAMES[w.type]||w.type)+' ')+w.id;
-    return (role==='selbst'?'• '+id+' ist selbst auffällig: ':'• '+id+' stammt aus '+q+': ')+w.reasons.join('; ');
+    return (role==='selbst'?'• '+id+' ist selbst auffällig: ':role==='dowel'?'• Dübel '+id+' stammt aus '+q+': ':'• '+id+' stammt aus '+q+': ')+w.reasons.join('; ');
   }).join('\n');
 }
 function cwCheckSelection(id){
@@ -6540,7 +6558,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.56'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.57'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
