@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.53</title>
+<title>Pilzverwaltung Serverversion 1.5.54</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -129,7 +129,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.53</h1>
+<h1>Pilzverwaltung – Version 1.5.54</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -4446,6 +4446,27 @@ function cwDismiss(key){
 }
 function cwRestore(key){ db.contamDismissed=(db.contamDismissed||[]).filter(d=>d.key!==key); save('Warnung wieder aktiv'); }
 
+
+// Popup beim Auswählen einer kritischen Quelle (Teil einer offenen Kontaminations-Warnung)
+const CW_SOURCE_SELECTS=['lcSource','kbLc','subSource','duebKb','sprSource'];
+function cwCheckSelection(id){
+  if(!id||id==='unbekannt') return;
+  let active; try{ active=computeContamWarnings().active; }catch(e){ return; }
+  const hits=[];
+  for(const w of active){
+    if(w.id===id) hits.push({w,role:'selbst'});
+    else if((w.kbs||[]).some(k=>k.id===id&&cwKbAvailable(k))) hits.push({w,role:'kb'});
+    else if((w.lcs||[]).some(l=>l.id===id)) hits.push({w,role:'lc'});
+  }
+  if(!hits.length) return;
+  const lines=hits.map(({w,role})=>{
+    const q=(w.kind==='syringe'?'Masterspritze ':(CW_ROOT_NAMES[w.type]||w.type)+' ')+w.id;
+    return (role==='selbst'?'• '+id+' ist selbst auffällig: ':'• '+id+' stammt aus '+q+': ')+w.reasons.join('; ');
+  });
+  alert('⚠ Zuerst kontrollieren!\n\n'+lines.join('\n')+'\n\nBitte diese Quelle prüfen, bevor daraus ein neues Produkt entsteht (Details unter «Warnungen»).');
+}
+document.addEventListener('change',e=>{ const t=e.target; if(t&&CW_SOURCE_SELECTS.includes(t.id)) cwCheckSelection(t.value); });
+
 function addSale(){let l=by('lots',saleLot.value);let q=+saleQty.value||0;let kunde=(saleCustomer.value||'').trim();if(q<=0)return alert('Ungültige Anzahl.');if(q>l.qty)return alert('Nicht genug Bestand');l.qty-=q;l.lastSaleDate=today();l.lastCustomer=kunde;if(l.qty<=0){l.status='verkauft';l.soldAt=today();}archiveLog('lots',l.id,'verkauft','Verkauf buchen; Anzahl: '+q+(kunde?'; Kunde: '+kunde:''));save()}
 function addDueb(){
 let dt=(el('duebSourceType')?.value||'kb');
@@ -6500,7 +6521,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.53'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.54'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

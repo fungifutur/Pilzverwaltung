@@ -1,4 +1,10 @@
-# Version 1.5.53 – Dashboard: Kachel «Warnungen»
+# Version 1.5.54 – Popup «Zuerst kontrollieren» bei kritischer Quelle
+
+Wählst du beim Erstellen von Flüssigmyzel, Körnerbrut, Substratsäcken, Dübeln oder Spritzen eine Quelle, die zu einer offenen Kontaminations-Warnung gehört (die auffällige Quelle selbst, eine noch vorhandene Körnerbrut davon oder eine Masterspritze mit auffälligem Flüssigmyzel), erscheint ein Popup «Zuerst kontrollieren!» mit dem Grund. Ausgeblendete (kontrollierte) Warnungen lösen kein Popup aus. Das Popup blockiert nichts, es erinnert nur.
+
+Vorherige Version 1.5.53:
+
+**Version 1.5.53 – Dashboard: Kachel «Warnungen»**
 
 Auf dem Dashboard gibt es bei den grossen Kacheln neu «Warnungen (Kontamination)» mit der Anzahl offener Warnungen. Ist eine Warnung offen, hat die Kachel einen roten Rand. Ein Klick öffnet die Seite Warnungen.
 
