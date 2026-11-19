@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.54</title>
+<title>Pilzverwaltung Serverversion 1.5.56</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -129,7 +129,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.54</h1>
+<h1>Pilzverwaltung – Version 1.5.56</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -2640,6 +2640,7 @@ function applySelectSearch(selectId){
   // Das Suchfeld kann die erste sichtbare Quelle automatisch wechseln.
   // Auch in diesem Fall muss die zugehörige SKU sofort aktualisiert werden.
   if(selectId==='kbLc' && node.value!==previous) renderProductionSkuOptions(true);
+  if(term) cwSearchChanged(selectId); else cwLastWarned[selectId]='';
 }
 
 function setOptions(id, value){
@@ -3849,6 +3850,7 @@ else if(t==='syringe') src=by('goods',lcSource.value);
 else src=by('petri',lcSource.value);
 if(!src.id)return alert('Quelle wählen');
 if(t==='unknown' && !src.strain)return alert('Bitte Strain / Produkt bei unbekannter Quelle eingeben.');
+if(!cwConfirmSource(src.id)) return;
 
 let petri = t==='petri' ? src.id : (src.petri || '');
 let dk = t==='dk' ? src.id : (src.dk || '');
@@ -3898,6 +3900,7 @@ else if(t==='kb') src=by('kb',kbLc.value);
 else src=by('lc',kbLc.value);
 if(!src.id)return alert('Bitte Quelle wählen.');
 if(t==='unknown' && !src.strain)return alert('Bitte Strain / Produkt bei unbekannter Quelle eingeben.');
+if(!cwConfirmSource(src.id)) return;
 let size=kbSize.value||'1000 g';
 const _createdKb=[]; const _order=orderFields('kb');
 const _kbBatchCount=Math.max(1,(+kbCount.value||1));
@@ -3937,6 +3940,7 @@ let t=subSourceType.value;
 let src = t==='unknown' ? Object.assign({id:'unbekannt'},unknownStrainSelection('subUnknownStrain')) : (t==='lc' ? by('lc',subSource.value) : by('kb',subSource.value));
 if(!src.id)return alert('Quelle wählen');
 if(t==='unknown' && !src.strain)return alert('Bitte Strain / Produkt bei unbekannter Quelle eingeben.');
+if(!cwConfirmSource(src.id)) return;
 let base = t==='unknown' ? 'SUB-'+new Date().getFullYear()+'-UNK' : src.id.replace(t==='lc'?'LC':'KB','SUB');
 let count = +subCount.value || 1;
 let isTest = subForTest.value==='ja';
@@ -4448,24 +4452,39 @@ function cwRestore(key){ db.contamDismissed=(db.contamDismissed||[]).filter(d=>d
 
 
 // Popup beim Auswählen einer kritischen Quelle (Teil einer offenen Kontaminations-Warnung)
-const CW_SOURCE_SELECTS=['lcSource','kbLc','subSource','duebKb','sprSource'];
-function cwCheckSelection(id){
-  if(!id||id==='unbekannt') return;
-  let active; try{ active=computeContamWarnings().active; }catch(e){ return; }
+const CW_SOURCE_SELECTS=['lcSource','kbLc','subSource','duebKb','sprSource','logSource'];
+function cwWarningText(id){
+  if(!id||id==='unbekannt') return '';
+  let active; try{ active=computeContamWarnings().active; }catch(e){ return ''; }
   const hits=[];
   for(const w of active){
     if(w.id===id) hits.push({w,role:'selbst'});
     else if((w.kbs||[]).some(k=>k.id===id&&cwKbAvailable(k))) hits.push({w,role:'kb'});
     else if((w.lcs||[]).some(l=>l.id===id)) hits.push({w,role:'lc'});
   }
-  if(!hits.length) return;
-  const lines=hits.map(({w,role})=>{
+  if(!hits.length) return '';
+  return hits.map(({w,role})=>{
     const q=(w.kind==='syringe'?'Masterspritze ':(CW_ROOT_NAMES[w.type]||w.type)+' ')+w.id;
     return (role==='selbst'?'• '+id+' ist selbst auffällig: ':'• '+id+' stammt aus '+q+': ')+w.reasons.join('; ');
-  });
-  alert('⚠ Zuerst kontrollieren!\n\n'+lines.join('\n')+'\n\nBitte diese Quelle prüfen, bevor daraus ein neues Produkt entsteht (Details unter «Warnungen»).');
+  }).join('\n');
 }
-document.addEventListener('change',e=>{ const t=e.target; if(t&&CW_SOURCE_SELECTS.includes(t.id)) cwCheckSelection(t.value); });
+function cwCheckSelection(id){
+  const txt=cwWarningText(id); if(!txt) return;
+  alert('⚠ Zuerst kontrollieren!\n\n'+txt+'\n\nBitte diese Quelle prüfen, bevor daraus ein neues Produkt entsteht (Details unter «Warnungen»).');
+}
+// Letzte Sicherung beim Speichern: Quelle ist kritisch → nachfragen.
+function cwConfirmSource(id){
+  const txt=cwWarningText(id); if(!txt) return true;
+  return confirm('⚠ Zuerst kontrollieren!\n\n'+txt+'\n\nTrotzdem daraus herstellen?');
+}
+// Suchfeld wechselt die Quelle ohne «change»-Ereignis: kurz nach dem Tippen prüfen.
+let cwSearchTimer=null; const cwLastWarned={};
+function cwSearchChanged(selectId){
+  if(!CW_SOURCE_SELECTS.includes(selectId)) return;
+  clearTimeout(cwSearchTimer);
+  cwSearchTimer=setTimeout(()=>{ const n=el(selectId); if(n&&n.value&&cwLastWarned[selectId]!==n.value){ cwLastWarned[selectId]=n.value; cwCheckSelection(n.value); } },900);
+}
+document.addEventListener('change',e=>{ const t=e.target; if(t&&CW_SOURCE_SELECTS.includes(t.id)){ cwLastWarned[t.id]=t.value; cwCheckSelection(t.value); } });
 
 function addSale(){let l=by('lots',saleLot.value);let q=+saleQty.value||0;let kunde=(saleCustomer.value||'').trim();if(q<=0)return alert('Ungültige Anzahl.');if(q>l.qty)return alert('Nicht genug Bestand');l.qty-=q;l.lastSaleDate=today();l.lastCustomer=kunde;if(l.qty<=0){l.status='verkauft';l.soldAt=today();}archiveLog('lots',l.id,'verkauft','Verkauf buchen; Anzahl: '+q+(kunde?'; Kunde: '+kunde:''));save()}
 function addDueb(){
@@ -5571,7 +5590,7 @@ function setSelectValueWhenReady(selectId, value, tries=20){
   if(!sel) return false;
   const wanted=String(value||'');
   const has=[...sel.options].some(o=>String(o.value)===wanted);
-  if(has){ sel.value=wanted; return true; }
+  if(has){ sel.value=wanted; if(CW_SOURCE_SELECTS.includes(selectId)) setTimeout(()=>cwCheckSelection(wanted),150); return true; }
   if(tries>0){ setTimeout(()=>setSelectValueWhenReady(selectId,value,tries-1),80); }
   return false;
 }
@@ -6521,7 +6540,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.54'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.56'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
