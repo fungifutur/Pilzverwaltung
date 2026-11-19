@@ -1,4 +1,12 @@
-# Version 1.5.45 – Speichern deutlich schneller + Zeitmessung
+# Version 1.5.46 – Speichern wartet nicht mehr auf WooCommerce
+
+Die Render-Logs von 1.5.45 zeigten: Von 42–49 Sekunden pro Speichern gingen 40–46 Sekunden in den Schritt «woo» (Bestandsmeldung an WooCommerce, pro Artikel mehrere Anfragen nacheinander, zum Teil mit Zeitüberschreitung). Jetzt speichert die App zuerst und antwortet sofort; WooCommerce wird danach im Hintergrund informiert (nacheinander, Protokoll wird nachher angehängt). Die automatische Wiederholung bei Fehlern bleibt. Das Speichern blockiert auch andere Geräte nicht mehr so lange.
+
+Hinweis: Das Sync-Protokoll in den Einstellungen füllt sich jetzt etwas später (nach der Antwort).
+
+Vorherige Version 1.5.45:
+
+**Version 1.5.45 – Speichern deutlich schneller + Zeitmessung**
 
 Beim Speichern (z. B. neue Petrischale oder neue Flüssigmyzel-Flasche) hat der Server jedes Mal alle Reservierungen neu berechnet und den Bestand aller Produkte mehrfach durchgerechnet, auch wenn sich am Bestand gar nichts geändert hat. Jetzt:
 
