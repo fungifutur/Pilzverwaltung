@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.51</title>
+<title>Pilzverwaltung Serverversion 1.5.52</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -129,7 +129,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.51</h1>
+<h1>Pilzverwaltung – Version 1.5.52</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -167,7 +167,7 @@ nav button.top-link{font-weight:bold}
 </div>
 <button class="top-link" onclick="show('orders',this); renderWooOrders()">Bestellungen</button>
 <button class="top-link" onclick="show('courses',this); renderCourses()">Kurse</button>
-<button class="top-link" onclick="show('contam',this); renderContam()">Warnungen <span id="contamBadge" class="badge bad" style="display:none"></span></button>
+<button class="top-link" onclick="show('contam',this); renderContam()">Warnungen <span id="contamBadge" class="badge danger" style="display:none"></span></button>
 <button class="nav-group-title" onclick="toggleNavGroup('researchGroup')">▶ Forschung & Zucht</button>
 <div id="researchGroup" class="nav-group">
 <button onclick="show('mastercultures',this)">Masterkulturen</button>
@@ -4380,7 +4380,7 @@ function computeContamWarnings(){
   const srcList={lc:db.lc,petri:db.petri,syringe:db.goods,kb:db.kb,dk:db.dk};
   for(let i=out.length-1;i>=0;i--){
     const w=out[i]; const rec=(srcList[w.type]||[]).find(x=>x.id===w.id);
-    if(!rec || isArchivedStatus(rec.status)) out.splice(i,1);
+    if(!rec || isArchivedStatus(rec.status)) out.splice(i,1); else w.rec=rec;
   }
   // ausgeblendete Warnungen
   const dis=new Map((db.contamDismissed||[]).map(d=>[d.key,d]));
@@ -4388,12 +4388,24 @@ function computeContamWarnings(){
   for(const w of out){ const d=dis.get(w.key); if(d && w.count<=Number(d.count||0)){ w.dismissed=d; hidden.push(w);} else active.push(w); }
   return {active,hidden};
 }
+function cwInfoHtml(w){
+  const e=escHtml, r=w.rec||{}, rows=[];
+  const strain=r.strain||(w.kbs&&w.kbs[0]&&w.kbs[0].strain)||'';
+  rows.push(['Pilzart',strain||'–']);
+  const herk=r.masterCode?('Masterkultur '+r.masterCode):(r.herkunft||r.origin||'');
+  rows.push(['Herkunft',herk||'–']);
+  const chain=[['dk','Dauerkultur',r.dk],['petri','Petrischale',r.petri],['syringe','Masterspritze',r.syringe],['lc','Flüssigmyzel',r.parentLc]].filter(x=>x[2]&&!(x[0]===w.type&&x[2]===w.id));
+  if(r.sourceType&&r.sourceId&&r.sourceId!=='unbekannt'&&!chain.some(x=>x[2]===r.sourceId)){ const nm={dk:'Dauerkultur',petri:'Petrischale',lc:'Flüssigmyzel',syringe:'Masterspritze',kb:'Körnerbrut'}[r.sourceType]||r.sourceType; chain.push([r.sourceType,nm,r.sourceId]); }
+  rows.push(['Quelle',chain.length?chain.map(x=>x[1]+' '+x[2]).join(' → '):'unbekannt / keine Vorstufe erfasst']);
+  if(r.date) rows.push(['Hergestellt am',fmt(r.date)]);
+  return `<p class="muted" style="margin:4px 0">${rows.map(([k,v])=>`<b>${e(k)}:</b> ${e(v)}`).join(' &nbsp;·&nbsp; ')}</p>`;
+}
 function cwKbAvailable(k){return !isArchivedStatus(k.status)&&k.status!=='beimpft';}
 function cwStatusBadge(st){return badge(st||'–');}
 function cwTreeHtml(w){
   const e=escHtml;
   if(w.kind==='syringe'){
-    return `<ul class="cwtree"><li><b>Masterspritze ${e(w.id)}</b><ul>${w.lcs.map(l=>`<li>Flüssigmyzel ${e(l.id)} ${cwStatusBadge(l.status)}${w.badLc.has(l.id)?' <span class="badge bad">auffällig</span>':''}<span class="muted"> · ${fmt(l.date)}</span></li>`).join('')}</ul></li></ul>`;
+    return `<ul class="cwtree"><li><b>Masterspritze ${e(w.id)}</b><ul>${w.lcs.map(l=>`<li>Flüssigmyzel ${e(l.id)} ${cwStatusBadge(l.status)}${w.badLc.has(l.id)?' <span class="badge danger">auffällig</span>':''}<span class="muted"> · ${fmt(l.date)}</span></li>`).join('')}</ul></li></ul>`;
   }
   const kbRows=(w.kbs||[]).map(k=>{
     const st=w.perKb.get(k.id);
@@ -4410,7 +4422,7 @@ function cwCardHtml(w,hidden){
   const title=w.kind==='syringe'?`Masterspritze ${e(w.id)} kontrollieren`:`${e(CW_ROOT_NAMES[w.type]||w.type)} ${e(w.id)} kontrollieren`;
   const still=(w.kbs||[]).filter(cwKbAvailable).length;
   const hint=w.kind==='source'&&still?`<p><b>${still} Körnerbrut${still===1?'':'en'} aus dieser Quelle noch vorhanden</b> – vor der Weiterverwendung prüfen.</p>`:'';
-  return `<div class="card" style="border-left:6px solid ${hidden?'#9ca3af':'#dc2626'}"><h3>${hidden?'':'⚠ '}${title}</h3><p>${w.reasons.map(e).join('<br>')}</p>${hint}${cwTreeHtml(w)}<div style="margin-top:8px">${hidden?`<button class="secondary" onclick="cwRestore('${e(w.key)}')">Warnung wieder anzeigen</button> <span class="muted">ausgeblendet am ${fmt(w.dismissed.date)}${w.dismissed.note?' – '+e(w.dismissed.note):''}</span>`:`<button class="primary" onclick="cwDismiss('${e(w.key)}')">Kontrolliert – Warnung ausblenden</button>`}</div></div>`;
+  return `<div class="card" style="border-left:6px solid ${hidden?'#9ca3af':'#dc2626'}"><h3>${hidden?'':'⚠ '}${title}</h3>${cwInfoHtml(w)}<p>${w.reasons.map(e).join('<br>')}</p>${hint}${cwTreeHtml(w)}<div style="margin-top:8px">${hidden?`<button class="secondary" onclick="cwRestore('${e(w.key)}')">Warnung wieder anzeigen</button> <span class="muted">ausgeblendet am ${fmt(w.dismissed.date)}${w.dismissed.note?' – '+e(w.dismissed.note):''}</span>`:`<button class="primary" onclick="cwDismiss('${e(w.key)}')">Kontrolliert – Warnung ausblenden</button>`}</div></div>`;
 }
 function renderContam(){
   const set=cwSettings();
@@ -6487,7 +6499,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.51'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.52'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
