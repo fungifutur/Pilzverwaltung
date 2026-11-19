@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.54</title>
+<title>Pilzverwaltung Serverversion 1.5.56</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -129,7 +129,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.54</h1>
+<h1>Pilzverwaltung – Version 1.5.56</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -4452,7 +4452,7 @@ function cwRestore(key){ db.contamDismissed=(db.contamDismissed||[]).filter(d=>d
 
 
 // Popup beim Auswählen einer kritischen Quelle (Teil einer offenen Kontaminations-Warnung)
-const CW_SOURCE_SELECTS=['lcSource','kbLc','subSource','duebKb','sprSource'];
+const CW_SOURCE_SELECTS=['lcSource','kbLc','subSource','duebKb','sprSource','logSource'];
 function cwWarningText(id){
   if(!id||id==='unbekannt') return '';
   let active; try{ active=computeContamWarnings().active; }catch(e){ return ''; }
@@ -5590,7 +5590,7 @@ function setSelectValueWhenReady(selectId, value, tries=20){
   if(!sel) return false;
   const wanted=String(value||'');
   const has=[...sel.options].some(o=>String(o.value)===wanted);
-  if(has){ sel.value=wanted; return true; }
+  if(has){ sel.value=wanted; if(CW_SOURCE_SELECTS.includes(selectId)) setTimeout(()=>cwCheckSelection(wanted),150); return true; }
   if(tries>0){ setTimeout(()=>setSelectValueWhenReady(selectId,value,tries-1),80); }
   return false;
 }
@@ -6540,7 +6540,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.54'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.56'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

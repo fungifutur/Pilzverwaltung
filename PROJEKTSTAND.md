@@ -4,6 +4,12 @@ Das Popup «Zuerst kontrollieren» kam nicht, wenn die Quelle über das Suchfeld
 
 Vorherige Version 1.5.55:
 
+**Version 1.5.55 – Popup «Zuerst kontrollieren» auch bei QR-Scan**
+
+Das Popup bei kritischer Quelle erscheint jetzt auch, wenn die Quelle nach einem QR-Scan («Herstellen») oder bei der Bestell-Produktion automatisch vorausgewählt wird, nicht nur bei der Auswahl von Hand. Zusätzlich gilt es für die Quelle bei Holzstämmen.
+
+Vorherige Version 1.5.54:
+
 **Version 1.5.54 – Popup «Zuerst kontrollieren» bei kritischer Quelle**
 
 Wählst du beim Erstellen von Flüssigmyzel, Körnerbrut, Substratsäcken, Dübeln oder Spritzen eine Quelle, die zu einer offenen Kontaminations-Warnung gehört (die auffällige Quelle selbst, eine noch vorhandene Körnerbrut davon oder eine Masterspritze mit auffälligem Flüssigmyzel), erscheint ein Popup «Zuerst kontrollieren!» mit dem Grund. Ausgeblendete (kontrollierte) Warnungen lösen kein Popup aus. Das Popup blockiert nichts, es erinnert nur.
