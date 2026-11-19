@@ -1,4 +1,10 @@
-# Version 1.5.51 – Warnungen verschwinden, wenn die Quelle schon weg ist
+# Version 1.5.52 – Warnungen zeigen Pilzart und Herkunft
+
+Jede Kontaminations-Warnung zeigt jetzt oben Pilzart, Herkunft (Masterkultur oder erfasste Herkunft), die Quelle aufwärts (z. B. Dauerkultur → Petrischale → Masterspritze) und das Herstelldatum der betroffenen Quelle.
+
+Vorherige Version 1.5.51:
+
+**Version 1.5.51 – Warnungen verschwinden, wenn die Quelle schon weg ist**
 
 Eine Kontaminations-Warnung wird nicht mehr angezeigt, wenn die Quelle selbst (Flüssigmyzel, Petrischale, Masterspritze …) schon kontaminiert, verbraucht, aufgebraucht, archiviert oder gelöscht ist. Ist die Quelle noch im Einsatz, bleibt die Warnung stehen, auch wenn alle ihre Körnerbruten schon kontaminiert sind.
 
