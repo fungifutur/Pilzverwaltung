@@ -1,4 +1,10 @@
-# Version 1.5.52 – Warnungen zeigen Pilzart und Herkunft
+# Version 1.5.53 – Dashboard: Kachel «Warnungen»
+
+Auf dem Dashboard gibt es bei den grossen Kacheln neu «Warnungen (Kontamination)» mit der Anzahl offener Warnungen. Ist eine Warnung offen, hat die Kachel einen roten Rand. Ein Klick öffnet die Seite Warnungen.
+
+Vorherige Version 1.5.52:
+
+**Version 1.5.52 – Warnungen zeigen Pilzart und Herkunft**
 
 Jede Kontaminations-Warnung zeigt jetzt oben Pilzart, Herkunft (Masterkultur oder erfasste Herkunft), die Quelle aufwärts (z. B. Dauerkultur → Petrischale → Masterspritze) und das Herstelldatum der betroffenen Quelle.
 
