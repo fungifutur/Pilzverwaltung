@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.48</title>
+<title>Pilzverwaltung Serverversion 1.5.49</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.48</h1>
+<h1>Pilzverwaltung – Version 1.5.49</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -450,7 +450,7 @@ nav button.top-link{font-weight:bold}
 <div><label>Mindesthaltbarkeit</label><input id="dlMhd" type="date"></div>
 <div><label>Gewicht pro Packung (g)</label><input id="dlWeight" type="text" inputmode="numeric" value="20"></div>
 <div><label>Anzahl Etiketten (je vorne und hinten)</label><input id="dlCount" type="text" inputmode="numeric" value="8"></div>
-<div><label>Lot-Nr. auf dem Etikett</label><input id="dlLotNr" readonly></div>
+<div><label>Lot-Nr. auf dem Etikett</label><input id="dlLotNr"></div>
 </div>
 <button class="primary" onclick="dlPrint('both')">Vorder- und Rückseiten drucken</button>
 <button class="secondary" onclick="dlPrint('back')">Nur Rückseiten</button>
@@ -4188,11 +4188,10 @@ function dlMatchSpecies(product){
   return (db.driedSpecies||[]).findIndex(s=>s.de && p.includes(stem(s.de)));
 }
 function dlLotNr(lot){
-  const iso=String(lot?.date||lot?.packDate||'');
-  const m=iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  const d=m?m[3]+m[2]+m[1]:'';
-  const id=String(lot?.id||'').replace(/^LOT-/,'');
-  return d?d+'-'+id:id;
+  // Auf dem Etikett genügt der Eimer-Code ohne «EIM-» (z. B. 2026-0099). Ohne Eimer (unbekannte Quelle) die Lot-Nummer ohne «LOT-».
+  const b=String(lot?.bucket||'');
+  if(b && b!=='unbekannt') return b.replace(/^EIM-/,'');
+  return String(lot?.id||'').replace(/^LOT-/,'');
 }
 function renderDriedLabels(){
   dlEnsureSpecies();
@@ -6339,7 +6338,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.48'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.49'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
