@@ -6,7 +6,7 @@ Neu im Reiter Dörrpilze (Karte «Dörrpilz-Etiketten drucken», auch über den 
 - Druck: A4, 8 Etiketten pro Bogen (2 × 4, 105 × 74,25 mm). Vorderseiten und Rückseiten in gleicher Anzahl; bei z. B. 10 Stück ein zweiter Bogen mit nur 2 Etiketten.
 - Rückseiten-Vorlage nach Pilzart: Zuchtpilze, Wildpilze («Wildpilze aus dem Berner Oberland»), Flockenstieliger Hexenröhrling (zusätzlich «Für mindestens 20 min erhitzen»). Mindesthaltbarkeit und Lot-Nr. werden eingesetzt.
 - Lot-Nr. auf dem Etikett: Abpackdatum (TTMMJJJJ) und Lot-Nummer ohne «LOT-», z. B. 19112026-2026-0099-001. Die Nummer enthält die Eimer-Nummer und ist damit auf den Eimer rückverfolgbar.
-- Vorderseite: Logo, Bio-Suisse-Logo, deutscher und wissenschaftlicher Name, «20g gedörrte …», bei Zucht «aus eigener Zucht in Steffisburg», bei Wild «aus eigener Wildsammlung aus dem Berner Oberland».
+- Vorderseite (HERMA 3427, 8 pro Bogen, um 90° gedreht wie deine Vorlage): Logo, Bio-Suisse-Logo, deutscher und wissenschaftlicher Name, «20g gedörrte …», bei Zucht «aus eigener Zucht in Steffisburg», bei Wild «aus eigener Wildsammlung aus dem Berner Oberland».
 - QR-Code für den Behälter, in dem die verpackten Dörrpilze liegen (zeigt auf das Lot, jederzeit neu druckbar).
 - Administration: Liste der Pilzarten (deutscher Name, wissenschaftlicher Name, Rückseite) kann angepasst werden.
 
