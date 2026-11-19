@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.49</title>
+<title>Pilzverwaltung Serverversion 1.5.50</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -121,6 +121,7 @@ nav button.top-link{font-weight:bold}
 .woo-order-has-note{background:#fff9e8!important;border-color:#e8cb80!important}
 .woo-order-has-note>summary{background:#fff4d4;border-radius:10px;padding:8px}
 .woo-order-note-indicator{display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#f7e5a7;color:#6b4d13;font-size:12px;font-weight:600;white-space:nowrap}
+.cwtree,.cwtree ul{list-style:none;margin:4px 0 0 0;padding-left:18px;border-left:2px solid #e5e7eb}.cwtree{border-left:0;padding-left:0}.cwtree li{margin:4px 0}
 </style>
 </head>
 <body>
@@ -128,7 +129,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.49</h1>
+<h1>Pilzverwaltung – Version 1.5.50</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -166,6 +167,7 @@ nav button.top-link{font-weight:bold}
 </div>
 <button class="top-link" onclick="show('orders',this); renderWooOrders()">Bestellungen</button>
 <button class="top-link" onclick="show('courses',this); renderCourses()">Kurse</button>
+<button class="top-link" onclick="show('contam',this); renderContam()">Warnungen <span id="contamBadge" class="badge bad" style="display:none"></span></button>
 <button class="nav-group-title" onclick="toggleNavGroup('researchGroup')">▶ Forschung & Zucht</button>
 <div id="researchGroup" class="nav-group">
 <button onclick="show('mastercultures',this)">Masterkulturen</button>
@@ -193,6 +195,21 @@ nav button.top-link{font-weight:bold}
 <div class="card" style="cursor:pointer" onclick="show('orders'); setOrderView('packing')"><div class="muted">Bestellungen packbereit</div><div id="sOrdersReady" class="stat"></div></div>
 <div class="card" style="cursor:pointer" onclick="show('orders'); setOrderView('production')"><div class="muted">Bestellungen mit Fehlbestand</div><div id="sOrdersMissing" class="stat"></div></div>
 </div>
+</section>
+
+<section id="contam" class="section">
+<h2>Warnungen: Kontaminationen in der Herkunft</h2>
+<p class="muted">Wenn ein hoher Anteil der Körnerbruten oder Substratsäcke aus der gleichen Quelle (Flüssigmyzel, Petrischale, Masterspritze) kontaminiert ist, erscheint hier eine Warnung mit dem Stammbaum. Ist die Quelle kontrolliert, kannst du die Warnung ausblenden. Sie erscheint wieder, wenn danach weitere Kontaminationen dazukommen.</p>
+<div class="card">
+<div class="form">
+<div><label>Warnschwelle (% kontaminiert)</label><input id="cwPct" type="text" inputmode="numeric" onchange="cwSave()"></div>
+<div><label>Mindestanzahl Körnerbruten</label><input id="cwMinKb" type="text" inputmode="numeric" onchange="cwSave()"></div>
+<div><label>Mindestanzahl Substratsäcke</label><input id="cwMinSub" type="text" inputmode="numeric" onchange="cwSave()"></div>
+</div>
+<p class="muted">Die Mindestanzahl verhindert Fehlalarme bei ganz kleinen Mengen (z. B. 1 von 2).</p>
+</div>
+<div id="contamList"></div>
+<details class="card"><summary style="cursor:pointer"><strong>Ausgeblendete Warnungen</strong></summary><div id="contamHidden" style="margin-top:10px"></div></details>
 </section>
 
 <section id="today" class="section">
@@ -1161,7 +1178,7 @@ async function pollLiveUpdates(){
   finally{ LIVE_POLL_BUSY=false; }
 }
 function startLiveUpdates(){ setInterval(pollLiveUpdates,5000); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') pollLiveUpdates(); }); }
-const DB_ARRAY_KEYS=['dk','petri','lc','kb','mix','sub','harv','buckets','lots','goods','logs','archive','minStocks','testGroups','masterCultures','productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks','driedSpecies'];
+const DB_ARRAY_KEYS=['dk','petri','lc','kb','mix','sub','harv','buckets','lots','goods','logs','archive','minStocks','testGroups','masterCultures','productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks','driedSpecies','contamDismissed'];
 // Speichert den ganzen Datenbestand. Der Server prüft den mitgesendeten Datenstand (409 bei veraltetem Stand)
 // und verlangt für Massenlöschungen (Reset) das Admin-Passwort (403 ADMIN_CONFIRM_REQUIRED).
 // Bestellungen, Reservierungen und Sync-Protokoll gehören dem Server (er ersetzt sie beim Speichern ohnehin); sie werden nicht mehr hochgeladen. Das spart pro Speichern rund 1 MB.
@@ -3552,6 +3569,8 @@ setHTML('lotRows', lotRowsData.map(x=>`<tr>
 <td>${esc(x.id)}</td><td>${esc(x.sku||'–')}</td><td>${esc(x.bucket)}</td><td>${esc(x.product)}</td><td>${fmt(x.mhd)}</td><td>${esc(x.qty)}</td><td>${badge(x.status)}</td><td><button class="secondary" onclick="editItem('lots','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('lots','${x.id}')">Historie</button> <button class="secondary" onclick="dlOpenForLot('${x.id}')">Etiketten</button> <button class="secondary" onclick="sellItem('lots','${x.id}')">Verkaufen</button> <button class="secondary" onclick="contamItem('lots','${x.id}')">Konti</button></td></tr>`).join(''));
 
 renderDriedLabels();
+scheduleContamBadge();
+if(el('contam')?.classList.contains('active')) renderContam();
 // Holzstämme
 setHTML('logRows', applyViewFilter('logs', activeItems(db.logs)).map(x=>`<tr>
 <td>${esc(x.id)}</td>
@@ -4283,6 +4302,130 @@ function dlPrintQr(){
   const n=parseInt(prompt('Wie viele QR-Etiketten für Behälter drucken?','1'),10); if(!n||n<1) return;
   dlOpenPrint(dlSheets('qr',Math.min(n,80),ctx),'QR Behälter '+ctx.lotNr);
 }
+
+
+// ===== Kontaminations-Warnungen (Herkunft / Stammbaum) =====
+function cwSettings(){
+  if(!db.contamSettings||typeof db.contamSettings!=='object'||Array.isArray(db.contamSettings)) db.contamSettings={};
+  const c=db.contamSettings;
+  return {pct:Number(c.pct)>0?Number(c.pct):30, minKb:Number(c.minKb)>0?Number(c.minKb):3, minSub:Number(c.minSub)>0?Number(c.minSub):5};
+}
+function cwSave(){
+  db.contamSettings={pct:parseInt(el('cwPct').value,10)||30,minKb:parseInt(el('cwMinKb').value,10)||3,minSub:parseInt(el('cwMinSub').value,10)||5};
+  save('Warnschwellen gespeichert');
+}
+function cwArchiveIndex(){
+  const idx=new Map();
+  for(const a of (db.archive||[])){
+    if(a.type!=='sub') continue;
+    const m=String(a.details||'').match(/Anzahl:\s*(\d+)/);
+    const n=m?Number(m[1]):1;
+    let e=idx.get(a.itemId); if(!e){e={contam:0,other:0};idx.set(a.itemId,e);}
+    if(a.action==='kontaminiert') e.contam+=n;
+    else if(a.action==='im Fruchtungsraum'||a.action==='verkauft') e.other+=n;
+  }
+  return idx;
+}
+function cwSubStats(x,idx){
+  const e=idx.get(x.id)||{contam:0,other:0};
+  const active=isArchivedStatus(x.status)?0:qtyOrOne(x.qty);
+  let contam=e.contam, other=x.forTest?0:e.other;
+  if(x.status==='kontaminiert' && contam===0) contam=qtyOrOne(x.qty)||1;
+  return {total:active+contam+other, contam};
+}
+const CW_ROOT_NAMES={lc:'Flüssigmyzel',petri:'Petrischale',syringe:'Masterspritze',kb:'Körnerbrut (Mutter)',dk:'Dauerkultur'};
+function cwRootOfKb(k){
+  const t=k.sourceType||(k.lc?'lc':(k.syringe?'syringe':(k.petri?'petri':'')));
+  const id=k.sourceId||k.lc||k.syringe||k.petri||'';
+  return {type:t,id};
+}
+function computeContamWarnings(){
+  const set=cwSettings(), idx=cwArchiveIndex(), roots=new Map();
+  const root=(type,id)=>{ const key=type+':'+id; if(!roots.has(key)) roots.set(key,{key,type,id,kbs:[],subs:[],lcs:[]}); return roots.get(key); };
+  const kbById=new Map((db.kb||[]).map(k=>[k.id,k]));
+  for(const k of (db.kb||[])){ const r=cwRootOfKb(k); if(!r.type||!r.id||r.id==='unbekannt') continue; root(r.type,r.id).kbs.push(k); }
+  for(const x of (db.sub||[])){
+    let r=null;
+    if(x.sourceType==='kb'){ const k=kbById.get(x.sourceId); if(k) r=cwRootOfKb(k); }
+    else if(x.sourceType==='lc') r={type:'lc',id:x.sourceId};
+    if(!r||!r.type||!r.id||r.id==='unbekannt') continue;
+    root(r.type,r.id).subs.push(x);
+  }
+  const out=[];
+  for(const R of roots.values()){
+    const kbTotal=R.kbs.length, kbContam=R.kbs.filter(k=>k.status==='kontaminiert').length;
+    let subTotal=0, subContam=0; const perKb=new Map();
+    for(const x of R.subs){ const st=cwSubStats(x,idx); subTotal+=st.total; subContam+=st.contam; if(x.sourceType==='kb'){ const e=perKb.get(x.sourceId)||{total:0,contam:0}; e.total+=st.total; e.contam+=st.contam; perKb.set(x.sourceId,e);} }
+    const reasons=[];
+    if(kbTotal>=set.minKb && kbContam*100>=set.pct*kbTotal) reasons.push(`${kbContam} von ${kbTotal} Körnerbruten kontaminiert (${Math.round(kbContam*100/kbTotal)} %)`);
+    if(subTotal>=set.minSub && subContam*100>=set.pct*subTotal) reasons.push(`${subContam} von ${subTotal} Substratsäcken kontaminiert (${Math.round(subContam*100/subTotal)} %)`);
+    if(!reasons.length) continue;
+    out.push({key:'w:'+R.key,kind:'source',type:R.type,id:R.id,reasons,kbs:R.kbs,perKb,kbTotal,kbContam,subTotal,subContam,count:kbContam+subContam});
+  }
+  // Masterspritzen: schon ein kontaminiertes Flüssigmyzel (oder eine Warnung beim Flüssigmyzel) genügt.
+  const warnedLc=new Set(out.filter(w=>w.type==='lc').map(w=>w.id));
+  const bySyringe=new Map();
+  for(const l of (db.lc||[])){
+    const sy=l.syringe||(l.sourceType==='syringe'?l.sourceId:'');
+    if(!sy) continue;
+    const bad=l.status==='kontaminiert'||warnedLc.has(l.id);
+    let e=bySyringe.get(sy); if(!e){e={all:[],bad:[]};bySyringe.set(sy,e);}
+    e.all.push(l); if(bad) e.bad.push(l);
+  }
+  for(const [sy,e] of bySyringe){
+    if(!e.bad.length) continue;
+    out.push({key:'w:syringe-lc:'+sy,kind:'syringe',type:'syringe',id:sy,reasons:[`${e.bad.length} von ${e.all.length} daraus hergestellten Flüssigmyzelen kontaminiert oder auffällig`],lcs:e.all,badLc:new Set(e.bad.map(l=>l.id)),count:e.bad.length});
+  }
+  // ausgeblendete Warnungen
+  const dis=new Map((db.contamDismissed||[]).map(d=>[d.key,d]));
+  const active=[], hidden=[];
+  for(const w of out){ const d=dis.get(w.key); if(d && w.count<=Number(d.count||0)){ w.dismissed=d; hidden.push(w);} else active.push(w); }
+  return {active,hidden};
+}
+function cwKbAvailable(k){return !isArchivedStatus(k.status)&&k.status!=='beimpft';}
+function cwStatusBadge(st){return badge(st||'–');}
+function cwTreeHtml(w){
+  const e=escHtml;
+  if(w.kind==='syringe'){
+    return `<ul class="cwtree"><li><b>Masterspritze ${e(w.id)}</b><ul>${w.lcs.map(l=>`<li>Flüssigmyzel ${e(l.id)} ${cwStatusBadge(l.status)}${w.badLc.has(l.id)?' <span class="badge bad">auffällig</span>':''}<span class="muted"> · ${fmt(l.date)}</span></li>`).join('')}</ul></li></ul>`;
+  }
+  const kbRows=(w.kbs||[]).map(k=>{
+    const st=w.perKb.get(k.id);
+    const still=cwKbAvailable(k);
+    return `<li>Körnerbrut ${e(k.id)} ${cwStatusBadge(k.status)}${still?' <span class="badge warn">noch vorhanden – kontrollieren</span>':''}${st?`<span class="muted"> · Substratsäcke: ${st.total}, davon kontaminiert ${st.contam} (${st.total?Math.round(st.contam*100/st.total):0} %)</span>`:''}</li>`;
+  }).join('');
+  return `<ul class="cwtree"><li><b>${e(CW_ROOT_NAMES[w.type]||w.type)} ${e(w.id)}</b><ul>
+<li>Körnerbruten: ${w.kbTotal} hergestellt, ${w.kbContam} kontaminiert</li>
+<li>Substratsäcke daraus: ${w.subTotal}, davon kontaminiert ${w.subContam}</li>
+<li>Betroffene Körnerbruten (Stammbaum):<ul>${kbRows||'<li class="muted">keine</li>'}</ul></li></ul></li></ul>`;
+}
+function cwCardHtml(w,hidden){
+  const e=escHtml;
+  const title=w.kind==='syringe'?`Masterspritze ${e(w.id)} kontrollieren`:`${e(CW_ROOT_NAMES[w.type]||w.type)} ${e(w.id)} kontrollieren`;
+  const still=(w.kbs||[]).filter(cwKbAvailable).length;
+  const hint=w.kind==='source'&&still?`<p><b>${still} Körnerbrut${still===1?'':'en'} aus dieser Quelle noch vorhanden</b> – vor der Weiterverwendung prüfen.</p>`:'';
+  return `<div class="card" style="border-left:6px solid ${hidden?'#9ca3af':'#dc2626'}"><h3>${hidden?'':'⚠ '}${title}</h3><p>${w.reasons.map(e).join('<br>')}</p>${hint}${cwTreeHtml(w)}<div style="margin-top:8px">${hidden?`<button class="secondary" onclick="cwRestore('${e(w.key)}')">Warnung wieder anzeigen</button> <span class="muted">ausgeblendet am ${fmt(w.dismissed.date)}${w.dismissed.note?' – '+e(w.dismissed.note):''}</span>`:`<button class="primary" onclick="cwDismiss('${e(w.key)}')">Kontrolliert – Warnung ausblenden</button>`}</div></div>`;
+}
+function renderContam(){
+  const set=cwSettings();
+  if(el('cwPct')&&document.activeElement!==el('cwPct')){ el('cwPct').value=set.pct; el('cwMinKb').value=set.minKb; el('cwMinSub').value=set.minSub; }
+  const {active,hidden}=computeContamWarnings();
+  setHTML('contamList', active.length?active.map(w=>cwCardHtml(w,false)).join(''):'<div class="card"><p>✅ Keine Warnungen. Aktuell ist keine Quelle auffällig.</p></div>');
+  setHTML('contamHidden', hidden.length?hidden.map(w=>cwCardHtml(w,true)).join(''):'<p class="muted">Keine ausgeblendeten Warnungen.</p>');
+  cwBadge(active.length);
+}
+function cwBadge(n){ const b=el('contamBadge'); if(!b) return; b.textContent=n; b.style.display=n?'inline-block':'none'; }
+let cwTimer=null;
+function scheduleContamBadge(){ clearTimeout(cwTimer); cwTimer=setTimeout(()=>{ try{ cwBadge(computeContamWarnings().active.length); }catch(e){} },400); }
+function cwDismiss(key){
+  const w=computeContamWarnings().active.find(x=>x.key===key); if(!w) return;
+  const note=prompt('Notiz zur Kontrolle (optional):','')||'';
+  if(!Array.isArray(db.contamDismissed)) db.contamDismissed=[];
+  db.contamDismissed=db.contamDismissed.filter(d=>d.key!==key);
+  db.contamDismissed.push({key,date:today(),count:w.count,note:note.trim()});
+  save('Warnung ausgeblendet');
+}
+function cwRestore(key){ db.contamDismissed=(db.contamDismissed||[]).filter(d=>d.key!==key); save('Warnung wieder aktiv'); }
 
 function addSale(){let l=by('lots',saleLot.value);let q=+saleQty.value||0;let kunde=(saleCustomer.value||'').trim();if(q<=0)return alert('Ungültige Anzahl.');if(q>l.qty)return alert('Nicht genug Bestand');l.qty-=q;l.lastSaleDate=today();l.lastCustomer=kunde;if(l.qty<=0){l.status='verkauft';l.soldAt=today();}archiveLog('lots',l.id,'verkauft','Verkauf buchen; Anzahl: '+q+(kunde?'; Kunde: '+kunde:''));save()}
 function addDueb(){
@@ -6338,7 +6481,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.49'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.50'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

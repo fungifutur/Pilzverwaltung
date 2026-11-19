@@ -1,4 +1,17 @@
-# Version 1.5.49 – Lot-Nr. auf Dörrpilz-Etiketten = Eimer-Code
+# Version 1.5.50 – Warnungen bei Kontaminationen in der Herkunft
+
+Neuer Menüpunkt **Warnungen** (mit roter Zahl, wenn etwas offen ist).
+
+- Ist ein hoher Anteil der **Körnerbruten** oder der **Substratsäcke** aus der gleichen Quelle kontaminiert (Standard: ab 30 %, mindestens 3 Körnerbruten bzw. 5 Säcke), erscheint die Warnung «Flüssigmyzel … kontrollieren» (bzw. Petrischale oder Masterspritze). Die Säcke werden über alle Körnerbruten der gleichen Quelle zusammengezählt (z. B. 3 Körnerbruten, 60 Säcke).
+- Ein **Stammbaum** zeigt die Quelle, die daraus hergestellten Körnerbruten (mit Status und Anzahl kontaminierter Säcke) und markiert die noch vorhandenen Körnerbruten zur Kontrolle.
+- **Masterspritzen:** Schon ein kontaminiertes (oder auffälliges) Flüssigmyzel daraus löst «Masterspritze kontrollieren» aus.
+- Mit **«Kontrolliert – Warnung ausblenden»** (mit Notiz) verschwindet die Warnung. Sie kommt wieder, wenn danach weitere Kontaminationen dazukommen. Ausgeblendete Warnungen sind einklappbar sichtbar und lassen sich wieder anzeigen.
+- Die Schwellen (Prozent, Mindestanzahlen) sind auf der Seite einstellbar.
+- Gezählt werden Kontaminationen aus dem Archiv-Protokoll (auch teilweise, z. B. 7 von 20 Säcken).
+
+Vorherige Version 1.5.49:
+
+**Version 1.5.49 – Lot-Nr. auf Dörrpilz-Etiketten = Eimer-Code**
 
 Auf den Dörrpilz-Etiketten steht als Lot-Nr. nur noch der Eimer-Code (z. B. «CH-BIO-006 ¦ Lot Nr. 2026-0099»), ohne Datum und ohne «EIM-». So bleibt es auf den Eimer rückverfolgbar. Bei unbekannter Quelle (kein Eimer) steht die Lot-Nummer ohne «LOT-». Die Lot-Nr. bleibt im Feld änderbar.
 
