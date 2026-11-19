@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.46</title>
+<title>Pilzverwaltung Serverversion 1.5.47</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -128,7 +128,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.46</h1>
+<h1>Pilzverwaltung – Version 1.5.47</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -440,6 +440,23 @@ nav button.top-link{font-weight:bold}
 <button class="primary" onclick="generatePacks()">Packungen generieren</button>
 <button class="secondary" onclick="labels()">Etiketten-Vorschau</button>
 <p class="muted">MHD wird automatisch als Abpackdatum + 2 Jahre gesetzt.</p>
+</div>
+
+<div class="card" id="driedLabelCard">
+<h3>Dörrpilz-Etiketten drucken (Vorderseite, Rückseite, QR für Behälter)</h3>
+<div class="form">
+<div><label>Lot / Packung</label><select id="dlLot" onchange="dlLotChanged()"></select></div>
+<div><label>Pilzart (für Vorderseite und Rückseite)</label><select id="dlSpecies"></select></div>
+<div><label>Mindesthaltbarkeit</label><input id="dlMhd" type="date"></div>
+<div><label>Gewicht pro Packung (g)</label><input id="dlWeight" type="text" inputmode="numeric" value="20"></div>
+<div><label>Anzahl Etiketten (je vorne und hinten)</label><input id="dlCount" type="text" inputmode="numeric" value="8"></div>
+<div><label>Lot-Nr. auf dem Etikett</label><input id="dlLotNr" readonly></div>
+</div>
+<button class="primary" onclick="dlPrint('both')">Vorder- und Rückseiten drucken</button>
+<button class="secondary" onclick="dlPrint('back')">Nur Rückseiten</button>
+<button class="secondary" onclick="dlPrint('front')">Nur Vorderseiten</button>
+<button class="secondary" onclick="dlPrintQr()">QR-Code für Behälter drucken</button>
+<p class="muted">8 Etiketten pro A4-Bogen (2 × 4). Bei mehr als 8 Etiketten kommen weitere Bögen, der letzte wird nur teilweise bedruckt. Die Rückseite richtet sich nach der Art der Pilzart (Zucht, Wild, Flockenstieliger Hexenröhrling). Die Liste der Pilzarten kann in der Administration angepasst werden.</p>
 </div>
 
 <div class="card">
@@ -908,6 +925,18 @@ nav button.top-link{font-weight:bold}
 <h3>Bestand / Datensätze</h3>
 <table><thead><tr><th>Bereich</th><th>Anzahl</th></tr></thead><tbody id="adminCountRows"></tbody></table>
 </div>
+<div class="card">
+<h3>Pilzarten für Dörrpilz-Etiketten</h3>
+<p class="muted">Deutscher und wissenschaftlicher Name erscheinen auf der Vorderseite. «Rückseite» bestimmt die Vorlage hinten.</p>
+<table><thead><tr><th>Deutscher Name</th><th>Wissenschaftlicher Name</th><th>Rückseite</th><th></th></tr></thead><tbody id="driedSpeciesRows"></tbody></table>
+<div class="form" style="margin-top:8px">
+<div><label>Deutscher Name</label><input id="dsDe" placeholder="z.B. Austernseitlinge"></div>
+<div><label>Wissenschaftlicher Name</label><input id="dsSci" placeholder="z.B. Pleurotus ostreatus"></div>
+<div><label>Rückseite</label><select id="dsKind"><option value="zucht">Zuchtpilze</option><option value="wild">Wildpilze</option><option value="flocki">Flockenstieliger Hexenröhrling (Wild, 20 min erhitzen)</option></select></div>
+</div>
+<button class="primary" onclick="dsAdd()">Pilzart hinzufügen</button>
+</div>
+
 <details class="card">
 <summary style="cursor:pointer"><strong>Backups</strong> <span class="muted">(automatisch eingeklappt)</span></summary>
 <div style="margin-top:12px">
@@ -1078,7 +1107,7 @@ async function ensureLogin(){
 }
 const demo={dk:[{id:'DK-2022-0017',strain:'Ganoderma sp.',type:'wild',source:'Wildklon',date:'2022-01-10',count:2,status:'fertig durchwachsen',place:'Zürichsee',coords:'47.35, 8.55',wood:'Buche'},{id:'DK-2026-0001',strain:'Pleurotus ostreatus',type:'gekauft',source:'Mycelia',date:'2026-05-12',count:4,status:'fertig durchwachsen'}],petri:[{id:'PET-2026-0031',dk:'DK-2022-0017',strain:'Ganoderma sp.',date:'2026-05-02',status:'durchwachsen'}],lc:[{id:'LC-2026-0001',sourceType:'petri',sourceId:'PET-2026-0031',petri:'PET-2026-0031',dk:'DK-2022-0017',strain:'Ganoderma sp.',date:'2026-05-06',volume:500,status:'fertig durchwachsen'}],kb:[{id:'KB-2026-0104',lc:'LC-2026-0001',petri:'PET-2026-0031',dk:'DK-2022-0017',strain:'Ganoderma sp.',date:'2026-05-08',status:'im Kühlschrank'}],mix:[{id:'MIX-0001',name:'Buche + Kleie',ing:'Buchenspäne, Kleie, Wasser',water:62}],sub:[{id:'SUB-2026-0104-001',kb:'KB-2026-0104',petri:'PET-2026-0031',dk:'DK-2022-0017',strain:'Ganoderma sp.',mix:'MIX-0001',sourceType:'kb',sourceId:'KB-2026-0104',status:'am durchwachsen',date:'2026-05-19',weight:5.8,water:62}],harv:[],buckets:[{id:'EIM-2026-0001',product:'Ganoderma getrocknet',date:'2026-05-20',qty:1000,unit:'g',status:'lagernd',note:'Test-Eimer'}],lots:[],goods:[],logs:[],archive:[],minStocks:[],testGroups:[],masterCultures:[],masterCounters:{}};
 let db=JSON.parse(JSON.stringify(demo));
-['dk','petri','lc','kb','mix','sub','harv','buckets','lots','goods','logs','archive','minStocks','testGroups','masterCultures','productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks'].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
+['dk','petri','lc','kb','mix','sub','harv','buckets','lots','goods','logs','archive','minStocks','testGroups','masterCultures','productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks','driedSpecies'].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
 if(!db.masterCounters || typeof db.masterCounters !== 'object' || Array.isArray(db.masterCounters)) db.masterCounters={};
 if(!db.skuDefaultLocations || typeof db.skuDefaultLocations!=='object' || Array.isArray(db.skuDefaultLocations)) db.skuDefaultLocations={};
 async function loadServerData(){
@@ -1114,7 +1143,7 @@ async function pollLiveUpdates(){
     db=fresh;
     DATA_VERSION=r.headers.get('X-Data-Version')||DATA_VERSION;
     await refreshServerStock();
-    ['dk','petri','lc','kb','mix','sub','harv','buckets','lots','goods','logs','archive','minStocks','testGroups','masterCultures','productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks'].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
+    ['dk','petri','lc','kb','mix','sub','harv','buckets','lots','goods','logs','archive','minStocks','testGroups','masterCultures','productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks','driedSpecies'].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
     if(!db.masterCounters || typeof db.masterCounters !== 'object' || Array.isArray(db.masterCounters)) db.masterCounters={};
     LIVE_UPDATED_AT=next;
     ensureWooSyncSettings(); ensureCatalogState(); normalizeWarningSettings();
@@ -1132,7 +1161,7 @@ async function pollLiveUpdates(){
   finally{ LIVE_POLL_BUSY=false; }
 }
 function startLiveUpdates(){ setInterval(pollLiveUpdates,5000); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') pollLiveUpdates(); }); }
-const DB_ARRAY_KEYS=['dk','petri','lc','kb','mix','sub','harv','buckets','lots','goods','logs','archive','minStocks','testGroups','masterCultures','productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks'];
+const DB_ARRAY_KEYS=['dk','petri','lc','kb','mix','sub','harv','buckets','lots','goods','logs','archive','minStocks','testGroups','masterCultures','productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks','driedSpecies'];
 // Speichert den ganzen Datenbestand. Der Server prüft den mitgesendeten Datenstand (409 bei veraltetem Stand)
 // und verlangt für Massenlöschungen (Reset) das Admin-Passwort (403 ADMIN_CONFIRM_REQUIRED).
 // Bestellungen, Reservierungen und Sync-Protokoll gehören dem Server (er ersetzt sie beim Speichern ohnehin); sie werden nicht mehr hochgeladen. Das spart pro Speichern rund 1 MB.
@@ -1208,7 +1237,7 @@ async function initApp(){
   await loadServerData();
   const split1000Changed=normalize1000DowelPacks();
   if(split1000Changed) await save();
-  ['dk','petri','lc','kb','mix','sub','harv','buckets','lots','goods','logs','archive','minStocks','testGroups','masterCultures','productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks'].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
+  ['dk','petri','lc','kb','mix','sub','harv','buckets','lots','goods','logs','archive','minStocks','testGroups','masterCultures','productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks','driedSpecies'].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
   if(!db.masterCounters || typeof db.masterCounters !== 'object' || Array.isArray(db.masterCounters)) db.masterCounters={};
   ensureWooSyncSettings();
   ensureCatalogState();
@@ -1854,7 +1883,7 @@ function dedupeLocalProductCatalog(){
 }
 
 function ensureCatalogState(){
-  ['productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks'].forEach(k=>{if(!Array.isArray(db[k]))db[k]=[];});
+  ['productCatalog','storageLocations','stockTransactions','wooOrders','wooReservations','wooSyncLog','productionRequests','personalTasks','driedSpecies'].forEach(k=>{if(!Array.isArray(db[k]))db[k]=[];});
   const defs=[['Ppul_Kör_150g','Lungenseitling Körnerbrut 150 g','kb','batch'],['Ppul_Kör_600g','Lungenseitling Körnerbrut 600 g','kb','batch'],['Ppul_Kör_1000g','Lungenseitling Körnerbrut 1000 g','kb','batch'],['INT_Stroh_500g','Strohpellets 500 g','rawmaterials','simple'],['INT_Stroh_2000g','Strohpellets 2000 g','rawmaterials','simple'],['INT_Stroh_3500g','Strohpellets 3500 g','rawmaterials','simple'],['INT_Nadelholz_500g','Nadelholzpellets 500 g','rawmaterials','simple'],['INT_Nadelholz_2000g','Nadelholzpellets 2000 g','rawmaterials','simple'],['INT_Nadelholz_3500g','Nadelholzpellets 3500 g','rawmaterials','simple']];
   defs.forEach(([sku,name,area,stockMode])=>{if(!db.productCatalog.some(p=>String(p.sku||'').toLowerCase()===String(sku).toLowerCase()))db.productCatalog.push({id:'INT-'+sku,sku,name,area,stockMode,qty:0,active:true,syncActive:false,internalOnly:true});});
   dedupeLocalProductCatalog();
@@ -3520,8 +3549,9 @@ setOptions('lotDateFilter', '<option value="">Alle Daten</option>' + lotDates.ma
 let lotRowsData = currentLotDate ? lotBase.filter(x=>x.date===currentLotDate) : lotBase;
 setHTML('lotRows', lotRowsData.map(x=>`<tr>
 <td><input type="checkbox" class="lotBulkCheck" value="${x.id}"></td>
-<td>${esc(x.id)}</td><td>${esc(x.sku||'–')}</td><td>${esc(x.bucket)}</td><td>${esc(x.product)}</td><td>${fmt(x.mhd)}</td><td>${esc(x.qty)}</td><td>${badge(x.status)}</td><td><button class="secondary" onclick="editItem('lots','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('lots','${x.id}')">Historie</button> <button class="secondary" onclick="sellItem('lots','${x.id}')">Verkaufen</button> <button class="secondary" onclick="contamItem('lots','${x.id}')">Konti</button></td></tr>`).join(''));
+<td>${esc(x.id)}</td><td>${esc(x.sku||'–')}</td><td>${esc(x.bucket)}</td><td>${esc(x.product)}</td><td>${fmt(x.mhd)}</td><td>${esc(x.qty)}</td><td>${badge(x.status)}</td><td><button class="secondary" onclick="editItem('lots','${x.id}')">Bearbeiten</button> <button class="secondary" onclick="showHistory('lots','${x.id}')">Historie</button> <button class="secondary" onclick="dlOpenForLot('${x.id}')">Etiketten</button> <button class="secondary" onclick="sellItem('lots','${x.id}')">Verkaufen</button> <button class="secondary" onclick="contamItem('lots','${x.id}')">Konti</button></td></tr>`).join(''));
 
+renderDriedLabels();
 // Holzstämme
 setHTML('logRows', applyViewFilter('logs', activeItems(db.logs)).map(x=>`<tr>
 <td>${esc(x.id)}</td>
@@ -4131,6 +4161,127 @@ db.lots.push({
   status:'lagernd'
 });
 save('Dörrpilz-Lot erstellt')
+}
+
+
+// ===== Dörrpilz-Etiketten (Vorder-/Rückseite, QR für Behälter) =====
+const DRIED_SPECIES_DEFAULT=[
+  {de:'Austernseitlinge',sci:'Pleurotus ostreatus',kind:'zucht'},
+  {de:'Kräuterseitlinge',sci:'Pleurotus eryngii',kind:'zucht'},
+  {de:'Limonenseitlinge',sci:'Pleurotus citrinopileatus',kind:'zucht'},
+  {de:'Lungenseitlinge',sci:'Pleurotus pulmonarius',kind:'zucht'},
+  {de:'Shiitake',sci:'Lentinula edodes',kind:'zucht'},
+  {de:'Igelstachelbart',sci:'Hericium erinaceus',kind:'zucht'},
+  {de:'Steinpilze',sci:'Boletus edulis',kind:'wild'},
+  {de:'Pfifferlinge',sci:'Cantharellus cibarius',kind:'wild'},
+  {de:'Totentrompeten',sci:'Craterellus cornucopioides',kind:'wild'},
+  {de:'Flockenstieliger Hexenröhrling',sci:'Neoboletus erythropus',kind:'flocki'}
+];
+const DRIED_KIND_NAMES={zucht:'Zuchtpilze',wild:'Wildpilze',flocki:'Flockenstieliger Hexenröhrling'};
+function dlEnsureSpecies(){
+  if(!Array.isArray(db.driedSpecies)) db.driedSpecies=[];
+  if(!db.driedSpecies.length) db.driedSpecies=DRIED_SPECIES_DEFAULT.map(x=>({...x}));
+}
+function dlMatchSpecies(product){
+  const p=String(product||'').toLowerCase();
+  const stem=s=>String(s||'').toLowerCase().replace(/(en|e|n)$/,'');
+  return (db.driedSpecies||[]).findIndex(s=>s.de && p.includes(stem(s.de)));
+}
+function dlLotNr(lot){
+  const iso=String(lot?.date||lot?.packDate||'');
+  const m=iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const d=m?m[3]+m[2]+m[1]:'';
+  const id=String(lot?.id||'').replace(/^LOT-/,'');
+  return d?d+'-'+id:id;
+}
+function renderDriedLabels(){
+  dlEnsureSpecies();
+  const lotSel=el('dlLot'); if(!lotSel) return;
+  const keep=lotSel.value;
+  const lots=(db.lots||[]).filter(x=>!['archiviert','kontaminiert'].includes(String(x.status||'')));
+  lotSel.innerHTML=lots.slice().reverse().map(x=>`<option value="${escHtml(x.id)}">${escHtml(x.id)} – ${escHtml(x.product||'')} (${escHtml(String(x.qty??''))} Pack.)</option>`).join('');
+  if(keep && lots.some(x=>x.id===keep)) lotSel.value=keep;
+  el('dlSpecies').innerHTML=db.driedSpecies.map((s,i)=>`<option value="${i}">${escHtml(s.de)} (${escHtml(DRIED_KIND_NAMES[s.kind]||s.kind)})</option>`).join('');
+  if(!el('dlMhd').dataset.touched) dlLotChanged(true);
+  setHTML('driedSpeciesRows', db.driedSpecies.map((s,i)=>`<tr><td><input value="${escHtml(s.de)}" onchange="dsEdit(${i},'de',this.value)"></td><td><input value="${escHtml(s.sci||'')}" onchange="dsEdit(${i},'sci',this.value)"></td><td><select onchange="dsEdit(${i},'kind',this.value)">${Object.entries(DRIED_KIND_NAMES).map(([k,v])=>`<option value="${k}" ${s.kind===k?'selected':''}>${escHtml(v)}</option>`).join('')}</select></td><td><button class="secondary" onclick="dsDelete(${i})">Löschen</button></td></tr>`).join(''));
+}
+function dlLotChanged(silent){
+  const lot=by('lots',el('dlLot').value); if(!lot||!lot.id) return;
+  el('dlMhd').value=lot.mhd||'';
+  el('dlLotNr').value=dlLotNr(lot);
+  el('dlCount').value=String(Math.min(Number(lot.qty)||8,200));
+  const i=dlMatchSpecies(lot.product); if(i>=0) el('dlSpecies').value=String(i);
+}
+function dlOpenForLot(id){
+  renderDriedLabels();
+  el('dlLot').value=id; dlLotChanged();
+  el('driedLabelCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function dsAdd(){
+  dlEnsureSpecies();
+  const de=(el('dsDe').value||'').trim(); if(!de) return alert('Bitte einen deutschen Namen eingeben.');
+  db.driedSpecies.push({de,sci:(el('dsSci').value||'').trim(),kind:el('dsKind').value});
+  el('dsDe').value=''; el('dsSci').value='';
+  save('Pilzart gespeichert');
+}
+function dsEdit(i,key,val){ if(!db.driedSpecies[i]) return; db.driedSpecies[i][key]=String(val).trim(); save('Pilzart gespeichert'); }
+function dsDelete(i){ if(!confirm('Diese Pilzart aus der Liste löschen?')) return; db.driedSpecies.splice(i,1); save('Pilzart gelöscht'); }
+
+function dlLabelHtml(kind,ctx){
+  const e=escHtml;
+  if(kind==='front'){
+    const sp=ctx.species;
+    const zucht=sp.kind==='zucht';
+    const origin=zucht?'aus eigener Zucht in Steffisburg':'aus eigener Wildsammlung aus dem Berner Oberland';
+    return `<div class="lb front"><div class="lg"><img src="/img/logo-fungifuturi.png" alt="Fungi Futuri"><img class="bio" src="/img/logo-biosuisse.png" alt="Bio Suisse"></div><div class="tx"><div class="nm">${e(sp.de)}</div>${sp.sci?`<div class="sc">(${e(sp.sci)})</div>`:''}<div class="ds">${e(ctx.weight)}g gedörrte ${e(sp.de)}<br>${origin}</div></div></div>`;
+  }
+  if(kind==='back'){
+    const sp=ctx.species, wild=sp.kind!=='zucht', flocki=sp.kind==='flocki';
+    return `<div class="lb back"><div class="t1">Trockenpilze</div>${wild?'<div class="t2">Wildpilze aus dem Berner Oberland</div>':''}<p>Dörrpilze sollten vor dem Verarbeiten mindestens für 30 Minuten im warmen Wasser eingeweicht werden.</p><p>Trotz sorgfältiger Verarbeitung kann das Produkt Fremdkörper enthalten.${flocki?' Für mindestens 20 min erhitzen.':''}</p><p>Mindesthaltbarkeit: ${e(ctx.mhd)}<br>CH-BIO-006 ¦ Lot Nr. ${e(ctx.lotNr)}</p><p class="ad">Fungi Futuri GmbH, Erlenstrasse 43, 3612 Steffisburg<br>www.fungifuturi.ch</p></div>`;
+  }
+  if(kind==='qr'){
+    const url='/api/qr?data='+encodeURIComponent(ctx.qrUrl);
+    return `<div class="lb qr"><img src="${url}" alt="QR"><div class="qt"><b>${e(ctx.product)}</b><br>Lot Nr. ${e(ctx.lotNr)}<br>MHD ${e(ctx.mhd)}<br><span>${e(ctx.lotId)}</span></div></div>`;
+  }
+  return '';
+}
+function dlSheets(kind,count,ctx){
+  const sheets=[]; let left=count;
+  while(left>0){ const n=Math.min(8,left); sheets.push(`<div class="sheet">${Array.from({length:n},()=>dlLabelHtml(kind,ctx)).join('')}</div>`); left-=n; }
+  return sheets.join('');
+}
+function dlOpenPrint(body,title){
+  const w=window.open('','_blank');
+  if(!w) return alert('Das Druckfenster wurde blockiert. Bitte Pop-ups für diese Seite erlauben.');
+  const css=`@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff}
+.sheet{width:210mm;height:297mm;display:grid;grid-template-columns:105mm 105mm;grid-template-rows:repeat(4,74.25mm);page-break-after:always;overflow:hidden}
+.sheet:last-child{page-break-after:auto}.lb{width:105mm;height:74.25mm;padding:5mm 6mm;overflow:hidden}
+@media screen{.lb{outline:1px dotted #bbb}body{background:#eee}.sheet{background:#fff;margin:6px auto;box-shadow:0 0 4px #999}}
+.back{text-align:center;display:flex;flex-direction:column;justify-content:center;font-size:11pt;line-height:1.25}.back p{margin:0 0 2.2mm}.back .t1{font-size:15pt;margin-bottom:1mm}.back .t2{margin-bottom:2.5mm}.back .ad{font-size:9pt}
+.front{display:flex;align-items:center;gap:5mm;font-family:'Monotype Corsiva','Apple Chancery','URW Chancery L','Z003','Palatino Linotype',Georgia,serif;font-style:italic}
+.front .lg{width:38mm;flex:0 0 38mm;display:flex;flex-direction:column;align-items:center;gap:4mm}.front .lg img{max-width:100%;max-height:34mm}.front .lg .bio{max-width:20mm}
+.front .tx{flex:1;text-align:center}.front .nm{font-size:20pt;line-height:1.1;text-decoration:none}.front .sc{font-size:12pt;margin:1mm 0 4mm}.front .ds{font-size:13pt;line-height:1.3}
+.qr{display:flex;align-items:center;gap:5mm}.qr img{width:50mm;height:50mm;flex:0 0 50mm}.qr .qt{font-size:11pt;line-height:1.3}.qr .qt span{font-size:9pt;color:#444}`;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(title)}</title><style>${css}</style></head><body>${body}<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),400))<\/script></body></html>`);
+  w.document.close();
+}
+function dlContext(){
+  dlEnsureSpecies();
+  const lot=by('lots',el('dlLot').value); if(!lot||!lot.id){ alert('Bitte ein Lot wählen.'); return null; }
+  const species=db.driedSpecies[Number(el('dlSpecies').value)]; if(!species){ alert('Bitte eine Pilzart wählen (Liste in der Administration).'); return null; }
+  const mhdIso=el('dlMhd').value; if(!mhdIso){ alert('Bitte ein Mindesthaltbarkeitsdatum eingeben.'); return null; }
+  return {lot,species,mhd:fmt(mhdIso),lotNr:el('dlLotNr').value||dlLotNr(lot),weight:(el('dlWeight').value||'20').trim(),product:lot.product||species.de,lotId:lot.id,qrUrl:qrTargetUrl('lots',lot)};
+}
+function dlPrint(mode){
+  const ctx=dlContext(); if(!ctx) return;
+  const n=Math.max(1,Math.min(400,parseInt(el('dlCount').value,10)||0)); if(!n) return alert('Bitte eine Anzahl eingeben.');
+  const body=(mode!=='back'?dlSheets('front',n,ctx):'')+(mode!=='front'?dlSheets('back',n,ctx):'');
+  dlOpenPrint(body,'Dörrpilz-Etiketten '+ctx.lotNr);
+}
+function dlPrintQr(){
+  const ctx=dlContext(); if(!ctx) return;
+  const n=parseInt(prompt('Wie viele QR-Etiketten für Behälter drucken?','1'),10); if(!n||n<1) return;
+  dlOpenPrint(dlSheets('qr',Math.min(n,80),ctx),'QR Behälter '+ctx.lotNr);
 }
 
 function addSale(){let l=by('lots',saleLot.value);let q=+saleQty.value||0;let kunde=(saleCustomer.value||'').trim();if(q<=0)return alert('Ungültige Anzahl.');if(q>l.qty)return alert('Nicht genug Bestand');l.qty-=q;l.lastSaleDate=today();l.lastCustomer=kunde;if(l.qty<=0){l.status='verkauft';l.soldAt=today();}archiveLog('lots',l.id,'verkauft','Verkauf buchen; Anzahl: '+q+(kunde?'; Kunde: '+kunde:''));save()}
@@ -6187,7 +6338,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.46'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.47'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
