@@ -1,4 +1,10 @@
-# Version 1.5.57 – Warnungen berücksichtigen Dübel
+# Version 1.5.58 – Handy: Ernte-Maske beim Test-Substratsack
+
+Scannst du einen Test-Substratsack, steht die Ernte-Eingabe (Gewicht und «Ernte speichern») jetzt ganz oben in der Maske, mit grossem Knopf und grünem Rahmen. Das Gewichtsfeld ist sofort aktiv (Zahlentastatur). Das Fenster nutzt auf dem Handy die volle Bildschirmhöhe und lässt unten Platz, damit nichts hinter der Tastatur oder der Browserleiste verschwindet. Bei normalen Substratsäcken bleibt die Reihenfolge wie bisher.
+
+Vorherige Version 1.5.57:
+
+**Version 1.5.57 – Warnungen berücksichtigen Dübel**
 
 Dübel, die aus einer betroffenen Körnerbrut hergestellt wurden (auch über grössere Dübel-Gebinde hinweg), erscheinen jetzt im Stammbaum der Warnung: «Dübel daraus: x Chargen, im Lager y» mit den IDs und dem Hinweis «Dübel kontrollieren». Die Karte zeigt zusätzlich «y Dübel aus dieser Quelle noch im Lager – vor dem Verkauf prüfen». Wählst du einen solchen Dübel als Quelle für kleinere Gebinde, kommt das Popup «Zuerst kontrollieren». Für den Prozentsatz zählen weiterhin nur Körnerbruten und Substratsäcke.
 
