@@ -1,3 +1,4 @@
+const lieferzeit = require('./lib/lieferzeit');
 const http = require('http');
 const fs = require('fs/promises');
 const path = require('path');
@@ -8,7 +9,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.58';
+const APP_VERSION = '1.5.59';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -807,23 +808,17 @@ async function wooDeliveryDaysForItem(item) {
   const key=`${productId}:${variationId}`;
   const cached=wooProductDeliveryCache.get(key);
   if(cached && Date.now()-cached.at<WOO_DELIVERY_CACHE_MS) return cached.value;
-  const meta=(p,k)=>{const raw=(p?.meta_data||[]).find(m=>m.key===k)?.value ?? p?.acf?.[k] ?? p?.[k] ?? '';return String(raw??'').trim();};
-  const days=s=>{const matches=String(s||'').toLowerCase().match(/\d+/g);if(!matches)return 0;const n=Math.max(...matches.map(Number));return /woche/.test(s.toLowerCase())?n*7:/tag/.test(s.toLowerCase())?n:0;};
   try {
-    let delivery='';
+    let node, parent=null;
     if(variationId){
-      const variation=await wooRequest(`/products/${productId}/variations/${variationId}`,{method:'GET'});
-      delivery=meta(variation,'lieferzeit');
-      if(!delivery){
-        const parent=await wooRequest(`/products/${productId}`,{method:'GET'});
-        if(variation.manage_stock){delivery=meta(parent,(variation.on_backorder || variation.stock_status==='onbackorder')?'lieferzeit_lieferrueckstand':'lieferzeit_lager');}
-      }
+      node=await wooRequest(`/products/${productId}/variations/${variationId}`,{method:'GET'});
+      parent=await wooRequest(`/products/${productId}`,{method:'GET'});
     }else{
-      const product=await wooRequest(`/products/${productId}`,{method:'GET'});
-      delivery=meta(product,'lieferzeit');
+      node=await wooRequest(`/products/${productId}`,{method:'GET'});
     }
     // Leere bzw. nicht freigegebene ACF-Felder dürfen kein erfundenes Datum erzeugen.
-    const value=delivery?days(delivery):null;
+    const delivery=lieferzeit.pickDeliveryText(node,parent);
+    const value=delivery?lieferzeit.parseDeliveryDays(delivery):null;
     wooProductDeliveryCache.set(key,{value,at:Date.now()});return value;
   }catch(e){console.warn('Woo Lieferzeit nicht verfügbar:',key,e.message);return null;}
 }
@@ -875,8 +870,8 @@ function applyCourseInfo(normalized, raw, courseIds) {
 async function enrichWooOrder(o){
   const normalized=normalizeWooOrder(o);
   applyCourseInfo(normalized, o, await wooCourseProductIds());
-  const explicit=o.latest_shipping_date || (o.meta_data||[]).find(m=>m.key==='latest_shipping_date'||m.key==='_mykothek_latest_shipping_date')?.value;
-  if(explicit){const value=String(explicit);normalized.latest_shipping_date=/^\d{2}\.\d{2}\.\d{4}$/.test(value)?value.slice(6)+'-'+value.slice(3,5)+'-'+value.slice(0,2):value;return normalized;}
+  const explicit=lieferzeit.latestShippingFromMeta(o);
+  if(explicit){normalized.latest_shipping_date=explicit;return normalized;}
   const lengths=await Promise.all((o.line_items||[]).map(wooDeliveryDaysForItem));
   if(!lengths.length || lengths.some(v=>v===null) || Math.max(...lengths)<=0) return normalized;
   const created=String(o.date_created||'').slice(0,10);

@@ -1,4 +1,15 @@
-# Version 1.5.58 – Handy: Ernte-Maske beim Test-Substratsack
+# Version 1.5.59 – Spätester Versand: Lieferzeit «an Lager» / «bei Lieferrückstand»
+
+«Spätester Versand: nicht verfügbar» kam bei Bestellungen mit Produkten, deren Lieferzeit nicht im einfachen Feld «lieferzeit», sondern in den Feldern «Lieferzeit an Lager» und «Lieferzeit bei Lieferrückstand» steht. Zweistellige Zahlen waren nie das Problem («12 – 14 Wochen» wird richtig als 14 Wochen gelesen).
+
+- Pro Produkt (oder Variante, mit Feldern am Elternprodukt) wird jetzt je nach Lagerlage die Lieferzeit «an Lager» oder «bei Lieferrückstand» genommen; fehlt eines, gilt das andere.
+- Die längste Lieferzeit aller Produkte ergibt zusammen mit dem Bestelldatum das späteste Versanddatum.
+- Hat ein anderes Plugin (z. B. das Produktions-Tool) das Datum schon an der Bestellung gespeichert, wird es auch unter anderen Schlüsselnamen erkannt (Name mit «latest»/«spät» und «ship»/«versand»/«liefer»).
+- Neue Datei lib/lieferzeit.js mit Tests (test/lieferzeit.test.js).
+
+Vorherige Version 1.5.58:
+
+**Version 1.5.58 – Handy: Ernte-Maske beim Test-Substratsack**
 
 Scannst du einen Test-Substratsack, steht die Ernte-Eingabe (Gewicht und «Ernte speichern») jetzt ganz oben in der Maske, mit grossem Knopf und grünem Rahmen. Das Gewichtsfeld ist sofort aktiv (Zahlentastatur). Das Fenster nutzt auf dem Handy die volle Bildschirmhöhe und lässt unten Platz, damit nichts hinter der Tastatur oder der Browserleiste verschwindet. Bei normalen Substratsäcken bleibt die Reihenfolge wie bisher.
 
