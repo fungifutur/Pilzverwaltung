@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.57</title>
+<title>Pilzverwaltung Serverversion 1.5.58</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -122,6 +122,8 @@ nav button.top-link{font-weight:bold}
 .woo-order-has-note>summary{background:#fff4d4;border-radius:10px;padding:8px}
 .woo-order-note-indicator{display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#f7e5a7;color:#6b4d13;font-size:12px;font-weight:600;white-space:nowrap}
 .cwtree,.cwtree ul{list-style:none;margin:4px 0 0 0;padding-left:18px;border-left:2px solid #e5e7eb}.cwtree{border-left:0;padding-left:0}.cwtree li{margin:4px 0}
+#qrActionModal.scan-mobile{padding:8px}#qrActionModal.scan-mobile .history-box{max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px);padding:14px;padding-bottom:90px}
+.scan-harvest{border:2px solid #2f6f4f!important}.scan-harvest button{width:100%;padding:14px 12px;font-size:16px}
 </style>
 </head>
 <body>
@@ -129,7 +131,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.57</h1>
+<h1>Pilzverwaltung – Version 1.5.58</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -5546,6 +5548,7 @@ function setupProductionQuantityCaret(){
 setupProductionQuantityCaret();
 
 function closeQrAction(){ const m=el('qrActionModal'); if(m){ m.style.display='none'; m.classList.remove('scan-mobile'); } }
+let scanHarvestFirst='';
 function openQrAction(area,id){
   if(area==='dk' || area==='petri'){
     alert('Dauerkulturen und Petrischalen haben bewusst keine QR-Arbeitsmaske. Bitte über die Tabelle bearbeiten.');
@@ -5553,7 +5556,7 @@ function openQrAction(area,id){
   }
   const item=(getCollectionByArea(area)||[]).find(x=>(x.id||x.masterCode)===id)||(getCollectionByArea(area)||[]).find(x=>x.splitFrom===id&&(+x.packIndex||1)===1);
   if(!item) return alert('Datensatz nicht gefunden: '+id);
-  setText('qrActionTitle', 'Scan – '+id);
+  setText('qrActionTitle', 'Scan – '+id); scanHarvestFirst='';
   const name=esc(item.strain||item.product||item.name||'');
   const qty=+item.qty || +item.count || 1;
   const statuses={
@@ -5581,7 +5584,8 @@ function openQrAction(area,id){
   if(area==='sub'){
     const test=item.forTest ? true : false;
     actions += `<div class="card" style="box-shadow:none"><strong>${test?'Test-Substratsack':'Massenaktion Charge'}</strong><div class="form"><div><label>Anzahl</label><input id="scanSubQty" type="number" min="1" value="${test?1:Math.min(qty||1,20)}"></div></div><div class="scan-actions"><button class="primary" onclick="scanSubAction('${escHtml(escJs(id))}','fruiting')">In Fruchtungsraum</button><button class="secondary" onclick="scanSubAction('${escHtml(escJs(id))}','contam')">Kontaminiert</button><button class="secondary" onclick="scanSubAction('${escHtml(escJs(id))}','archive')">Archivieren</button></div></div>`;
-    actions += `<div class="card" style="box-shadow:none"><strong>Ernte eintragen</strong><div class="form"><div><label>Gewicht g</label><input id="scanHarvestWeight" type="number" min="1" placeholder="z.B. 850"></div></div><button class="primary" onclick="scanAddHarvest('${escHtml(escJs(id))}')">Ernte speichern</button></div>`;
+    const harvestCard=`<div class="card scan-harvest" style="box-shadow:none"><strong>Ernte eintragen</strong><div class="form"><div><label>Gewicht g</label><input id="scanHarvestWeight" type="number" inputmode="numeric" min="1" placeholder="z.B. 850"></div></div><button class="primary" onclick="scanAddHarvest('${escHtml(escJs(id))}')">Ernte speichern</button></div>`;
+    if(test) scanHarvestFirst=harvestCard; else actions += harvestCard;
   }
   if(area==='goods'){
     if(item.type==='Dübel' && (parseInt(item.size||item.variant||'',10)===1000)){
@@ -5597,10 +5601,12 @@ function openQrAction(area,id){
     actions += `<button class="secondary" onclick="st('buckets','${escHtml(escJs(id))}','aufgebraucht'); closeQrAction();">Eimer aufgebraucht</button>`;
   }
   setHTML('qrActionContent', `<div class="qr-action-panel"><strong>${name}</strong><br>ID: ${esc(id)}<br>${item.date?'Datum: '+fmt(item.date)+'<br>':''}Bestand/Anzahl: ${qty}<br>Status: ${badge(item.status||'–')}</div>
+    ${scanHarvestFirst}
     <div class="form"><div><label>Status ändern</label><select id="qrNewStatus">${opts}</select></div></div>
     <div class="scan-actions"><button class="primary" onclick="st('${area}','${escHtml(escJs(id))}',el('qrNewStatus').value); closeQrAction();">Status speichern</button><button class="secondary" onclick="showHistory('${area}','${escHtml(escJs(id))}')">Historie anzeigen</button></div>
     <div class="scan-actions">${actions}</div>`);
   const m=el('qrActionModal'); if(m){ m.classList.add('scan-mobile'); m.style.display='flex'; }
+  if(scanHarvestFirst) setTimeout(()=>{ const w=el('scanHarvestWeight'); if(w){ w.scrollIntoView({block:'center'}); w.focus(); } },250);
 }
 
 function setSelectValueWhenReady(selectId, value, tries=20){
@@ -6558,7 +6564,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.57'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.58'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

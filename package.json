@@ -1,6 +1,6 @@
 {
   "name": "pilzverwaltung-server",
-  "version": "1.5.57",
+  "version": "1.5.58",
   "description": "Pilzverwaltung als Server-App mit ausschliesslicher PostgreSQL-Speicherung, QR-Arbeitsmaske, Backups und Administration",
   "main": "server.js",
   "scripts": {
