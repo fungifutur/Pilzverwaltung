@@ -1,6 +1,6 @@
 # Version 1.5.61 – Dörrpilz-Etiketten: Schriftgrössen und Bio-Suisse-Logo
 
-Vorderseite: Name 20 pt, wissenschaftlicher Name 14 pt, Text unten 15 pt (alles Monotype Corsiva). Die Rückseite ist unverändert. Bio-Suisse-Zeichen (aus deiner EPS-Datei) und Fungi-Futuri-Logo (aus deiner SVG-Datei) sind jetzt gestochen scharf.
+Vorderseite: Name 20 pt, wissenschaftlicher Name 14 pt, Text unten 15 pt (alles Monotype Corsiva). Die Rückseite hat dieselbe Schrift wie die Vorderseite (Monotype Corsiva), Grössen unverändert. Bio-Suisse-Zeichen (aus deiner EPS-Datei) und Fungi-Futuri-Logo (aus deiner SVG-Datei) sind jetzt gestochen scharf.
 
 Vorherige Version 1.5.60:
 
