@@ -1,3 +1,9 @@
+# Version 1.5.60 – Dörrpilz-Etiketten: richtiges Logo
+
+Das Fungi-Futuri-Logo auf den Dörrpilz-Etiketten ist jetzt die Originalversion: Der Text «FUNGI FUTURI» steht rechts vom Pilzstiel (vorher links). Das Logo ist zudem etwas kleiner, damit es mehr Rand hat.
+
+Vorherige Version 1.5.59:
+
 # Version 1.5.59 – Spätester Versand: Lieferzeit «an Lager» / «bei Lieferrückstand»
 
 «Spätester Versand: nicht verfügbar» kam bei Bestellungen mit Produkten, deren Lieferzeit nicht im einfachen Feld «lieferzeit», sondern in den Feldern «Lieferzeit an Lager» und «Lieferzeit bei Lieferrückstand» steht. Zweistellige Zahlen waren nie das Problem («12 – 14 Wochen» wird richtig als 14 Wochen gelesen).
