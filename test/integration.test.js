@@ -48,7 +48,7 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.62 gegen PostgreSQL', { skip }, () => {
+describe('Pilzverwaltung 1.5.63 gegen PostgreSQL', { skip }, () => {
   let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
@@ -355,6 +355,14 @@ describe('Pilzverwaltung 1.5.62 gegen PostgreSQL', { skip }, () => {
     // 4) Zahlung geht ein: on-hold → processing behält die Reservierung
     await webhook({ ...wooOrder(9102, 'processing', kbItem(9102, 2), { date_created: '2026-10-01T09:00:00' }), date_modified: '2026-10-31T13:00:00' }, 'order.updated'); await settled();
     assert.equal(await reserved(9103) + await reserved(9102), 2);
+  });
+
+  it('Status «Kurs bestätigt» (kurs-bestaetigt) wird übernommen', async () => {
+    const settled = async () => until(async () => (await db.query(`SELECT count(*)::int AS n FROM app_webhook_queue WHERE status='pending'`)).rows[0].n === 0);
+    await webhook(wooOrder(9201, 'kurs-bestaetigt', [{ id: 92010, name: 'Pilzkurs', sku: 'KURS_TEST', quantity: 2, product_id: 5, variation_id: 0, total: '100' }]), 'order.created'); await settled();
+    const o = (await A.req('GET', '/api/data')).json.wooOrders.find(x => x.id === 9201);
+    assert.ok(o, 'Bestellung wurde übernommen');
+    assert.equal(o.archived, false);
   });
 
   it('INT-10 (b): Menge 0 zählt nicht als 1 (kein Phantom-Bestand), fehlende Menge schon', async () => {

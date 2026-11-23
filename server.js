@@ -9,7 +9,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.62';
+const APP_VERSION = '1.5.63';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -882,7 +882,7 @@ async function enrichWooOrder(o){
 }
 async function wooListActiveOrders(onProgress=()=>{}){
   const result=[];
-  for(const status of ['processing','on-hold']){
+  for(const status of WOO_ACTIVE_STATUSES){
     onProgress(`Lade WooCommerce-Bestellungen: ${status} …`);
     for(let page=1;page<=20;page++){
       const list=await wooRequest(`/orders?status=${status}&per_page=100&page=${page}&orderby=date&order=asc`,{method:'GET'});
@@ -1187,6 +1187,8 @@ function normalizeWooOrder(o) {
   };
 }
 
+// Aktive Bestellstatus. «kurs-bestaetigt» ist ein eigener Status aus dem Child-Theme (Kurs bestätigt) und zählt wie «bezahlt».
+const WOO_ACTIVE_STATUSES=['processing','on-hold','kurs-bestaetigt'];
 function isTerminalWooStatus(status) {
   return ['completed','cancelled','refunded','failed','trash'].includes(String(status||'').toLowerCase());
 }
@@ -1259,7 +1261,7 @@ function reserveOrderFifo(db, order) {
         // Bestellgebundene Ware einer anderen noch aktiven processing-Bestellung bleibt geschützt.
         // Nach Storno/Freigabe darf die bereits hergestellte Ware wieder als normaler Bestand dienen.
         if(b.orderId && (String(b.orderId)!==String(order.id) || String(b.orderItemId||'')!==String(item.id))) {
-          const ownerActive=(db.wooOrders||[]).some(o=>String(o.id)===String(b.orderId)&&['processing','on-hold'].includes(String(o.status||'').toLowerCase())&&!o.archived&&!o.externalDeleted);
+          const ownerActive=(db.wooOrders||[]).some(o=>String(o.id)===String(b.orderId)&&WOO_ACTIVE_STATUSES.includes(String(o.status||'').toLowerCase())&&!o.archived&&!o.externalDeleted);
           if(ownerActive) continue;
         }
         const available=Math.max(0,b.qty-reservedQtyForBatch(db,b.collection,b.id,null));
@@ -1282,8 +1284,8 @@ function reservationInputSig(db) {
 }
 function rebuildProcessingReservations(db) {
   // Bezahlte Bestellungen (processing) haben Vorrang vor wartenden (on-hold, z. B. Vorauskasse); innerhalb gleich nach Bestelldatum.
-  const rank=o=>o.status==='processing'?0:1;
-  const processing=(db.wooOrders||[]).filter(o=>['processing','on-hold'].includes(o.status)&&!o.archived&&!o.externalDeleted).sort((a,b)=>rank(a)-rank(b)||String(a.date_created||'').localeCompare(String(b.date_created||''))||Number(a.id||0)-Number(b.id||0));
+  const rank=o=>o.status==='on-hold'?1:0;
+  const processing=(db.wooOrders||[]).filter(o=>WOO_ACTIVE_STATUSES.includes(o.status)&&!o.archived&&!o.externalDeleted).sort((a,b)=>rank(a)-rank(b)||String(a.date_created||'').localeCompare(String(b.date_created||''))||Number(a.id||0)-Number(b.id||0));
   const prevReserved=(db.wooReservations||[]).filter(r=>r.status==='reserved'); const prevSet=new Set(prevReserved);
   for(const r of prevReserved) { r.status='replaced'; r.releasedAt=new Date().toISOString(); }
   for(const o of processing) reserveOrderFifo(db,o);
@@ -1376,7 +1378,7 @@ function applyWooReconcile(db, fetched) {
     if(isOlderThanLocal(remote,local)) continue;
     const previous=String(local.status||'');
     if(remote.status==='completed' && previous!=='completed') consumeOrderReservations(db,remote.id);
-    else if(!['processing','on-hold'].includes(remote.status)) releaseOrderReservations(db,remote.id,'released');
+    else if(!WOO_ACTIVE_STATUSES.includes(remote.status)) releaseOrderReservations(db,remote.id,'released');
     db.wooOrders[i]=isTerminalWooStatus(remote.status) ? markWooOrderArchived({...remote,internal_note:local.internal_note||'',manual_shipping_date:local.manual_shipping_date||''}, remote.status) : {...remote,internal_note:local.internal_note||'',manual_shipping_date:local.manual_shipping_date||'',archived:false,archivedAt:'',archiveReason:''};
     if(previous!==String(remote.status||'')) summary.updated++;
   }
@@ -1426,13 +1428,13 @@ async function processWooOrderEvent(rawOrder, source='webhook', topic='') {
     }
     // Neue Bestellungen werden nur dann in die aktive Pilzverwaltung übernommen,
     // wenn WooCommerce sie tatsächlich als "processing" oder "on-hold" meldet.
-    else if(idx<0 && !['processing','on-hold'].includes(order.status)) {
-      ignored=`Quelle: ${source}; nicht importiert (nur processing/on-hold wird neu übernommen).`;
+    else if(idx<0 && !WOO_ACTIVE_STATUSES.includes(order.status)) {
+      ignored=`Quelle: ${source}; nicht importiert (nur processing/on-hold/kurs-bestaetigt wird neu übernommen).`;
     }
     // Bereits archivierte/abgeschlossene Bestellungen werden durch verspätete
     // Webhook-Wiederholungen nicht wieder aktiviert. Ein echtes Wiederöffnen auf
     // processing wird beim manuellen Woo-Abgleich sicher erkannt.
-    else if(idx>=0 && db.wooOrders[idx].archived && ['processing','on-hold'].includes(order.status)) {
+    else if(idx>=0 && db.wooOrders[idx].archived && WOO_ACTIVE_STATUSES.includes(order.status)) {
       ignored=`Quelle: ${source}; ignoriert, da lokal bereits abgeschlossen. Mit WooCommerce abgleichen zum Wiederöffnen.`;
     }
     if(ignored) {
@@ -1441,7 +1443,7 @@ async function processWooOrderEvent(rawOrder, source='webhook', topic='') {
       return {order,ignored:true,reservations:[]};
     }
 
-    if(['processing','on-hold'].includes(order.status)) {
+    if(WOO_ACTIVE_STATUSES.includes(order.status)) {
       const active={...order,internal_note:idx>=0?(db.wooOrders[idx].internal_note||''):'',manual_shipping_date:idx>=0?(db.wooOrders[idx].manual_shipping_date||''):'',archived:false,archivedAt:'',archiveReason:'',externalDeleted:false};
       if(idx>=0) db.wooOrders[idx]=active; else db.wooOrders.push(active);
       reserveOrderFifo(db,active);   // processing und on-hold (Vorauskasse) reservieren; Storno/Ablehnung gibt über den Endstatus wieder frei
