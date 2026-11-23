@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.62</title>
+<title>Pilzverwaltung Serverversion 1.5.63</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -131,7 +131,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.62</h1>
+<h1>Pilzverwaltung – Version 1.5.63</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -2270,7 +2270,7 @@ function renderWooOrders(){
     const html=rows.length?`<div class="card"><h3>Pack-/Versandliste nach Lagerort</h3><table><thead><tr><th>1. Raum</th><th>2. Regal</th><th>3. Kiste</th><th>Bestellung</th><th>Kunde</th><th>Menge</th><th>Produkt</th><th>SKU</th><th>Charge</th></tr></thead><tbody>${rows.map(p=>`<tr><td><strong>${escHtml(p.room||'–')}</strong></td><td>${escHtml(p.shelf||'–')}</td><td>${escHtml(p.box||'–')}</td><td>#${escHtml(String(p.orderNumber))}</td><td>${escHtml(p.customer)}</td><td>${esc(p.qty)}</td><td>${escHtml(p.name)}</td><td>${escHtml(p.sku||'–')}</td><td>${escHtml(p.id)}</td></tr>`).join('')}</tbody></table></div>`:'';
     return setHTML('wooOrdersRows',html||'<span class="muted">Momentan ist keine Bestellung vollständig packbereit.</span>');
   }
-  const active=(db.wooOrders||[]).filter(o=>isWooActiveOrder(o)&&!o.courseOnly&&['processing','on-hold'].includes(String(o.status||'').toLowerCase()));
+  const active=(db.wooOrders||[]).filter(o=>isWooActiveOrder(o)&&!o.courseOnly&&['processing','on-hold','kurs-bestaetigt'].includes(String(o.status||'').toLowerCase()));
   const pickup=o=>(o.shipping_lines||[]).some(l=>/local_pickup|abholung|pickup/i.test([l.method_id,l.method_title,l.method].join(' '))) || /local_pickup|abholung|pickup/i.test(o.shipping_method||'');
   const group=o=>String(o.status||'').toLowerCase()==='on-hold'?2:pickup(o)?1:0;
   const sortDate=o=>String(o.manual_shipping_date||o.latest_shipping_date||'') || '9999-12-31';
@@ -2285,7 +2285,7 @@ function renderWooOrders(){
 let courseEmailGroups=[];
 function courseGroups(){
   const groups=new Map();
-  (db.wooOrders||[]).filter(o=>isWooActiveOrder(o)&&['processing','on-hold'].includes(String(o.status||'').toLowerCase())).forEach(o=>{
+  (db.wooOrders||[]).filter(o=>isWooActiveOrder(o)&&['processing','on-hold','kurs-bestaetigt'].includes(String(o.status||'').toLowerCase())).forEach(o=>{
     (o.items||[]).filter(i=>i.course).forEach(i=>{
       const key=String(i.name||'Kurs'); if(!groups.has(key))groups.set(key,[]);
       groups.get(key).push({o,i});
@@ -2298,9 +2298,9 @@ function courseTableHtml(g,gi,forPrint){
   const emails=Array.from(new Set(g.rows.map(r=>String(r.o.courseContact?.email||'').trim()).filter(Boolean)));
   courseEmailGroups[gi]=emails;
   const body=g.rows.map(({o,i})=>{
-    const c=o.courseContact||{}; const paid=String(o.status||'').toLowerCase()==='processing';
+    const c=o.courseContact||{}; const st=String(o.status||'').toLowerCase(); const paid=st==='processing'||st==='kurs-bestaetigt';
     const meta=(i.meta||[]).map(m=>escHtml(m.key)+': '+escHtml(m.value)).join('<br>');
-    return `<tr><td>#${escHtml(String(o.number||o.id))}</td><td>${escHtml(o.customer||'–')}</td><td>${c.email?escHtml(c.email):'–'}</td><td>${c.phone?escHtml(c.phone):'–'}</td><td>${escHtml(String(i.quantity))}</td><td>${paid?'bezahlt':'wartet auf Zahlung'}</td><td>${meta||'–'}</td><td>${o.customer_note?escHtml(o.customer_note):'–'}</td></tr>`;
+    return `<tr><td>#${escHtml(String(o.number||o.id))}</td><td>${escHtml(o.customer||'–')}</td><td>${c.email?escHtml(c.email):'–'}</td><td>${c.phone?escHtml(c.phone):'–'}</td><td>${escHtml(String(i.quantity))}</td><td>${paid?(st==='kurs-bestaetigt'?'bestätigt':'bezahlt'):'wartet auf Zahlung'}</td><td>${meta||'–'}</td><td>${o.customer_note?escHtml(o.customer_note):'–'}</td></tr>`;
   }).join('');
   const copyBtn=forPrint?'':` <button class="secondary" onclick="copyCourseEmails(${gi})">E-Mail-Adressen kopieren (${emails.length})</button>`;
   return `<h3>${escHtml(g.name)}</h3><p><strong>${people}</strong> Teilnehmer in <strong>${g.rows.length}</strong> Bestellung(en)${copyBtn}</p><div style="overflow:auto"><table><thead><tr><th>Bestellung</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th>Anzahl</th><th>Zahlung</th><th>Angaben</th><th>Bemerkung</th></tr></thead><tbody>${body}</tbody></table></div>`;
@@ -6564,7 +6564,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.62'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.63'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

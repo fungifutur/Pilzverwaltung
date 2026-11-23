@@ -1,3 +1,9 @@
+# Version 1.5.63 – Kurse: Status «Kurs bestätigt» wird übernommen
+
+Kursbuchungen mit dem eigenen Bestellstatus «Kurs bestätigt» (kurs-bestaetigt aus dem Child-Theme) wurden beim Abgleich nicht mehr geladen und verschwanden deshalb aus dem Reiter «Kurse». Jetzt werden neben «in Bearbeitung» und «wartend» auch Bestellungen mit «Kurs bestätigt» übernommen und als «bestätigt» angezeigt. Sie zählen wie bezahlte Bestellungen. Nach dem Deployen einmal «Mit WooCommerce abgleichen» drücken.
+
+Vorherige Version 1.5.62:
+
 # Version 1.5.62 – Dörrpilz-Etiketten: Rückseite in derselben Schrift
 
 Die Rückseite der Dörrpilz-Etiketten hat jetzt dieselbe Schrift wie die Vorderseite (Monotype Corsiva). Die Grössen der Rückseite sind unverändert.
