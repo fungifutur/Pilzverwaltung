@@ -1,3 +1,9 @@
+# Version 1.5.61 – Dörrpilz-Etiketten: Schriftgrössen und Bio-Suisse-Logo
+
+Vorderseite: Name 20 pt, wissenschaftlicher Name 14 pt, Text unten 15 pt (alles Monotype Corsiva). Die Rückseite ist unverändert. Das Bio-Suisse-Zeichen stammt jetzt aus deiner EPS-Datei und ist dadurch gestochen scharf.
+
+Vorherige Version 1.5.60:
+
 # Version 1.5.60 – Dörrpilz-Etiketten: richtiges Logo
 
 Das Fungi-Futuri-Logo auf den Dörrpilz-Etiketten ist jetzt die Originalversion: Der Text «FUNGI FUTURI» steht rechts vom Pilzstiel (vorher links). Das Logo ist zudem etwas kleiner, damit es mehr Rand hat.
