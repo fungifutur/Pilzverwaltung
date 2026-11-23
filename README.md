@@ -1,3 +1,9 @@
+# Version 1.5.62 – Dörrpilz-Etiketten: Rückseite in derselben Schrift
+
+Die Rückseite der Dörrpilz-Etiketten hat jetzt dieselbe Schrift wie die Vorderseite (Monotype Corsiva). Die Grössen der Rückseite sind unverändert.
+
+Vorherige Version 1.5.61:
+
 # Version 1.5.61 – Dörrpilz-Etiketten: Schriftgrössen und Bio-Suisse-Logo
 
 Vorderseite: Name 20 pt, wissenschaftlicher Name 14 pt, Text unten 15 pt (alles Monotype Corsiva). Die Rückseite ist unverändert. Bio-Suisse-Zeichen (aus deiner EPS-Datei) und Fungi-Futuri-Logo (aus deiner SVG-Datei) sind jetzt gestochen scharf.
