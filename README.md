@@ -1,3 +1,9 @@
+# Version 1.5.64 – Kontrollblatt zum Ausdrucken
+
+Im Reiter «Warnungen» gibt es den Knopf «Kontrollblatt drucken». Das Blatt (A4) listet alle offenen Warnungen mit Pilzart, Herkunft, Grund und den noch vorhandenen Körnerbruten und Dübeln zum Abhaken, dazu die Substratsäcke im Test. Unten ist Platz für Datum und Visum.
+
+Vorherige Version 1.5.63:
+
 # Version 1.5.63 – Kurse: Status «Kurs bestätigt» wird übernommen
 
 Kursbuchungen mit dem eigenen Bestellstatus «Kurs bestätigt» (kurs-bestaetigt aus dem Child-Theme) wurden beim Abgleich nicht mehr geladen und verschwanden deshalb aus dem Reiter «Kurse». Jetzt werden neben «in Bearbeitung» und «wartend» auch Bestellungen mit «Kurs bestätigt» übernommen und als «bestätigt» angezeigt. Sie zählen wie bezahlte Bestellungen. Nach dem Deployen einmal «Mit WooCommerce abgleichen» drücken.
