@@ -1,3 +1,9 @@
+# Version 1.5.66 – Dörrpilz-Etiketten: Rückseite Schriftgrössen
+
+Rückseite der Dörrpilz-Etiketten: Titel 18 pt, Text 12 pt (vorher 15 und 11 pt). Die Adresszeile bleibt bei 9 pt.
+
+Vorherige Version 1.5.65:
+
 # Version 1.5.65 – Kontrollblatt nur mit aktiven Warnungen
 
 Auf dem Kontrollblatt stehen nur noch die aktiven Warnungen. Die Substratsäcke im Test sind nicht mehr dabei.
