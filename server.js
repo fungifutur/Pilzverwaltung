@@ -9,7 +9,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.64';
+const APP_VERSION = '1.5.65';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
