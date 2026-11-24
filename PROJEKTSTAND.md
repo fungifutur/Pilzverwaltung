@@ -1,6 +1,6 @@
 # Version 1.5.64 – Kontrollblatt zum Ausdrucken
 
-Im Reiter «Warnungen» gibt es den Knopf «Kontrollblatt drucken». Das Blatt (A4) listet alle offenen Warnungen mit Pilzart, Herkunft, Grund und den noch vorhandenen Körnerbruten und Dübeln zum Abhaken, dazu die Substratsäcke im Test. Unten ist Platz für Datum und Visum.
+Im Reiter «Warnungen» gibt es den Knopf «Kontrollblatt drucken». Das Blatt (A4) listet alle offenen Warnungen mit Pilzart, Herkunft, Grund und den noch vorhandenen Körnerbruten und Dübeln zum Abhaken. Unten ist Platz für Datum und Visum.
 
 Vorherige Version 1.5.63:
 
