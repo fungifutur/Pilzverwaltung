@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.65</title>
+<title>Pilzverwaltung Serverversion 1.5.66</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -131,7 +131,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.65</h1>
+<h1>Pilzverwaltung – Version 1.5.66</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -441,6 +441,7 @@ nav button.top-link{font-weight:bold}
 <div class="card">
 <h3>Neuen Eimer anlegen</h3>
 <div class="form">
+<div><label>Eimer-Typ</label><select id="bucketType"><option value="">Dörrpilze</option><option value="jerky">Jerky Shrooms</option></select></div>
 <div><label>Produkt / Pilzart</label><input id="bucketProduct" list="productAutocompleteList" autocomplete="off" placeholder="z.B. Austernseitling getrocknet oder Pleurotus ostreatus"></div>
 <div><label>Einfülldatum</label><input id="bucketDate" type="date"></div>
 <div><label>Notiz</label><input id="bucketNote" placeholder="z.B. Charge, Herkunft, Erntewoche"></div>
@@ -467,7 +468,7 @@ nav button.top-link{font-weight:bold}
 <h3>Dörrpilz-Etiketten drucken (Vorderseite, Rückseite, QR für Behälter)</h3>
 <div class="form">
 <div><label>Lot / Packung</label><select id="dlLot" onchange="dlLotChanged()"></select></div>
-<div><label>Pilzart (für Vorderseite und Rückseite)</label><select id="dlSpecies"></select></div>
+<div id="dlSpeciesWrap"><label>Pilzart (für Vorderseite und Rückseite)</label><select id="dlSpecies"></select></div>
 <div><label>Mindesthaltbarkeit</label><input id="dlMhd" type="date"></div>
 <div><label>Gewicht pro Packung (g)</label><input id="dlWeight" type="text" inputmode="numeric" value="20"></div>
 <div><label>Anzahl Etiketten (je vorne und hinten)</label><input id="dlCount" type="text" inputmode="numeric" value="8"></div>
@@ -1276,6 +1277,7 @@ async function initApp(){
 function localIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 // INT-10 (c): Datum in Schweizer Zeit, nicht UTC (zwischen 00:00 und 02:00 Uhr entstand sonst das Vortagesdatum)
 function today(){try{const f=today._f||(today._f=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Zurich'}));return f.format(new Date())}catch(e){return localIso(new Date())}}
+function addMonthsIso(iso,months){const p=String(iso).split('-').map(Number);const t=p[1]-1+months;const y=p[0]+Math.floor(t/12),m=((t%12)+12)%12;const last=new Date(Date.UTC(y,m+1,0)).getUTCDate();return new Date(Date.UTC(y,m,Math.min(p[2],last))).toISOString().slice(0,10)}
 function addYearsIso(iso,years){const p=String(iso).split('-').map(Number);return new Date(Date.UTC(p[0]+years,p[1]-1,p[2])).toISOString().slice(0,10)}
 // INT-10 (b): fehlende Menge zählt als 1, eine ausdrückliche 0 bleibt 0
 function qtyOrOne(v){if(v===undefined||v===null||v==='')return 1;const n=Number(v);return Number.isFinite(n)?Math.max(0,n):1}
@@ -4157,10 +4159,12 @@ function addHarvest(){
 function addMix(){db.mix.push({id:'MIX-'+String(db.mix.length+1).padStart(4,'0'),name:mixName.value,ing:mixIng.value,water:+mixWater.value});save('Substrat erstellt')}
 function addBucket(){
 if(!db.buckets)db.buckets=[];
-if(!bucketProduct.value)return alert('Produkt / Pilzart eingeben');
+const bType=(el('bucketType')?.value||'');
+if(!bucketProduct.value && bType!=='jerky')return alert('Produkt / Pilzart eingeben');
 db.buckets.push({
   id:next('EIM',db.buckets),
-  product:bucketProduct.value,
+  ...(bType?{type:bType}:{}),
+  product:bucketProduct.value||'Jerky Shrooms',
   date:bucketDate.value||today(),
   status:'lagernd',
   note:bucketNote.value
@@ -4183,7 +4187,8 @@ db.lots.push({
   sku:findSku('lots', b.product, ''),
   storageLocation:defaultStorageLocationForSku(findSku('lots', b.product, '')),
   date:d,
-  mhd:addYearsIso(d,2),
+  ...(b.type==='jerky'?{type:'jerky'}:{}),
+  mhd:b.type==='jerky'?addMonthsIso(d,18):addYearsIso(d,2),
   qty:count,
   status:'lagernd'
 });
@@ -4231,12 +4236,16 @@ function renderDriedLabels(){
   if(!el('dlMhd').dataset.touched) dlLotChanged(true);
   setHTML('driedSpeciesRows', db.driedSpecies.map((s,i)=>`<tr><td><input value="${escHtml(s.de)}" onchange="dsEdit(${i},'de',this.value)"></td><td><input value="${escHtml(s.sci||'')}" onchange="dsEdit(${i},'sci',this.value)"></td><td><select onchange="dsEdit(${i},'kind',this.value)">${Object.entries(DRIED_KIND_NAMES).map(([k,v])=>`<option value="${k}" ${s.kind===k?'selected':''}>${escHtml(v)}</option>`).join('')}</select></td><td><button class="secondary" onclick="dsDelete(${i})">Löschen</button></td></tr>`).join(''));
 }
+function dlIsJerky(lot){ if(!lot) return false; if(lot.type==='jerky') return true; const b=by('buckets',lot.bucket); return !!(b&&b.type==='jerky'); }
 function dlLotChanged(silent){
   const lot=by('lots',el('dlLot').value); if(!lot||!lot.id) return;
   el('dlMhd').value=lot.mhd||'';
   el('dlLotNr').value=dlLotNr(lot);
   el('dlCount').value=String(Math.min(Number(lot.qty)||8,200));
-  const i=dlMatchSpecies(lot.product); if(i>=0) el('dlSpecies').value=String(i);
+  const jk=dlIsJerky(lot);
+  el('dlSpeciesWrap').style.display=jk?'none':'';
+  if(jk){ el('dlWeight').value='50'; } else if(el('dlWeight').value==='50'){ el('dlWeight').value='20'; }
+  if(!jk){ const i=dlMatchSpecies(lot.product); if(i>=0) el('dlSpecies').value=String(i); }
 }
 function dlOpenForLot(id){
   renderDriedLabels();
@@ -4265,6 +4274,12 @@ function dlLabelHtml(kind,ctx){
     const sp=ctx.species, wild=sp.kind!=='zucht', flocki=sp.kind==='flocki';
     return `<div class="lb back"><div class="t1">Trockenpilze</div>${wild?'<div class="t2">Wildpilze aus dem Berner Oberland</div>':''}<p>Dörrpilze sollten vor dem Verarbeiten mindestens für 30 Minuten im warmen Wasser eingeweicht werden.</p><p>Trotz sorgfältiger Verarbeitung kann das Produkt Fremdkörper enthalten.${flocki?' Für mindestens 20 min erhitzen.':''}</p><p>Mindesthaltbarkeit: ${e(ctx.mhd)}<br>CH-BIO-006 ¦ Lot Nr. ${e(ctx.lotNr)}</p><p class="ad">Fungi Futuri GmbH, Erlenstrasse 43, 3612 Steffisburg<br>www.fungifuturi.ch</p></div>`;
   }
+  if(kind==='jfront'){
+    return `<div class="lb front jerky"><div class="rot"><div class="top"><div class="logos"><img class="bio" src="/img/logo-biosuisse.png" alt="Bio Suisse"><img class="vegan" src="/img/logo-vegan.svg" alt="Vegan"></div><img class="ffl" src="/img/logo-fungifuturi.png" alt="Fungi Futuri"></div><div class="jt">Jerky Shrooms</div><div class="jn">net.: ${e(ctx.weight)}g, zum Rohessen</div><div class="jz">Zutaten: Zuchtpilze (siehe Rückseite), <b>Tamari,*</b> Birnel, Apfelessig, Gewürze | <b><u>*enthält Soja</u></b></div><div class="jm">Mind. haltbar bis: ${e(ctx.mhd)} | CH-BIO-006 | Lot Nr. ${e(ctx.lotNr)}<br>Fungifuturi GmbH Erlenstrasse 43, 3612 Steffisburg fungifuturi.ch</div></div></div>`;
+  }
+  if(kind==='jback'){
+    return `<div class="jb"><div class="fit">Folgende Zuchtpilze können im Jerky verarbeitet sein: Austern-, Kräuter-, Rosen-, Limonen-, Estragon- und Lungen-seitling, Shiitake, Stachelbärte, Klapperschwamm, Buchenpilz, Samtfussrübling, Pioppino, Chestnut, Nameko (Pleurotus ostreatus, P. eryngii, P. djamor, P. citrinopileatus, P. eosmus, P. pulmonarius, Lentinula edodes, Hericium erinaceus, H. coralloides, H. americanum, H. abietis, H. flagellum, Grifola frondosa, Hypsizygus tessellatus, Flammulina velutipes, Cyclocybe aegerita, Pholiota adiposa, P. nameko)</div></div>`;
+  }
   if(kind==='qr'){
     const url='/api/qr?data='+encodeURIComponent(ctx.qrUrl);
     return `<div class="lb qr"><img src="${url}" alt="QR"><div class="qt"><b>${e(ctx.product)}</b><br>Lot Nr. ${e(ctx.lotNr)}<br>MHD ${e(ctx.mhd)}<br><span>${e(ctx.lotId)}</span></div></div>`;
@@ -4272,8 +4287,8 @@ function dlLabelHtml(kind,ctx){
   return '';
 }
 function dlSheets(kind,count,ctx){
-  const sheets=[]; let left=count;
-  while(left>0){ const n=Math.min(8,left); sheets.push(`<div class="sheet">${Array.from({length:n},()=>dlLabelHtml(kind,ctx)).join('')}</div>`); left-=n; }
+  const sheets=[]; let left=count; const per=kind==='jback'?24:8, cls=kind==='jback'?'sheet s3':'sheet';
+  while(left>0){ const n=Math.min(per,left); sheets.push(`<div class="${cls}">${Array.from({length:n},()=>dlLabelHtml(kind,ctx)).join('')}</div>`); left-=n; }
   return sheets.join('');
 }
 function dlOpenPrint(body,title){
@@ -4288,21 +4303,28 @@ function dlOpenPrint(body,title){
 .front .rot{position:absolute;left:15.375mm;top:-15.375mm;width:74.25mm;height:105mm;transform:rotate(-90deg);transform-origin:center center;padding:6mm 5mm;text-align:center;display:flex;flex-direction:column;justify-content:center}
 .front .top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6mm}.front .top .bio{width:15mm;height:auto}.front .top .ffl{width:40mm;height:auto;margin-right:4mm}
 .front .nm{font-size:20pt;line-height:1.1}.front .sc{font-size:14pt;margin:1mm 0 5mm}.front .ds{font-size:15pt;line-height:1.35}
+.sheet.s3{grid-template-columns:repeat(3,70mm);grid-template-rows:repeat(8,35mm);padding-top:8.5mm}
+.jb{width:70mm;height:35mm;padding:1.5mm 2.5mm;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;font-size:8pt;line-height:1.2;font-family:'Monotype Corsiva','Apple Chancery','URW Chancery L','Z003','Palatino Linotype',Georgia,serif;font-style:italic}
+@media screen{.jb{outline:1px dotted #bbb}}
+.front.jerky .top{align-items:center}.front.jerky .logos{display:flex;align-items:center;gap:3mm}.front.jerky .logos .vegan{width:17mm;height:auto}.front.jerky .logos .bio{width:14mm}.front.jerky .top .ffl{width:34mm}
+.front .jt{font-size:22pt;line-height:1.1;text-decoration:underline}.front .jn{font-size:14pt;margin:1mm 0 3mm}.front .jz{font-size:11pt;line-height:1.3;margin-bottom:3mm}.front .jm{font-size:7pt;line-height:1.35}
 .qr{display:flex;align-items:center;gap:5mm}.qr img{width:50mm;height:50mm;flex:0 0 50mm}.qr .qt{font-size:11pt;line-height:1.3}.qr .qt span{font-size:9pt;color:#444}`;
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(title)}</title><style>${css}</style></head><body>${body}<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),400))<\/script></body></html>`);
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(title)}</title><style>${css}</style></head><body>${body}<script>window.addEventListener('load',()=>{document.querySelectorAll('.jb').forEach(c=>{const t=c.firstElementChild;let fs=8;while(fs>4.5&&t.scrollHeight>c.clientHeight-8){fs-=0.25;t.style.fontSize=fs+'pt';}});setTimeout(()=>window.print(),400)})<\/script></body></html>`);
   w.document.close();
 }
 function dlContext(){
   dlEnsureSpecies();
   const lot=by('lots',el('dlLot').value); if(!lot||!lot.id){ alert('Bitte ein Lot wählen.'); return null; }
-  const species=db.driedSpecies[Number(el('dlSpecies').value)]; if(!species){ alert('Bitte eine Pilzart wählen (Liste in der Administration).'); return null; }
+  const jerky=dlIsJerky(lot);
+  const species=jerky?{de:'Jerky Shrooms',sci:'',kind:'zucht'}:db.driedSpecies[Number(el('dlSpecies').value)]; if(!species){ alert('Bitte eine Pilzart wählen (Liste in der Administration).'); return null; }
   const mhdIso=el('dlMhd').value; if(!mhdIso){ alert('Bitte ein Mindesthaltbarkeitsdatum eingeben.'); return null; }
-  return {lot,species,mhd:fmt(mhdIso),lotNr:el('dlLotNr').value||dlLotNr(lot),weight:(el('dlWeight').value||'20').trim(),product:lot.product||species.de,lotId:lot.id,qrUrl:qrTargetUrl('lots',lot)};
+  return {jerky,lot,species,mhd:fmt(mhdIso),lotNr:el('dlLotNr').value||dlLotNr(lot),weight:(el('dlWeight').value||(jerky?'50':'20')).trim(),product:lot.product||species.de,lotId:lot.id,qrUrl:qrTargetUrl('lots',lot)};
 }
 function dlPrint(mode){
   const ctx=dlContext(); if(!ctx) return;
   const n=Math.max(1,Math.min(400,parseInt(el('dlCount').value,10)||0)); if(!n) return alert('Bitte eine Anzahl eingeben.');
-  const body=(mode!=='back'?dlSheets('front',n,ctx):'')+(mode!=='front'?dlSheets('back',n,ctx):'');
+  const fk=ctx.jerky?'jfront':'front', bk=ctx.jerky?'jback':'back';
+  const body=(mode!=='back'?dlSheets(fk,n,ctx):'')+(mode!=='front'?dlSheets(bk,n,ctx):'');
   dlOpenPrint(body,'Dörrpilz-Etiketten '+ctx.lotNr);
 }
 function dlPrintQr(){
@@ -6581,7 +6603,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.65'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.66'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

@@ -1,3 +1,14 @@
+# Version 1.5.66 – Jerky Shrooms: Eimer und Etiketten (Dörrpilze Teil 2, Schritt 1)
+
+- Beim Anlegen eines Eimers gibt es neu den **Eimer-Typ**: «Dörrpilze» oder «Jerky Shrooms». Die Eimer-ID wird gleich vergeben wie bei den Dörrpilzen (EIM-2026-0001). Bei Jerky ist das Produkt automatisch «Jerky Shrooms».
+- Beim Abpacken aus einem Jerky-Eimer ist das MHD **18 Monate** ab Abpackdatum (Dörrpilze: 2 Jahre). Die Lot-Nummer auf dem Etikett ist der Eimer-Code wie bei den Dörrpilzen.
+- Im Etiketten-Bereich (Button «Etiketten» beim Lot) erkennt die App Jerky-Lots selbst: Pilzart-Auswahl entfällt, Gewicht 50 g.
+- **Vorderseite** (8 pro Bogen, HERMA 3427): Logo, Bio Suisse, Vegan, «Jerky Shrooms», Zutaten, MHD, Lot und Adresse.
+- **Rückseite** (24 pro Bogen, 3 × 8, 70 × 35 mm): fester Text «Folgende Zuchtpilze können im Jerky verarbeitet sein …». Die Schrift verkleinert sich bei Bedarf automatisch, damit der ganze Text Platz hat.
+- Gedruckt werden zuerst alle Bögen mit Vorderseiten, danach alle Bögen mit Rückseiten.
+
+Vorherige Version 1.5.65:
+
 # Version 1.5.65 – Kontrollblatt nur mit aktiven Warnungen
 
 Auf dem Kontrollblatt stehen nur noch die aktiven Warnungen. Die Substratsäcke im Test sind nicht mehr dabei.
