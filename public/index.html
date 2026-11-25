@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.67</title>
+<title>Pilzverwaltung Serverversion 1.5.68</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -131,7 +131,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.67</h1>
+<h1>Pilzverwaltung – Version 1.5.68</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -4275,7 +4275,7 @@ function dlLabelHtml(kind,ctx){
     return `<div class="lb back"><div class="t1">Trockenpilze</div>${wild?'<div class="t2">Wildpilze aus dem Berner Oberland</div>':''}<p>Dörrpilze sollten vor dem Verarbeiten mindestens für 30 Minuten im warmen Wasser eingeweicht werden.</p><p>Trotz sorgfältiger Verarbeitung kann das Produkt Fremdkörper enthalten.${flocki?' Für mindestens 20 min erhitzen.':''}</p><p>Mindesthaltbarkeit: ${e(ctx.mhd)}<br>CH-BIO-006 ¦ Lot Nr. ${e(ctx.lotNr)}</p><p class="ad">Fungi Futuri GmbH, Erlenstrasse 43, 3612 Steffisburg<br>www.fungifuturi.ch</p></div>`;
   }
   if(kind==='jfront'){
-    return `<div class="lb front jerky"><div class="rot"><div class="top"><div class="logos"><img class="bio" src="/img/logo-biosuisse.png" alt="Bio Suisse"><img class="vegan" src="/img/logo-vegan.svg" alt="Vegan"></div><img class="ffl" src="/img/logo-fungifuturi.png" alt="Fungi Futuri"></div><div class="jt">Jerky Shrooms</div><div class="jn">net.: ${e(ctx.weight)}g, zum Rohessen</div><div class="jz">Zutaten: Zuchtpilze (siehe Rückseite), <b>Tamari,*</b> Birnel, Apfelessig, Gewürze | <b><u>*enthält Soja</u></b></div><div class="jm">Mind. haltbar bis: ${e(ctx.mhd)} | CH-BIO-006 | Lot Nr. ${e(ctx.lotNr)}<br>Fungifuturi GmbH Erlenstrasse 43, 3612 Steffisburg fungifuturi.ch</div></div></div>`;
+    return `<div class="lb front jerky"><div class="rot"><div class="top"><div class="logos"><img class="bio" src="/img/logo-biosuisse.png" alt="Bio Suisse"><img class="vegan" src="/img/logo-vegan.png" alt="Vegan"></div><img class="ffl" src="/img/logo-fungifuturi.png" alt="Fungi Futuri"></div><div class="jt">Jerky Shrooms</div><div class="jn">net.: ${e(ctx.weight)}g, zum Rohessen</div><div class="jz">Zutaten: Zuchtpilze (siehe Rückseite), <b>Tamari,*</b> Birnel, Apfelessig, Gewürze | <b><u>*enthält Soja</u></b></div><div class="jm">Mind. haltbar bis: ${e(ctx.mhd)} | CH-BIO-006 | Lot Nr. ${e(ctx.lotNr)}<br>Fungifuturi GmbH Erlenstrasse 43, 3612 Steffisburg fungifuturi.ch</div></div></div>`;
   }
   if(kind==='jback'){
     return `<div class="jb"><div class="fit">Folgende Zuchtpilze können im Jerky verarbeitet sein: Austern-, Kräuter-, Rosen-, Limonen-, Estragon- und Lungen-seitling, Shiitake, Stachelbärte, Klapperschwamm, Buchenpilz, Samtfussrübling, Pioppino, Chestnut, Nameko (Pleurotus ostreatus, P. eryngii, P. djamor, P. citrinopileatus, P. eosmus, P. pulmonarius, Lentinula edodes, Hericium erinaceus, H. coralloides, H. americanum, H. abietis, H. flagellum, Grifola frondosa, Hypsizygus tessellatus, Flammulina velutipes, Cyclocybe aegerita, Pholiota adiposa, P. nameko)</div></div>`;
@@ -4288,7 +4288,15 @@ function dlLabelHtml(kind,ctx){
 }
 function dlSheets(kind,count,ctx){
   const sheets=[]; let left=count; const per=kind==='jback'?24:8, cls=kind==='jback'?'sheet s3':'sheet';
-  while(left>0){ const n=Math.min(per,left); sheets.push(`<div class="${cls}">${Array.from({length:n},()=>dlLabelHtml(kind,ctx)).join('')}</div>`); left-=n; }
+  const rotated=(kind==='front'||kind==='jfront');
+  while(left>0){ const n=Math.min(per,left);
+    if(rotated){
+      // Vorderseiten: ganzer Bogen wird gedreht (Etiketten stehen aufrecht im 297×210-mm-Raster). So gibt es keine gedrehten Einzel-Etiketten, die über den Seitenrand ragen und im Druck umbrechen.
+      sheets.push(`<div class="sheet rs"><div class="rin">${Array.from({length:n},(_,i)=>dlLabelHtml(kind,ctx).replace('<div class="lb','<div style="grid-column:'+(4-Math.floor(i/2))+';grid-row:'+((i%2)+1)+'" class="lb')).join('')}</div></div>`);
+    } else {
+      sheets.push(`<div class="${cls}">${Array.from({length:n},()=>dlLabelHtml(kind,ctx)).join('')}</div>`);
+    }
+    left-=n; }
   return sheets.join('');
 }
 function dlOpenPrint(body,title){
@@ -4303,6 +4311,10 @@ function dlOpenPrint(body,title){
 .front .rot{position:absolute;left:15.375mm;top:-15.375mm;width:74.25mm;height:105mm;transform:rotate(-90deg);transform-origin:center center;padding:6mm 5mm;text-align:center;display:flex;flex-direction:column;justify-content:center}
 .front .top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6mm}.front .top .bio{width:15mm;height:auto}.front .top .ffl{width:40mm;height:auto;margin-right:4mm}
 .front .nm{font-size:20pt;line-height:1.1}.front .sc{font-size:14pt;margin:1mm 0 5mm}.front .ds{font-size:15pt;line-height:1.35}
+.sheet.rs{display:block;position:relative;overflow:hidden}
+.rs .rin{position:absolute;left:0;top:0;width:297mm;height:210mm;display:grid;grid-template-columns:repeat(4,74.25mm);grid-template-rows:repeat(2,105mm);transform-origin:0 0;transform:translateY(297mm) rotate(-90deg)}
+.rs .lb{width:74.25mm;height:105mm}
+.rs .front .rot,.rs .front.jerky .rot{position:static;left:auto;top:auto;transform:none;width:74.25mm;height:105mm}
 .sheet.s3{grid-template-columns:repeat(3,70mm);grid-template-rows:repeat(8,35mm);padding-top:8.5mm}
 .jb{width:70mm;height:35mm;padding:1.5mm 2.5mm;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;font-size:8pt;line-height:1.2;font-family:'Monotype Corsiva','Apple Chancery','URW Chancery L','Z003','Palatino Linotype',Georgia,serif;font-style:italic}
 @media screen{.jb{outline:1px dotted #bbb}}
@@ -6603,7 +6615,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.67'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.68'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
