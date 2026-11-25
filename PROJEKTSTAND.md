@@ -1,3 +1,9 @@
+# Version 1.5.67 – Jerky-Etikette: Schriftgrössen
+
+Vorderseite Jerky: Titel 36 pt, «net.: 50g, zum Rohessen» 16 pt, Zutaten 12 pt, «Mind. haltbar bis» und Rest 8 pt. Ist der Titel in der Druckschrift zu breit für die Etikette, verkleinert er sich automatisch.
+
+Vorherige Version 1.5.66:
+
 # Version 1.5.66 – Jerky Shrooms: Eimer und Etiketten (Dörrpilze Teil 2, Schritt 1)
 
 - Beim Anlegen eines Eimers gibt es neu den **Eimer-Typ**: «Dörrpilze» oder «Jerky Shrooms». Die Eimer-ID wird gleich vergeben wie bei den Dörrpilzen (EIM-2026-0001). Bei Jerky ist das Produkt automatisch «Jerky Shrooms».
