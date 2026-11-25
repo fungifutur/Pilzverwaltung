@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.66</title>
+<title>Pilzverwaltung Serverversion 1.5.67</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -131,7 +131,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.66</h1>
+<h1>Pilzverwaltung – Version 1.5.67</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -4307,9 +4307,9 @@ function dlOpenPrint(body,title){
 .jb{width:70mm;height:35mm;padding:1.5mm 2.5mm;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;font-size:8pt;line-height:1.2;font-family:'Monotype Corsiva','Apple Chancery','URW Chancery L','Z003','Palatino Linotype',Georgia,serif;font-style:italic}
 @media screen{.jb{outline:1px dotted #bbb}}
 .front.jerky .top{align-items:center}.front.jerky .logos{display:flex;align-items:center;gap:3mm}.front.jerky .logos .vegan{width:17mm;height:auto}.front.jerky .logos .bio{width:14mm}.front.jerky .top .ffl{width:34mm}
-.front .jt{font-size:22pt;line-height:1.1;text-decoration:underline}.front .jn{font-size:14pt;margin:1mm 0 3mm}.front .jz{font-size:11pt;line-height:1.3;margin-bottom:3mm}.front .jm{font-size:7pt;line-height:1.35}
+.front .jt{font-size:36pt;white-space:nowrap;line-height:1.1;text-decoration:underline}.front .jn{font-size:16pt;margin:1mm 0 3mm}.front .jz{font-size:12pt;line-height:1.3;margin-bottom:3mm}.front .jm{font-size:8pt;line-height:1.35}
 .qr{display:flex;align-items:center;gap:5mm}.qr img{width:50mm;height:50mm;flex:0 0 50mm}.qr .qt{font-size:11pt;line-height:1.3}.qr .qt span{font-size:9pt;color:#444}`;
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(title)}</title><style>${css}</style></head><body>${body}<script>window.addEventListener('load',()=>{document.querySelectorAll('.jb').forEach(c=>{const t=c.firstElementChild;let fs=8;while(fs>4.5&&t.scrollHeight>c.clientHeight-8){fs-=0.25;t.style.fontSize=fs+'pt';}});setTimeout(()=>window.print(),400)})<\/script></body></html>`);
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(title)}</title><style>${css}</style></head><body>${body}<script>window.addEventListener('load',()=>{document.querySelectorAll('.jt').forEach(t=>{let fs=36;const w=t.clientWidth;while(fs>20&&t.scrollWidth>w+1){fs-=0.5;t.style.fontSize=fs+'pt';}});document.querySelectorAll('.jb').forEach(c=>{const t=c.firstElementChild;let fs=8;while(fs>4.5&&t.scrollHeight>c.clientHeight-8){fs-=0.25;t.style.fontSize=fs+'pt';}});setTimeout(()=>window.print(),400)})<\/script></body></html>`);
   w.document.close();
 }
 function dlContext(){
@@ -6603,7 +6603,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.66'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.67'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
