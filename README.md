@@ -1,3 +1,12 @@
+# Version 1.5.71 – Mischpilze Zucht und Wild (Dörrpilze Teil 2, Schritt 2)
+
+- Bei «Abgepackte Dörrpilze generieren» gibt es neu die Quelle **«mehrere Eimer (Mischpilze)»**. Dort werden 2 oder mehr Eimer angehakt. Die Pilzart jedes Eimers wird aus der Pilzarten-Liste erkannt.
+- Regeln: 2 bis 3 verschiedene Pilzarten, Zucht und Wild werden nie gemischt (sonst Fehlermeldung). Jede Pilzart muss in der Pilzarten-Liste stehen.
+- Jede Charge bekommt ein eigenes Lot (LOT-2026-0001). Es merkt sich die Eimer und die Pilzarten und ist über die Rückverfolgung zu jedem Eimer zurückverfolgbar. Die Lot-Nummer auf dem Etikett ist die Lot-Nummer ohne «LOT-». MHD: Abpackdatum + 2 Jahre (auf dem Etikett änderbar).
+- **Vorderseite:** «Dörrpilze gemischt», darunter die Pilzarten in Klammern, dann «20g gedörrte Zuchtpilze aus eigener Produktion in Steffisburg» oder «Wildpilze aus eigener Wildsammlung aus dem Berner Oberland». **Rückseite:** wie Zucht bzw. Wild bei den normalen Dörrpilzen.
+
+Vorherige Version 1.5.70:
+
 # Version 1.5.70 – Jerky-Etikette: Zeilen
 
 Auf der Jerky-Vorderseite steht «Mind. haltbar bis: …» in einer eigenen Zeile, darunter «CH-BIO-006 | Lot Nr. …». Der Strich nach dem Datum ist weg.
