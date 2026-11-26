@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.77</title>
+<title>Pilzverwaltung Serverversion 1.5.78</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -137,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.77</h1>
+<h1>Pilzverwaltung – Version 1.5.78</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -4377,6 +4377,7 @@ function dlLotChanged(silent){
   const jk=dlIsJerky(lot), mx=dlIsMix(lot)||dlIsRb(lot), vt=!!dlVitalKind(lot), rb=dlIsRb(lot);
   el('dlSpeciesWrap').style.display=(jk||mx||vt)?'none':'';
   if(jk||vt){ el('dlWeight').value='50'; } else if(el('dlWeight').value==='50'){ el('dlWeight').value='20'; }
+  if(rb){ el('dlWeight').value=(lot.kind==='wild')?'15':'20'; }
   document.querySelectorAll('.dlStd').forEach(b=>b.style.display=rb?'none':'');
   document.querySelectorAll('.dlRb').forEach(b=>b.style.display=rb?'':'none');
   el('dlPaperWrap').style.display=rb?'':'none';
@@ -4424,7 +4425,7 @@ function dlLabelHtml(kind,ctx){
     const seal=info.variant==='biosuisse'?'<img class="seal" src="/img/logo-biosuisse.png" alt="Bio Suisse">':'<img class="seal" src="/img/logo-bio.png" alt="Bio">';
     const mush=zucht?'gedörrten Zuchtpilzen aus unserem Betrieb in Steffisburg':'gedörrten Wildpilzen aus dem Berner Oberland';
     const ing=[info.ing].concat(sp.list||[]);
-    return `<div class="pp"><div class="rfin"><div class="rt">${e(info.title)}</div><div class="rl"><img class="ffl" src="/img/logo-fungifuturi.png" alt="Fungi Futuri">${seal}</div><div class="rd">200g ${e(info.rice)} mit ${e(ctx.weight)}g ${mush}</div><div class="rh">Rezept</div><div class="rr">${e(info.recipe)}</div><div class="ra">Fungi Futuri GmbH, Erlenstrasse 43, 3612 Steffisburg, www.fungifuturi.ch</div><div class="rw">Trotz sorgfältiger Verarbeitung können die Trockenpilze Fremdkörper enthalten.</div><div class="rz">Zutaten: ${e(info.ing)}, ${e(dlListNames(sp.list||[]).replace(' & ',' und '))}</div></div></div>`;
+    return `<div class="pp"><div class="rfin"><div class="rtop"><div class="rl">${seal}<img class="ffl" src="/img/logo-fungifuturi.png" alt="Fungi Futuri"></div><div class="rt">${e(info.title)}</div></div><div class="rd">200g ${e(info.rice)} mit ${e(ctx.weight)}g ${mush}</div><div class="rh">Rezept</div><div class="rr">${e(info.recipe)}</div><div class="ra">Fungi Futuri GmbH, Erlenstrasse 43, 3612 Steffisburg, www.fungifuturi.ch</div><div class="rw">***Trotz sorgfältiger Verarbeitung können die Trockenpilze Fremdkörper enthalten***.</div><div class="rz">Zutaten: ${e(info.ing)}, ${e(dlListNames(sp.list||[]).replace(' & ',' und '))}</div></div></div>`;
   }
   if(kind==='rsmall'){
     return `<div class="rs64">Mind. Haltbar bis: ${e(ctx.mhd)}<br>CH-BIO-006 | Lot Nr. ${e(ctx.lotNr)}</div>`;
@@ -4486,7 +4487,7 @@ function dlOpenPrint(body,title,extraCss,extraJs){
 @media screen{.rs64{outline:1px dotted #bbb}}
 .pp{display:flex;align-items:center;justify-content:center;page-break-after:always;overflow:hidden;font-family:'Monotype Corsiva','Apple Chancery','URW Chancery L','Z003','Palatino Linotype',Georgia,serif;font-style:italic;text-align:center}
 .pp:last-child{page-break-after:auto}.rfin{width:100%;padding:5mm;font-size:11pt;line-height:1.25}
-.rfin .rt{font-size:2.1em;line-height:1.1;margin-bottom:3mm}.rfin .rl{display:flex;align-items:center;justify-content:center;gap:5mm;margin-bottom:3mm}.rfin .ffl{width:38mm;height:auto}.rfin .seal{height:16mm;width:auto}
+.rfin .rtop{transform:rotate(180deg);margin-bottom:3mm}.rfin .rt{font-size:2.1em;line-height:1.1;margin-bottom:3mm}.rfin .rl{display:flex;align-items:center;justify-content:center;gap:5mm;margin-bottom:3mm}.rfin .ffl{width:38mm;height:auto}.rfin .seal{height:16mm;width:auto}
 .rfin .rd{font-size:1.1em;margin-bottom:3mm}.rfin .rh{font-size:1.2em;text-decoration:underline;margin-bottom:1mm}.rfin .rr{margin-bottom:3mm}.rfin .ra{font-size:.9em;margin-bottom:2mm}.rfin .rw{font-size:.75em;font-weight:bold;margin-bottom:1mm}.rfin .rz{font-size:.8em}
 .qr{display:flex;align-items:center;gap:5mm}.qr img{width:50mm;height:50mm;flex:0 0 50mm}.qr .qt{font-size:11pt;line-height:1.3}.qr .qt span{font-size:9pt;color:#444}`;
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(title)}</title><style>${css}${extraCss||''}</style></head><body>${body}<script>window.addEventListener('load',()=>{document.querySelectorAll('.jt').forEach(t=>{let fs=36;const w=t.clientWidth;while(fs>20&&t.scrollWidth>w+1){fs-=0.5;t.style.fontSize=fs+'pt';}});document.querySelectorAll('.jb').forEach(c=>{const t=c.firstElementChild;let fs=8;while(fs>4.5&&t.scrollHeight>c.clientHeight-8){fs-=0.25;t.style.fontSize=fs+'pt';}});document.querySelectorAll('.pp').forEach(pp=>{const c=pp.firstElementChild;let fs=11;while(fs>5&&c.scrollHeight>pp.clientHeight){fs-=0.25;c.style.fontSize=fs+'pt';}});setTimeout(()=>window.print(),400)})<\/script></body></html>`);
@@ -6791,7 +6792,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.77'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.78'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
