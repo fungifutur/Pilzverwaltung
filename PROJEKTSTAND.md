@@ -1,3 +1,9 @@
+# Version 1.5.76 – Fix: Auswahllisten (Dropdowns) blieben nicht offen
+
+- Auswahllisten bei den Dörrpilzen und weiteren Stellen klappten sofort wieder zu, weil sie bei jedem Neuzeichnen (auch beim automatischen Abgleich alle paar Sekunden) neu aufgebaut wurden. Sie werden jetzt nur noch neu aufgebaut, wenn sich der Inhalt ändert.
+
+Vorherige Version 1.5.75:
+
 # Version 1.5.75 – Risotto und Bramata mit Dörrpilzen (Etiketten)
 
 - Neu beim Abpacken: **Quelle Typ «Risotto / Bramata (mehrere Eimer)»**. Du wählst das Produkt (Risotto, Bramata Bio Suisse oder Bramata Knospe), **Zucht- oder Wildpilze** und einen oder mehrere Dörrpilz-Eimer (nur Eimer der gewählten Art werden angezeigt).
