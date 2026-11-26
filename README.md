@@ -1,3 +1,16 @@
+# Version 1.5.82 – Neuer Reiter «Verkäufe» (Verkaufsstatistik)
+
+- Neuer Menüpunkt **Einstellungen → Verkäufe**. Er zählt drei Quellen zusammen:
+  - **Direkt:** alles, was über einen «Verkaufen»-Knopf (Lots, Körnerbrut, Flüssigmyzel, Holzstämme, Substratsäcke, Dübel/Spritzen/Sets …), «Verkauf buchen», die Massenbearbeitung oder einen Statuswechsel auf «verkauft» gebucht wurde (Archiv).
+  - **WooCommerce:** Artikel aus **abgeschlossenen** Bestellungen (mit SKU, Menge und Umsatz). Offene Bestellungen zählen erst nach dem Abschluss.
+  - **Lager manuell:** manuelle Abgänge im Lager.
+- Filter: Zeitraum, Quelle, Bereich, Suche (Produkt, SKU, Kunde). Auswertungen: Übersicht, nach Produkt/SKU, nach Kunde, nach Monat und die Liste der einzelnen Verkäufe. **CSV-Export** aller gefilterten Verkäufe.
+- Bei jedem Verkaufen-Knopf und bei der Massenbearbeitung «verkauft» wird neu ein **Kunde (optional)** gefragt und im Archiv gespeichert.
+- Kundennamen aus WooCommerce werden aus Datenschutzgründen nach der eingestellten Frist (Standard 90 Tage) gelöscht. Danach steht bei diesen Bestellungen «(Name gelöscht)».
+- Die Von/Bis-Felder dieses Reiters bleiben leer, bis man sie ausfüllt.
+
+Vorherige Version 1.5.81:
+
 # Version 1.5.81 – Risotto/Bramata: Wildpilze auf neuer Zeile
 
 - Bei Wildpilzen steht «Wildpilzen aus dem Berner Oberland» auf einer eigenen Zeile (davor endet die Zeile mit «gedörrten»). Bei Zuchtpilzen bleibt es wie in 1.5.80.
