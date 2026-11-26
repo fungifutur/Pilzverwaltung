@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.80</title>
+<title>Pilzverwaltung Serverversion 1.5.81</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -137,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.80</h1>
+<h1>Pilzverwaltung – Version 1.5.81</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -4423,7 +4423,7 @@ function dlLabelHtml(kind,ctx){
   if(kind==='rfront'){
     const info=ctx.rbInfo, sp=ctx.species, zucht=sp.kind==='zucht';
     const seal=info.variant==='biosuisse'?'<img class="seal" src="/img/logo-biosuisse.png" alt="Bio Suisse">':'<img class="seal" src="/img/logo-bio.png" alt="Bio">';
-    const mush=zucht?'gedörrten Zuchtpilzen<br>aus unserem Betrieb in Steffisburg':'gedörrten Wildpilzen<br>aus dem Berner Oberland';
+    const mush=zucht?'gedörrten Zuchtpilzen<br>aus unserem Betrieb in Steffisburg':'gedörrten<br>Wildpilzen aus dem Berner Oberland';
     const ing=[info.ing].concat(sp.list||[]);
     return `<div class="pp"><div class="rfin"><div class="rtop"><div class="rl">${seal}<img class="ffl" src="/img/logo-fungifuturi.png" alt="Fungi Futuri"></div><div class="rt">${e(info.title)}</div><div class="rd">200g ${e(info.rice)} mit ${e(ctx.weight)}g ${mush}</div></div><div class="rh">Rezept</div><div class="rr">${e(info.recipe)}</div><div class="ra">Fungi Futuri GmbH, Erlenstrasse 43, 3612 Steffisburg, www.fungifuturi.ch</div><div class="rw">***Trotz sorgfältiger Verarbeitung können die Trockenpilze Fremdkörper enthalten***.</div><div class="rz">Zutaten: ${e(info.ing)}, ${e(dlListNames(sp.list||[]).replace(' & ',' und '))}</div></div></div>`;
   }
@@ -6792,7 +6792,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.80'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.81'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

@@ -1,3 +1,9 @@
+# Version 1.5.81 – Risotto/Bramata: Wildpilze auf neuer Zeile
+
+- Bei Wildpilzen steht «Wildpilzen aus dem Berner Oberland» auf einer eigenen Zeile (davor endet die Zeile mit «gedörrten»). Bei Zuchtpilzen bleibt es wie in 1.5.80.
+
+Vorherige Version 1.5.80:
+
 # Version 1.5.80 – Risotto/Bramata: Zeilenumbruch in der Beschreibung
 
 - In der Zeile oben (bei den Logos) steht «aus unserem Betrieb in Steffisburg» (Zuchtpilze) bzw. «aus dem Berner Oberland» (Wildpilze) **auf einer eigenen Zeile**, direkt nach «Zuchtpilzen» bzw. «Wildpilzen».
