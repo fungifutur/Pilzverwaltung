@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.71</title>
+<title>Pilzverwaltung Serverversion 1.5.72</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -21,6 +21,12 @@ main{padding:22px}
 input,select,textarea{width:100%;padding:9px;border:1px solid #ddd;border-radius:10px;margin:4px 0 10px;box-sizing:border-box}
 .select-search{margin-bottom:4px;background:#fbfbfb}
 label{font-size:12px;color:#6b7280}
+#packMixList{max-height:360px;overflow:auto;border:1px solid #d1d5db;border-radius:8px;background:#fff}
+.mixhead{position:sticky;top:0;background:#f3f4f6;padding:6px 10px;font-weight:700;font-size:13px;color:#111827;border-bottom:1px solid #d1d5db}
+.mixrow{display:flex;align-items:center;gap:12px;padding:9px 10px;border-bottom:1px solid #e5e7eb;font-size:14px;color:#111827;cursor:pointer;margin:0}
+.mixrow:hover{background:#f9fafb}
+.mixrow input[type=checkbox]{width:20px;height:20px;flex:none;margin:0}
+.mixsum{margin:6px 0 10px;font-size:13px;font-weight:600;color:#065f46}
 .task-print-choice{display:flex!important;align-items:center!important;gap:10px!important;min-height:34px;font-size:14px;color:#374151}.task-print-choice input[type=checkbox]{width:20px!important;height:20px!important;min-width:20px;margin:0!important;padding:0!important;accent-color:#2f6f4e}
 .form{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 button.primary{background:#2f6f4e;color:white;border:0;border-radius:12px;padding:10px 14px;cursor:pointer}
@@ -131,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.71</h1>
+<h1>Pilzverwaltung – Version 1.5.72</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -4179,9 +4185,21 @@ save('Eimer erstellt')
 function packMixBuckets(){ return (db.buckets||[]).filter(x=>!['archiviert','aufgebraucht','kontaminiert','verkauft','verbraucht'].includes(String(x.status||''))&&x.type!=='jerky'); }
 function renderPackMixList(){
   const box=el('packMixList'); if(!box) return;
-  const checked=new Set([...box.querySelectorAll('input:checked')].map(i=>i.value));
+  const checked=new Set([...box.querySelectorAll('input[type=checkbox]:checked')].map(i=>i.value));
   dlEnsureSpecies();
-  setHTML('packMixList', packMixBuckets().map(b=>{const i=dlMatchSpecies(b.product);const k=i>=0?(DRIED_KIND_NAMES[db.driedSpecies[i].kind]||''):'Pilzart nicht in Liste';return `<label style="display:block;font-weight:normal;margin:2px 0"><input type="checkbox" value="${escHtml(b.id)}" ${checked.has(b.id)?'checked':''}> ${escHtml(b.id)} – ${escHtml(b.product)} <span class="muted">(${escHtml(k)})</span></label>`}).join('')||'<span class="muted">Keine offenen Eimer vorhanden.</span>');
+  const groups={zucht:[],wild:[],other:[]};
+  packMixBuckets().forEach(b=>{const i=dlMatchSpecies(b.product);const sp=i>=0?db.driedSpecies[i]:null;(sp&&(sp.kind==='zucht'||sp.kind==='wild')?groups[sp.kind]:groups.other).push({b,sp});});
+  const row=({b,sp})=>`<label class="mixrow"><input type="checkbox" value="${escHtml(b.id)}" ${checked.has(b.id)?'checked':''} onchange="packMixSummary()"><span><b>${escHtml(b.id)}</b> – ${escHtml(b.product)}${sp?'':' <em style="color:#b91c1c">(Pilzart nicht in Liste)</em>'}</span></label>`;
+  const sect=(title,list)=>list.length?`<div class="mixhead">${title} (${list.length})</div>`+list.sort((a,c)=>String(a.sp?.de||a.b.product).localeCompare(String(c.sp?.de||c.b.product),'de')||String(a.b.id).localeCompare(String(c.b.id))).map(row).join(''):'';
+  setHTML('packMixList', (sect('Zuchtpilze',groups.zucht)+sect('Wildpilze',groups.wild)+sect('Pilzart nicht in Liste',groups.other))||'<span class="muted">Keine offenen Eimer vorhanden.</span>');
+  packMixSummary();
+}
+function packMixSummary(){
+  const box=el('packMixList'); if(!box) return;
+  const ids=[...box.querySelectorAll('input[type=checkbox]:checked')].map(i=>i.value);
+  const names=[...new Set(ids.map(id=>{const b=by('buckets',id);const i=dlMatchSpecies(b?.product);return i>=0?db.driedSpecies[i].de:(b?.product||id);}))];
+  let t=el('packMixSum'); if(!t){ t=document.createElement('div'); t.id='packMixSum'; box.parentNode.insertBefore(t,box.nextSibling); }
+  t.className='mixsum'; t.textContent=ids.length?`Gewählt: ${ids.length} Eimer · ${names.length} Pilzart${names.length===1?'':'en'}: ${names.join(', ')}`:'Noch kein Eimer gewählt.';
 }
 function dlListNames(a){ return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' & '+a[a.length-1]; }
 function generateMixPacks(){
@@ -6658,7 +6676,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.71'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.72'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
