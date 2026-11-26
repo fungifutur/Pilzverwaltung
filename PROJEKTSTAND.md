@@ -1,3 +1,9 @@
+# Version 1.5.70 – Jerky-Etikette: Zeilen
+
+Auf der Jerky-Vorderseite steht «Mind. haltbar bis: …» in einer eigenen Zeile, darunter «CH-BIO-006 | Lot Nr. …». Der Strich nach dem Datum ist weg.
+
+Vorherige Version 1.5.69:
+
 # Version 1.5.69 – Jerky-Etikette: Strich entfernt
 
 Auf der Jerky-Vorderseite ist der senkrechte Strich nach «Gewürze» weg. «*enthält Soja» steht in einer eigenen Zeile.
