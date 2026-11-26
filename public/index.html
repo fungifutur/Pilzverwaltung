@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.83</title>
+<title>Pilzverwaltung Serverversion 1.5.84</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -137,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.83</h1>
+<h1>Pilzverwaltung – Version 1.5.84</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -419,6 +419,7 @@ nav button.top-link{font-weight:bold}
 </div>
 <div class="card"><strong>Bestand pro Strain:</strong><br><span id="subSummary"></span></div>
 <div class="card"><h3>Substrate im Durchwachsen</h3><p class="muted">Substratsäcke mit dem Status «am durchwachsen», nach Pilzart.</p><table><thead><tr><th>Pilzart</th><th>Anzahl</th><th>davon Test</th></tr></thead><tbody id="subGrowingRows"></tbody></table></div>
+<div class="card"><h3>Substratsäcke als einfacher Stückbestand</h3><p class="muted">Pro SKU wählst du, ob der Bestand wie bisher aus einzelnen Säcken (Chargen) kommt oder als einfache Stückzahl geführt wird. Beim einfachen Stückbestand buchst du Zugänge und Abgänge von Hand, die Säcke in der Liste zählen für diese SKU dann nicht mehr. Webshop-Bestellungen und der WooCommerce-Bestand rechnen mit der Stückzahl.</p><div id="subSimpleRows"></div></div>
 <div class="card"><h3>Substratsäcke erzeugen</h3><div class="form"><div><label>Quelle Typ</label><select id="subSourceType" onchange="render(); renderProductionSkuOptions(true)"><option value="kb">Körnerbrut</option><option value="lc">Flüssigmyzel</option><option value="unknown">unbekannt</option></select></div><div id="subSourceWrap"><label>Quelle</label><select id="subSource" onchange="renderProductionSkuOptions(true)"></select></div><div id="subUnknownWrap" style="display:none"><label>Strain bei unbekannter Quelle</label><select id="subUnknownStrain" onchange="renderProductionSkuOptions(true)"></select><span class="muted">Bestehenden Strain wählen; dadurch bleiben SKU- und Mindestbestandszuordnung erhalten.</span></div><div><label>Substrat</label><select id="subMix"></select></div><div><label>SKU Substrat</label><select id="subSku"><option value="">von Quelle übernehmen / automatisch</option></select></div><div><label>Anzahl</label><input id="subCount" type="text" inputmode="numeric" pattern="[0-9]*" value="1"></div><div><label>Datum</label><input id="subDate" type="date"></div><div><label>Gewicht kg</label><input id="subWeight" type="number" value="3.4"></div><div><label>Wasser %</label><input id="subWater" type="number" value="62"></div><div><label>Verwendung</label><select id="subForTest"><option value="nein">normal</option><option value="ja">für Test markieren</option><option value="webshop">für Webshop herstellen</option></select></div><div><label>Testname (nur bei Test)</label><input id="subTestName" placeholder="z.B. Buche/Kleie 62%"></div><div><label>Testbeschreibung</label><input id="subTestDesc" placeholder="z.B. Variante, Ziel, Notizen"></div><div id="subKbUsageWrap"><label>Verwendung der Körnerbrut-Quelle</label><label style="display:flex;gap:8px;align-items:center"><input id="subSourceUsedUp" type="checkbox"> Quelle vollständig aufgebraucht → ins Archiv</label><span class="muted">Nicht markieren = Körnerbrut bleibt aktiv und erhält den Hinweis „Angebraucht“.</span></div></div><button class="primary" onclick="addSub()">Erzeugen</button><div id="subOrderHint" class="muted" style="margin-top:8px"></div></div>
 <div class="card">
 <h3>Massenbearbeitung Substratsäcke</h3>
@@ -2069,11 +2070,42 @@ function renderLocalCatalog(){
 async function updateCatalogField(id,key,value){const p=(db.productCatalog||[]).find(x=>x.id===id);if(!p)return;p[key]=value;if(key==='area'){localCatalogKeep.add(id);autoEnableAssignedSync();}if(key==='syncActive'&&p.sku){const st=ensureWooSyncSettings(),set=new Set(st.selectedSkus);value?set.add(p.sku):set.delete(p.sku);st.selectedSkus=Array.from(set);}await save();renderWooGroupManager();}
 function simpleStockProducts(area){return (db.productCatalog||[]).filter(p=>p.active!==false&&p.area===area&&p.stockMode==='simple');}
 function renderSimpleStock(area){
+  if(area==='sub') return renderSubSimple();
   ensureCatalogState(); const items=simpleStockProducts(area);
   const locOpts=(db.storageLocations||[]).filter(l=>l.active!==false).map(l=>`<option value="${escHtml(l.id)}">${escHtml(storageLocationLabel(l))}</option>`).join('');
   const html=items.map(p=>`<div class="card" style="box-shadow:none;margin:8px 0"><strong>${escHtml(p.name||p.sku)}</strong><br><span class="muted">SKU: ${escHtml(p.sku)}</span><div class="form"><div><label>Bestand</label><div class="stat" style="font-size:24px">${+p.qty||0}</div></div><div><label>Menge buchen</label><input id="stockQty_${p.id}" type="number" min="0" value="1"></div><div><label>Lagerplatz</label><select id="stockLoc_${p.id}" onchange="setCatalogLocation('${p.id}',this.value)"><option value="">kein Lagerplatz</option>${locOpts}</select></div></div><button class="primary" onclick="bookSimpleStock('${p.id}',1)">+ Zugang</button> <button class="secondary" onclick="bookSimpleStock('${p.id}',-1)">− Abgang</button></div>`).join('');
   setHTML(area+'Rows',html||'<span class="muted">Keine Produkte aktiviert. Im WooCommerce-Produktkatalog Bereich und Bestandsart festlegen.</span>');
   items.forEach(p=>{const e=el('stockLoc_'+p.id);if(e)e.value=p.storageLocation||defaultStorageLocationForSku(p.sku)||'';});
+}
+function renderSubSimple(){
+  if(!el('subSimpleRows')) return;
+  ensureCatalogState();
+  const skus=allSkuProducts(true).filter(p=>p.sku&&skuKind(String(p.sku))==='sub');
+  const html=skus.map(p=>{
+    const cat=(db.productCatalog||[]).find(c=>String(c.sku||'').toLowerCase()===String(p.sku).toLowerCase());
+    const simple=!!cat&&cat.stockMode==='simple';
+    const sk=encodeURIComponent(p.sku);
+    const mode=`<select onchange="setSubStockMode('${sk}',this.value)"><option value="batch" ${simple?'':'selected'}>Chargen (einzelne Säcke)</option><option value="simple" ${simple?'selected':''}>einfacher Stückbestand</option></select>`;
+    const stock=simple?`<div class="stat" style="font-size:22px">${+cat.qty||0}</div>`:`<span class="muted">${wooStockBreakdown(p.sku).physical} aus Säcken</span>`;
+    const book=simple?`<div><label>Menge buchen</label><input id="stockQty_${escHtml(cat.id)}" type="number" min="0" value="1" style="width:90px"></div><div style="align-self:end"><button class="primary" onclick="bookSimpleStock('${escHtml(cat.id)}',1)">+ Zugang</button> <button class="secondary" onclick="bookSimpleStock('${escHtml(cat.id)}',-1)">− Abgang</button></div>`:'';
+    return `<div class="card" style="box-shadow:none;margin:8px 0"><strong>${escHtml(p.sku)}</strong><br><span class="muted">${escHtml(p.name||'')}</span><div class="form"><div><label>Bestandsart</label>${mode}</div><div><label>Bestand</label>${stock}</div>${book}</div></div>`;
+  }).join('');
+  setHTML('subSimpleRows',html||'<span class="muted">Keine Substrat-SKUs gefunden.</span>');
+}
+async function setSubStockMode(skuEnc,mode){
+  const sku=decodeURIComponent(skuEnc); ensureCatalogState();
+  let cat=(db.productCatalog||[]).find(c=>String(c.sku||'').toLowerCase()===sku.toLowerCase());
+  if(mode==='simple'){
+    const fromBatches=batchCandidatesForSku(sku).reduce((a,x)=>a+(+x.qty||0),0);
+    if(!confirm('«'+sku+'» auf einfachen Stückbestand umstellen?\n\nStartbestand: '+fromBatches+' (aktuell fertige Säcke dieser SKU). Danach buchst du Zugänge und Abgänge von Hand. Die einzelnen Säcke zählen für diese SKU nicht mehr.')) return renderSubSimple();
+    if(!cat){ const base=allSkuProducts(true).find(p=>p.sku===sku)||{}; cat={id:'CAT-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),sku,name:base.name||sku,area:'sub',stockMode:'simple',qty:0,active:true,syncActive:false}; db.productCatalog.push(cat); }
+    cat.area='sub'; cat.stockMode='simple'; cat.qty=fromBatches; cat.active=true;
+    db.stockTransactions.push({id:'ST-'+Date.now(),productId:cat.id,sku:sku,date:new Date().toISOString(),change:fromBatches,before:0,after:fromBatches,storageLocation:cat.storageLocation||'',note:'Umstellung auf einfachen Stückbestand (Startbestand aus Säcken)'});
+  } else if(cat){
+    if(!confirm('«'+sku+'» wieder auf Chargen (einzelne Säcke) umstellen? Der Stückbestand ('+(+cat.qty||0)+') wird nicht mehr verwendet.')) return renderSubSimple();
+    cat.stockMode='batch';
+  }
+  await save(); renderSubSimple();
 }
 async function setCatalogLocation(id,loc){const p=(db.productCatalog||[]).find(x=>x.id===id);if(p){p.storageLocation=loc;await save();}}
 async function bookSimpleStock(id,dir){
@@ -3417,7 +3449,8 @@ function renderStats(){
     ['Dauerkulturen', statusStats('dk', db.dk, 'fertig durchwachsen'), 'fertig durchwachsen'],
     ['Petrischalen', statusStats('petri', db.petri, 'durchwachsen'), 'durchwachsen'],
     ['Körnerbrut', statusStats('kb', db.kb, 'im Kühlschrank'), 'im Kühlschrank'],
-    ['Flüssigmyzel', statusStats('lc', db.lc, 'im Kühlschrank'), 'im Kühlschrank']
+    ['Flüssigmyzel', statusStats('lc', db.lc, 'im Kühlschrank'), 'im Kühlschrank'],
+    ['Substratsäcke', statusStats('sub', (db.sub||[]).filter(x=>!x.forTest), 'fertig durchwachsen'), 'fertig durchwachsen']
   ].map(([label,s,target])=>`<tr><td>${esc(label)}</td><td>${esc(s.pos)} ${badge(target)}</td><td>${esc(s.konti)} ${badge('kontaminiert')}</td><td>${esc(s.posPct)}</td><td>${esc(s.kontiPct)}</td></tr>`).join('');
   setHTML('statusStatsRows', statusRows);
   const rows=[
@@ -3481,6 +3514,7 @@ setHTML('testGroupSummary', (db.testGroups||[]).slice().reverse().map(g=>{
 }).join('') || '<span class="muted">Noch keine Testgruppen vorhanden.</span>');
 renderStats();
 try{ renderSales(); }catch(e){ console.error('renderSales',e); }
+try{ renderSubSimple(); }catch(e){ console.error('renderSubSimple',e); }
 
 setHTML('dkSummary', stockSummaryDropdown('dk', db.dk, x=>+x.count||1));
 setHTML('petriSummary', stockSummaryDropdown('petri', db.petri));
@@ -6898,7 +6932,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.83'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.84'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
