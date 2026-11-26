@@ -6,6 +6,8 @@
 - **Kleine Etiketten:** HERMA 64 (4 × 16 pro A4, 48,3 × 16,9 mm), «Mind. Haltbar bis» und «CH-BIO-006 | Lot Nr.».
 - **Vorderseite und kleine Etiketten werden nie zusammen gedruckt** (das Papier muss im Drucker separat eingelegt werden). Für diese Lots gibt es nur zwei getrennte Knöpfe.
 
+- **Fix:** Auswahllisten (Dropdowns) bei den Dörrpilzen und weiteren Stellen klappten sofort wieder zu, weil sie bei jedem Neuzeichnen neu aufgebaut wurden. Sie werden jetzt nur noch neu aufgebaut, wenn sich der Inhalt ändert.
+
 Vorherige Version 1.5.74:
 
 # Version 1.5.74 – Igelstachelbart-Pulver aus Igelstachelbart-Eimer
