@@ -1,3 +1,9 @@
+# Version 1.5.72 – Mischpilze: übersichtliche Eimer-Auswahl
+
+Die Eimer-Auswahl für Mischpilze ist jetzt eine Liste mit Trennlinien zwischen den Eimern, Kästchen links und Gruppen «Zuchtpilze», «Wildpilze» und «Pilzart nicht in Liste» (nach Pilzart sortiert). Unter der Liste steht, wie viele Eimer und welche Pilzarten gewählt sind. Die ganze Zeile ist anklickbar.
+
+Vorherige Version 1.5.71:
+
 # Version 1.5.71 – Mischpilze Zucht und Wild (Dörrpilze Teil 2, Schritt 2)
 
 - Bei «Abgepackte Dörrpilze generieren» gibt es neu die Quelle **«mehrere Eimer (Mischpilze)»**. Dort werden 2 oder mehr Eimer angehakt. Die Pilzart jedes Eimers wird aus der Pilzarten-Liste erkannt.
