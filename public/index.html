@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.84</title>
+<title>Pilzverwaltung Serverversion 1.5.85</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -137,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.84</h1>
+<h1>Pilzverwaltung – Version 1.5.85</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -292,16 +292,15 @@ nav button.top-link{font-weight:bold}
 <div><label>Bis</label><input id="salesTo" type="date" data-nodefault oninput="renderSales()"></div>
 <div><label>Quelle</label><select id="salesSource" onchange="renderSales()"><option value="">alle</option><option value="direkt">Direkt (Verkaufen-Knopf, Verkauf buchen, Statuswechsel)</option><option value="woo">WooCommerce (abgeschlossene Bestellungen)</option><option value="lager">Lager manuell ausgebucht</option></select></div>
 <div><label>Bereich</label><select id="salesCat" onchange="renderSales()"></select></div>
-<div><label>Suche (Produkt, SKU, Kunde)</label><input id="salesSearch" oninput="renderSales()" placeholder="z.B. Austern oder Heri_"></div>
+<div><label>Suche (Produkt, SKU)</label><input id="salesSearch" oninput="renderSales()" placeholder="z.B. Austern oder Heri_"></div>
 <div style="align-self:end"><button class="secondary" onclick="clearSalesFilter()">Filter löschen</button> <button class="primary" onclick="salesCsv()">Als CSV exportieren</button></div>
 </div>
-<p class="muted">Gezählt wird, was über einen Verkaufen-Knopf, «Verkauf buchen» oder einen Statuswechsel auf «verkauft» gebucht wurde (Archiv), alles, was in WooCommerce abgeschlossen wurde (Artikel mit SKU), und manuelle Lager-Abgänge. Offene Bestellungen zählen erst, wenn sie in WooCommerce abgeschlossen sind. Kundennamen aus WooCommerce werden aus Datenschutzgründen nach der eingestellten Frist (Standard 90 Tage) gelöscht, danach fehlt der Kunde bei diesen Bestellungen. Direktverkäufe behalten den eingegebenen Kunden.</p>
+<p class="muted">Gezählt wird, was über einen Verkaufen-Knopf, «Verkauf buchen» oder einen Statuswechsel auf «verkauft» gebucht wurde (Archiv), alles, was in WooCommerce abgeschlossen wurde (Artikel mit SKU), und manuelle Lager-Abgänge. Offene Bestellungen zählen erst, wenn sie in WooCommerce abgeschlossen sind.</p>
 </div>
 <div class="card"><h3>Übersicht</h3><div id="salesSummary"></div></div>
 <div class="card"><h3>Nach Produkt / SKU</h3><table><thead><tr><th>Produkt</th><th>SKU</th><th>Bereich</th><th>Menge</th><th>Vorgänge</th><th>Umsatz WooCommerce (CHF)</th></tr></thead><tbody id="salesByProduct"></tbody></table></div>
-<div class="card"><h3>Nach Kunde</h3><table><thead><tr><th>Kunde</th><th>Menge</th><th>Vorgänge</th></tr></thead><tbody id="salesByCustomer"></tbody></table></div>
 <div class="card"><h3>Nach Monat</h3><table><thead><tr><th>Monat</th><th>Menge</th><th>Vorgänge</th></tr></thead><tbody id="salesByMonth"></tbody></table></div>
-<div class="card"><h3>Einzelne Verkäufe</h3><table><thead><tr><th>Datum</th><th>Quelle</th><th>Bereich</th><th>Produkt</th><th>SKU</th><th>Menge</th><th>Kunde</th><th>Bezug</th></tr></thead><tbody id="salesRows"></tbody></table><p class="muted" id="salesMore"></p></div>
+<div class="card"><h3>Einzelne Verkäufe</h3><table><thead><tr><th>Datum</th><th>Quelle</th><th>Bereich</th><th>Produkt</th><th>SKU</th><th>Menge</th><th>Bezug</th></tr></thead><tbody id="salesRows"></tbody></table><p class="muted" id="salesMore"></p></div>
 </section>
 
 <section id="stats" class="section">
@@ -4598,28 +4597,26 @@ function salesCollect(){
     const d=String(a.details||'');
     const mq=d.match(/Anzahl:\s*(\d+)/)||d.match(/verkauft:\s*(\d+)/);
     const qty=mq?Number(mq[1]):1;
-    const mk=d.match(/Kunde:\s*([^;]+)/);
     const ms=d.match(/SKU:\s*([^;]+)/);
     const it=by(a.type,a.itemId)||{};
     const cat=a.type==='goods'?(it.type||SALES_CAT.goods):(SALES_CAT[a.type]||a.type||'');
-    rows.push({date:salesIso(a.date),source:'direkt',cat,product:it.product||it.strain||it.name||it.type||String(a.itemId||''),sku:it.sku||(ms?ms[1].trim():''),qty,customer:mk?mk[1].trim():(it.lastCustomer||''),ref:String(a.itemId||''),amount:0});
+    rows.push({date:salesIso(a.date),source:'direkt',cat,product:it.product||it.strain||it.name||it.type||String(a.itemId||''),sku:it.sku||(ms?ms[1].trim():''),qty,ref:String(a.itemId||''),amount:0});
   }
   // 2) WooCommerce: abgeschlossene Bestellungen (Artikel mit SKU)
   for(const o of (db.wooOrders||[])){
     if(String(o.status||'').toLowerCase()!=='completed') continue;
     const date=salesIso(o.archivedAt||o.date_modified||o.date_created);
-    const cust=o.customer||(o.anonymized?'(Name gelöscht)':'');
     for(const i of (o.items||[])){
       const qty=Number(i.quantity)||0; if(qty<=0) continue;
       const cat=(db.productCatalog||[]).find(p=>p.sku&&i.sku&&String(p.sku).toLowerCase()===String(i.sku).toLowerCase());
-      rows.push({date,source:'woo',cat:cat&&cat.area&&cat.area!=='unassigned'?areaLabel(cat.area):'WooCommerce',product:i.name||i.sku||'',sku:i.sku||'',qty,customer:cust,ref:'Bestellung #'+(o.number||o.id),amount:Number(i.total)||0});
+      rows.push({date,source:'woo',cat:cat&&cat.area&&cat.area!=='unassigned'?areaLabel(cat.area):'WooCommerce',product:i.name||i.sku||'',sku:i.sku||'',qty,ref:'Bestellung #'+(o.number||o.id),amount:Number(i.total)||0});
     }
   }
   // 3) Manuelle Lager-Abgänge
   for(const t of (db.stockTransactions||[])){
     if(!(Number(t.change)<0) || !/Abgang/i.test(String(t.note||''))) continue;
     const p=(db.productCatalog||[]).find(x=>x.id===t.productId||(x.sku&&x.sku===t.sku))||{};
-    rows.push({date:salesIso(t.date),source:'lager',cat:p.area&&p.area!=='unassigned'?areaLabel(p.area):'Lager',product:p.name||t.sku||'',sku:t.sku||p.sku||'',qty:-Number(t.change),customer:'',ref:String(t.note||'manueller Abgang'),amount:0});
+    rows.push({date:salesIso(t.date),source:'lager',cat:p.area&&p.area!=='unassigned'?areaLabel(p.area):'Lager',product:p.name||t.sku||'',sku:t.sku||p.sku||'',qty:-Number(t.change),ref:String(t.note||'manueller Abgang'),amount:0});
   }
   return rows;
 }
@@ -4627,7 +4624,7 @@ function salesFiltered(){
   const from=el('salesFrom')?.value||'', to=el('salesTo')?.value||'', src=el('salesSource')?.value||'', cat=el('salesCat')?.value||'', q=(el('salesSearch')?.value||'').trim().toLowerCase();
   const all=salesCollect();
   const cats=[...new Set(all.map(r=>r.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'de'));
-  return {all,cats,rows:all.filter(r=>(!from||r.date>=from)&&(!to||r.date<=to)&&(!src||r.source===src)&&(!cat||r.cat===cat)&&(!q||(r.product+' '+r.sku+' '+r.customer).toLowerCase().includes(q)))};
+  return {all,cats,rows:all.filter(r=>(!from||r.date>=from)&&(!to||r.date<=to)&&(!src||r.source===src)&&(!cat||r.cat===cat)&&(!q||(r.product+' '+r.sku).toLowerCase().includes(q)))};
 }
 function renderSales(){
   if(!el('salesRows')) return;
@@ -4642,21 +4639,20 @@ function renderSales(){
   setHTML('salesSummary',`<p><b>${sum(rows)}</b> Stück in <b>${rows.length}</b> Verkaufsvorgängen${umsatz?` · WooCommerce-Umsatz <b>CHF ${umsatz.toFixed(2)}</b>`:''}</p><table><thead><tr><th>Quelle</th><th>Menge</th><th>Vorgänge</th></tr></thead><tbody>${bySrc}</tbody></table>`);
   const group=(keyFn)=>{const m=new Map();rows.forEach(r=>{const k=keyFn(r);let g=m.get(k.key);if(!g){g={...k,qty:0,n:0,amount:0};m.set(k.key,g);}g.qty+=r.qty;g.n++;g.amount+=r.amount||0;});return [...m.values()];};
   setHTML('salesByProduct',group(r=>({key:(r.sku||r.product)+'|'+r.cat,product:r.product,sku:r.sku,cat:r.cat})).sort((a,b)=>b.qty-a.qty).map(g=>`<tr><td>${esc(g.product)}</td><td>${esc(g.sku||'–')}</td><td>${esc(g.cat)}</td><td>${g.qty}</td><td>${g.n}</td><td>${g.amount?g.amount.toFixed(2):'–'}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">Keine Verkäufe im gewählten Zeitraum.</td></tr>');
-  setHTML('salesByCustomer',group(r=>({key:r.customer||'–',name:r.customer||'(kein Kunde erfasst)'})).sort((a,b)=>b.qty-a.qty).map(g=>`<tr><td>${esc(g.name)}</td><td>${g.qty}</td><td>${g.n}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">–</td></tr>');
   setHTML('salesByMonth',group(r=>({key:String(r.date).slice(0,7)||'–'})).sort((a,b)=>String(b.key).localeCompare(String(a.key))).map(g=>`<tr><td>${esc(g.key)}</td><td>${g.qty}</td><td>${g.n}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">–</td></tr>');
   const LIM=500;
-  setHTML('salesRows',sorted.slice(0,LIM).map(r=>`<tr><td>${fmt(r.date)}</td><td>${SALES_SRC[r.source]}</td><td>${esc(r.cat)}</td><td>${esc(r.product)}</td><td>${esc(r.sku||'–')}</td><td>${r.qty}</td><td>${esc(r.customer||'–')}</td><td>${esc(r.ref)}</td></tr>`).join('')||'<tr><td colspan="8" class="muted">Keine Verkäufe.</td></tr>');
+  setHTML('salesRows',sorted.slice(0,LIM).map(r=>`<tr><td>${fmt(r.date)}</td><td>${SALES_SRC[r.source]}</td><td>${esc(r.cat)}</td><td>${esc(r.product)}</td><td>${esc(r.sku||'–')}</td><td>${r.qty}</td><td>${esc(r.ref)}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">Keine Verkäufe.</td></tr>');
   setText('salesMore',sorted.length>LIM?`Es werden die neusten ${LIM} von ${sorted.length} Verkäufen angezeigt. Der CSV-Export enthält alle.`:'');
 }
 function clearSalesFilter(){ ['salesFrom','salesTo','salesSource','salesCat','salesSearch'].forEach(i=>{const n=el(i); if(n) n.value='';}); renderSales(); }
 function salesCsv(){
   const {rows}=salesFiltered();
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const lines=[['Datum','Quelle','Bereich','Produkt','SKU','Menge','Kunde','Bezug','Umsatz CHF'].map(q).join(';')].concat(rows.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r=>[r.date,SALES_SRC[r.source],r.cat,r.product,r.sku,r.qty,r.customer,r.ref,r.amount?r.amount.toFixed(2):''].map(q).join(';')));
+  const lines=[['Datum','Quelle','Bereich','Produkt','SKU','Menge','Bezug','Umsatz CHF'].map(q).join(';')].concat(rows.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r=>[r.date,SALES_SRC[r.source],r.cat,r.product,r.sku,r.qty,r.ref,r.amount?r.amount.toFixed(2):''].map(q).join(';')));
   const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='verkaeufe-'+today()+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
 }
-function askSaleCustomer(){ const c=prompt('Kunde (optional, für die Verkaufsstatistik):',''); return c===null?'':String(c).trim().replace(/[;]/g,','); }
+function askSaleCustomer(){ return ''; }
 
 
 // ===== Kontaminations-Warnungen (Herkunft / Stammbaum) =====
@@ -6932,7 +6928,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.84'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.85'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
