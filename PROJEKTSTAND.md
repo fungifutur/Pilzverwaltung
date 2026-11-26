@@ -1,3 +1,9 @@
+# Version 1.5.79 – Risotto/Bramata: Beschreibung gehört zur gedrehten oberen Hälfte
+
+- Die Zeile «200g … mit 20g gedörrten … Pilzen …» steht jetzt **in der gedrehten oberen Hälfte**. Wenn man die Hälfte umdreht, ist die Reihenfolge: Logo und BIO-Siegel, dann Titel, dann diese Zeile. Darunter (aufrecht) folgen Rezept, Adresse, Hinweis und Zutaten.
+
+Vorherige Version 1.5.78:
+
 # Version 1.5.78 – Risotto/Bramata: obere Hälfte der Vorderseite gedreht
 
 - Auf der Vorderseite von Risotto und Bramata ist die **obere Hälfte (Titel, Logo und BIO-Siegel) um 180° gedreht**, wie auf dem Original. Der Rest bleibt aufrecht.
