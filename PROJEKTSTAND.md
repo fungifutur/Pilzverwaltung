@@ -1,3 +1,9 @@
+# Version 1.5.83 – Substrate im Durchwachsen (Übersicht pro Pilzart)
+
+- Im Reiter **Substratsäcke** gibt es neu die Karte **«Substrate im Durchwachsen»**: Für jede Pilzart steht, wie viele Substratsäcke aktuell den Status «am durchwachsen» haben, dazu «davon Test» und ein Total. Pilzarten ohne solche Säcke erscheinen nicht.
+
+Vorherige Version 1.5.82:
+
 # Version 1.5.82 – Neuer Reiter «Verkäufe» (Verkaufsstatistik)
 
 - Neuer Menüpunkt **Einstellungen → Verkäufe**. Er zählt drei Quellen zusammen:

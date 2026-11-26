@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.82</title>
+<title>Pilzverwaltung Serverversion 1.5.83</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -137,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.82</h1>
+<h1>Pilzverwaltung – Version 1.5.83</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -418,6 +418,7 @@ nav button.top-link{font-weight:bold}
 </div>
 </div>
 <div class="card"><strong>Bestand pro Strain:</strong><br><span id="subSummary"></span></div>
+<div class="card"><h3>Substrate im Durchwachsen</h3><p class="muted">Substratsäcke mit dem Status «am durchwachsen», nach Pilzart.</p><table><thead><tr><th>Pilzart</th><th>Anzahl</th><th>davon Test</th></tr></thead><tbody id="subGrowingRows"></tbody></table></div>
 <div class="card"><h3>Substratsäcke erzeugen</h3><div class="form"><div><label>Quelle Typ</label><select id="subSourceType" onchange="render(); renderProductionSkuOptions(true)"><option value="kb">Körnerbrut</option><option value="lc">Flüssigmyzel</option><option value="unknown">unbekannt</option></select></div><div id="subSourceWrap"><label>Quelle</label><select id="subSource" onchange="renderProductionSkuOptions(true)"></select></div><div id="subUnknownWrap" style="display:none"><label>Strain bei unbekannter Quelle</label><select id="subUnknownStrain" onchange="renderProductionSkuOptions(true)"></select><span class="muted">Bestehenden Strain wählen; dadurch bleiben SKU- und Mindestbestandszuordnung erhalten.</span></div><div><label>Substrat</label><select id="subMix"></select></div><div><label>SKU Substrat</label><select id="subSku"><option value="">von Quelle übernehmen / automatisch</option></select></div><div><label>Anzahl</label><input id="subCount" type="text" inputmode="numeric" pattern="[0-9]*" value="1"></div><div><label>Datum</label><input id="subDate" type="date"></div><div><label>Gewicht kg</label><input id="subWeight" type="number" value="3.4"></div><div><label>Wasser %</label><input id="subWater" type="number" value="62"></div><div><label>Verwendung</label><select id="subForTest"><option value="nein">normal</option><option value="ja">für Test markieren</option><option value="webshop">für Webshop herstellen</option></select></div><div><label>Testname (nur bei Test)</label><input id="subTestName" placeholder="z.B. Buche/Kleie 62%"></div><div><label>Testbeschreibung</label><input id="subTestDesc" placeholder="z.B. Variante, Ziel, Notizen"></div><div id="subKbUsageWrap"><label>Verwendung der Körnerbrut-Quelle</label><label style="display:flex;gap:8px;align-items:center"><input id="subSourceUsedUp" type="checkbox"> Quelle vollständig aufgebraucht → ins Archiv</label><span class="muted">Nicht markieren = Körnerbrut bleibt aktiv und erhält den Hinweis „Angebraucht“.</span></div></div><button class="primary" onclick="addSub()">Erzeugen</button><div id="subOrderHint" class="muted" style="margin-top:8px"></div></div>
 <div class="card">
 <h3>Massenbearbeitung Substratsäcke</h3>
@@ -3583,6 +3584,9 @@ let subDates = Array.from(new Set(subAllActive.map(x=>x.date).filter(Boolean))).
 setOptions('subDateFilter', '<option value="">Alle Daten</option>' + subDates.map(d=>`<option value="${d}" ${d===currentSubDate?'selected':''}>${fmt(d)}</option>`).join(''));
 let subDateFiltered = currentSubDate ? subAllActive.filter(x=>x.date===currentSubDate) : subAllActive;
 setHTML('subSummary', stockSummaryDropdown('sub', subDateFiltered, x=>qtyOrOne(x.qty)));
+{ const g=new Map(); (db.sub||[]).filter(x=>String(x.status||'').toLowerCase()==='am durchwachsen').forEach(x=>{const k=String(x.strain||'(ohne Pilzart)').trim()||'(ohne Pilzart)'; const e=g.get(k)||{n:0,t:0}; const q=qtyOrOne(x.qty); e.n+=q; if(x.forTest) e.t+=q; g.set(k,e);});
+  const rows=[...g.entries()].sort((a,b)=>a[0].localeCompare(b[0],'de')); const tot=rows.reduce((a,[,v])=>a+v.n,0), totT=rows.reduce((a,[,v])=>a+v.t,0);
+  setHTML('subGrowingRows', rows.length?rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.n}</td><td>${v.t||'–'}</td></tr>`).join('')+`<tr><td><b>Total</b></td><td><b>${tot}</b></td><td><b>${totT||'–'}</b></td></tr>`:'<tr><td colspan="3" class="muted">Momentan sind keine Substratsäcke am Durchwachsen.</td></tr>'); }
 let subFilteredRows = applyViewFilter('sub', subDateFiltered);
 setHTML('subRows', subFilteredRows.map(x=>`<tr>
 <td><input type="checkbox" class="subBulkCheck" value="${x.id}"></td>
@@ -6894,7 +6898,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.82'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.83'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
