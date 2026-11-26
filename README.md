@@ -1,3 +1,11 @@
+# Version 1.5.78 – Risotto/Bramata: obere Hälfte der Vorderseite gedreht
+
+- Auf der Vorderseite von Risotto und Bramata ist die **obere Hälfte (Titel, Logo und BIO-Siegel) um 180° gedreht**, wie auf dem Original. Der Rest bleibt aufrecht.
+- Das Gewicht der Pilze ist bei Wildpilzen **15 g**, bei Zuchtpilzen **20 g** (wird beim Wählen des Lots gesetzt, kann geändert werden).
+- Der Hinweis zu Fremdkörpern steht mit *** wie auf dem Original.
+
+Vorherige Version 1.5.77:
+
 # Version 1.5.77 – Auswahllisten robuster
 
 - Auswahllisten (Dropdowns) werden nur noch neu aufgebaut, wenn sich der Inhalt ändert **und** nur, wenn der angezeigte Inhalt nicht mehr stimmt oder leer ist. Eine leere Liste füllt sich dadurch immer wieder.
