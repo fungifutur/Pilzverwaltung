@@ -1,3 +1,10 @@
+# Version 1.5.84 – Statusquote Substratsäcke und einfacher Stückbestand für Substratsäcke
+
+- **Statistik → Statusquoten:** neue Zeile **Substratsäcke** (Zielstatus «fertig durchwachsen», dazu kontaminiert und die Quoten). Test-Säcke zählen nicht mit.
+- **Substratsäcke → «Substratsäcke als einfacher Stückbestand»:** Für jede Substrat-SKU kann man wählen, ob der Bestand wie bisher aus einzelnen Säcken (Chargen) kommt oder als **einfacher Stückbestand** geführt wird. Beim Umstellen wird der Startbestand aus den aktuell fertigen Säcken übernommen und protokolliert. Danach gibt es «+ Zugang» und «− Abgang». Bestellungen und WooCommerce rechnen mit der Stückzahl. Bisher ging das nur bei neu importierten SKUs, weil die bisherigen Substrat-SKUs nicht im Produktkatalog standen.
+
+Vorherige Version 1.5.83:
+
 # Version 1.5.83 – Substrate im Durchwachsen (Übersicht pro Pilzart)
 
 - Im Reiter **Substratsäcke** gibt es neu die Karte **«Substrate im Durchwachsen»**: Für jede Pilzart steht, wie viele Substratsäcke aktuell den Status «am durchwachsen» haben, dazu «davon Test» und ein Total. Pilzarten ohne solche Säcke erscheinen nicht.
