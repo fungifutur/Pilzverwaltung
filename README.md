@@ -1,3 +1,9 @@
+# Version 1.5.80 – Risotto/Bramata: Zeilenumbruch in der Beschreibung
+
+- In der Zeile oben (bei den Logos) steht «aus unserem Betrieb in Steffisburg» (Zuchtpilze) bzw. «aus dem Berner Oberland» (Wildpilze) **auf einer eigenen Zeile**, direkt nach «Zuchtpilzen» bzw. «Wildpilzen».
+
+Vorherige Version 1.5.79:
+
 # Version 1.5.79 – Risotto/Bramata: Beschreibung gehört zur gedrehten oberen Hälfte
 
 - Die Zeile «200g … mit 20g gedörrten … Pilzen …» steht jetzt **in der gedrehten oberen Hälfte**. Wenn man die Hälfte umdreht, ist die Reihenfolge: Logo und BIO-Siegel, dann Titel, dann diese Zeile. Darunter (aufrecht) folgen Rezept, Adresse, Hinweis und Zutaten.
