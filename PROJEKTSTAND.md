@@ -1,3 +1,13 @@
+# Version 1.5.73 – Vitalpilze: Reishi geschnitten und Igelstachelbart Pulver (Etiketten)
+
+- Beim Anlegen eines Eimers gibt es neu die Typen **«Vitalpilze: Reishi geschnitten»** und **«Vitalpilze: Igelstachelbart Pulver»**. Das Produkt wird automatisch gesetzt.
+- Die Etiketten sind fest auf diese beiden Produkte eingestellt und werden **immer automatisch** gewählt (auch bei Eimern, deren Produktname «Reishi» oder «Igelstachelbart» + «Pulver» enthält). Pilzart-Auswahl entfällt, Gewicht 50 g. Die normalen Igelstachelbart-Dörrpilze behalten ihr eigenes Etikett.
+- Vorderseite: Position von Bio Suisse und Logo wie bei den Dörrpilzen, dazu Name, wissenschaftlicher Name und «50g … aus eigener Produktion in Steffisburg». Rückseite: «Trockenpilz- Pulver» mit Zubereitung (Igelstachelbart) bzw. Teezubereitung (Reishi), MHD, Lot und Adresse.
+- Vitalpilz-Eimer erscheinen nicht in der Eimer-Auswahl für Mischpilze.
+- MHD: Abpackdatum + 2 Jahre (auf dem Etikett änderbar).
+
+Vorherige Version 1.5.72:
+
 # Version 1.5.72 – Mischpilze: übersichtliche Eimer-Auswahl
 
 Die Eimer-Auswahl für Mischpilze ist jetzt eine Liste mit Trennlinien zwischen den Eimern, Kästchen links und Gruppen «Zuchtpilze», «Wildpilze» und «Pilzart nicht in Liste» (nach Pilzart sortiert). Unter der Liste steht, wie viele Eimer und welche Pilzarten gewählt sind. Die ganze Zeile ist anklickbar.
