@@ -1,3 +1,10 @@
+# Version 1.5.77 – Auswahllisten robuster
+
+- Auswahllisten (Dropdowns) werden nur noch neu aufgebaut, wenn sich der Inhalt ändert **und** nur, wenn der angezeigte Inhalt nicht mehr stimmt oder leer ist. Eine leere Liste füllt sich dadurch immer wieder.
+- Ein Fehler in den Dörrpilz-Bereichen (Etiketten, Abpacken) kann nicht mehr alle anderen Listen leeren. Tritt ein Anzeigefehler auf, erscheint unten eine Meldung «Anzeigefehler (…)» mit dem Text des Fehlers.
+
+Vorherige Version 1.5.76:
+
 # Version 1.5.76 – Fix: Auswahllisten (Dropdowns) blieben nicht offen
 
 - Auswahllisten bei den Dörrpilzen und weiteren Stellen klappten sofort wieder zu, weil sie bei jedem Neuzeichnen (auch beim automatischen Abgleich alle paar Sekunden) neu aufgebaut wurden. Sie werden jetzt nur noch neu aufgebaut, wenn sich der Inhalt ändert.
