@@ -1,3 +1,11 @@
+# Version 1.5.74 – Igelstachelbart-Pulver aus Igelstachelbart-Eimer
+
+- Igelstachelbart-Pulver hat **keinen eigenen Eimer** mehr. Beim Abpacken aus einem Igelstachelbart-Eimer (Dörrpilze) wählst du bei **«Abpack-Form»** «Igelstachelbart-Pulver (gemahlen, Heri_gem_50g)». Das Lot bekommt dann das Produkt «Igelstachelbart Pulver» und die Artikelnummer **Heri_gem_50g**, bleibt aber mit dem Eimer verknüpft (Rückverfolgung). Das Pulver-Etikett wird automatisch gewählt.
+- Ein anderer Eimer als Igelstachelbart wird dafür abgelehnt.
+- Der Eimer-Typ «Vitalpilze: Igelstachelbart Pulver» ist entfernt. Für Reishi geschnitten bleibt der Typ «Vitalpilze: Reishi geschnitten».
+
+Vorherige Version 1.5.73:
+
 # Version 1.5.73 – Vitalpilze: Reishi geschnitten und Igelstachelbart Pulver (Etiketten)
 
 - Beim Anlegen eines Eimers gibt es neu die Typen **«Vitalpilze: Reishi geschnitten»** und **«Vitalpilze: Igelstachelbart Pulver»**. Das Produkt wird automatisch gesetzt.
