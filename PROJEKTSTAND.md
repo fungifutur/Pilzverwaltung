@@ -1,3 +1,13 @@
+# Version 1.5.75 – Risotto und Bramata mit Dörrpilzen (Etiketten)
+
+- Neu beim Abpacken: **Quelle Typ «Risotto / Bramata (mehrere Eimer)»**. Du wählst das Produkt (Risotto, Bramata Bio Suisse oder Bramata Knospe), **Zucht- oder Wildpilze** und einen oder mehrere Dörrpilz-Eimer (nur Eimer der gewählten Art werden angezeigt).
+- Es entsteht **ein Lot**, das auf die gewählten Eimer zurückführt (wie bei den Mischpilzen, Etikett-Lot-Nr. = Lot ohne «LOT-»). **MHD = Abpackdatum + 1 Jahr.**
+- **Vorderseite:** zugeschnittenes Papier, ein Druck = ein Papier (Anzahl = Anzahl Papiere). Papiergrösse einstellbar (Standard 105 × 148 mm). Titel, Logo mit Siegel (BIO oder Bio Suisse), Rezept, Adresse, Hinweis und Zutaten mit den gewählten Pilzarten.
+- **Kleine Etiketten:** HERMA 64 (4 × 16 pro A4, 48,3 × 16,9 mm), «Mind. Haltbar bis» und «CH-BIO-006 | Lot Nr.».
+- **Vorderseite und kleine Etiketten werden nie zusammen gedruckt** (das Papier muss im Drucker separat eingelegt werden). Für diese Lots gibt es nur zwei getrennte Knöpfe.
+
+Vorherige Version 1.5.74:
+
 # Version 1.5.74 – Igelstachelbart-Pulver aus Igelstachelbart-Eimer
 
 - Igelstachelbart-Pulver hat **keinen eigenen Eimer** mehr. Beim Abpacken aus einem Igelstachelbart-Eimer (Dörrpilze) wählst du bei **«Abpack-Form»** «Igelstachelbart-Pulver (gemahlen, Heri_gem_50g)». Das Lot bekommt dann das Produkt «Igelstachelbart Pulver» und die Artikelnummer **Heri_gem_50g**, bleibt aber mit dem Eimer verknüpft (Rückverfolgung). Das Pulver-Etikett wird automatisch gewählt.

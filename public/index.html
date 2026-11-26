@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.74</title>
+<title>Pilzverwaltung Serverversion 1.5.75</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -137,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.74</h1>
+<h1>Pilzverwaltung – Version 1.5.75</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -459,8 +459,10 @@ nav button.top-link{font-weight:bold}
 <div class="card">
 <h3>Abgepackte Dörrpilze aus Eimer generieren</h3>
 <div class="form">
-<div><label>Quelle Typ</label><select id="packSourceType" onchange="render()"><option value="bucket">Eimer</option><option value="mix">mehrere Eimer (Mischpilze)</option><option value="unknown">unbekannt</option></select></div>
-<div id="packMixWrap" style="display:none;grid-column:1/-1"><label>Eimer für Mischpilze (2–3 Pilzarten, nie Zucht und Wild zusammen)</label><div id="packMixList"></div></div>
+<div><label>Quelle Typ</label><select id="packSourceType" onchange="render()"><option value="bucket">Eimer</option><option value="mix">mehrere Eimer (Mischpilze)</option><option value="rb">Risotto / Bramata (mehrere Eimer)</option><option value="unknown">unbekannt</option></select></div>
+<div id="packRbWrap" style="display:none"><label>Produkt</label><select id="packRbProduct"><option value="risotto">Risotto mit Dörrpilzen</option><option value="bramata-bs">Bramata mit Dörrpilzen (Bio Suisse)</option><option value="bramata-kn">Bramata mit Dörrpilzen (Knospe)</option></select></div>
+<div id="packRbKindWrap" style="display:none"><label>Pilze</label><select id="packRbKind" onchange="render()"><option value="zucht">Zuchtpilze</option><option value="wild">Wildpilze</option></select></div>
+<div id="packMixWrap" style="display:none;grid-column:1/-1"><label id="packMixLabel">Eimer für Mischpilze (2–3 Pilzarten, nie Zucht und Wild zusammen)</label><div id="packMixList"></div></div>
 <div id="packBucketWrap"><label>Quelle Eimer</label><select id="packBucket"></select></div>
 <div id="packUnknownWrap" style="display:none"><label>Produkt bei unbekannter Quelle</label><input id="packUnknownProduct" placeholder="z.B. Austernseitling getrocknet"></div>
 <div id="packFormWrap"><label>Abpack-Form</label><select id="packForm"><option value="">wie Eimer (Dörrpilze)</option><option value="pulver">Igelstachelbart-Pulver (gemahlen, Heri_gem_50g)</option></select></div>
@@ -469,7 +471,7 @@ nav button.top-link{font-weight:bold}
 </div>
 <button class="primary" onclick="generatePacks()">Packungen generieren</button>
 <button class="secondary" onclick="labels()">Etiketten-Vorschau</button>
-<p class="muted">MHD wird automatisch als Abpackdatum + 2 Jahre gesetzt.</p>
+<p class="muted">MHD wird automatisch als Abpackdatum + 2 Jahre gesetzt (Jerky +18 Monate, Risotto/Bramata +1 Jahr).</p>
 </div>
 
 <div class="card" id="driedLabelCard">
@@ -481,12 +483,15 @@ nav button.top-link{font-weight:bold}
 <div><label>Gewicht pro Packung (g)</label><input id="dlWeight" type="text" inputmode="numeric" value="20"></div>
 <div><label>Anzahl Etiketten (je vorne und hinten)</label><input id="dlCount" type="text" inputmode="numeric" value="8"></div>
 <div><label>Lot-Nr. auf dem Etikett</label><input id="dlLotNr"></div>
+<div id="dlPaperWrap" style="display:none"><label>Papier Vorderseite Breite × Höhe (mm)</label><input id="dlPaperW" type="text" inputmode="numeric" value="105" style="width:45%"> × <input id="dlPaperH" type="text" inputmode="numeric" value="148" style="width:45%"></div>
 </div>
-<button class="primary" onclick="dlPrint('both')">Vorder- und Rückseiten drucken</button>
-<button class="secondary" onclick="dlPrint('back')">Nur Rückseiten</button>
-<button class="secondary" onclick="dlPrint('front')">Nur Vorderseiten</button>
+<button class="primary dlStd" onclick="dlPrint('both')">Vorder- und Rückseiten drucken</button>
+<button class="secondary dlStd" onclick="dlPrint('back')">Nur Rückseiten</button>
+<button class="secondary dlStd" onclick="dlPrint('front')">Nur Vorderseiten</button>
+<button class="primary dlRb" style="display:none" onclick="dlPrint('front')">Vorderseite drucken (zugeschnittenes Papier)</button>
+<button class="primary dlRb" style="display:none" onclick="dlPrint('back')">Kleine Etiketten drucken (HERMA 64)</button>
 <button class="secondary" onclick="dlPrintQr()">QR-Code für Behälter drucken</button>
-<p class="muted">8 Etiketten pro A4-Bogen (2 × 4). Bei mehr als 8 Etiketten kommen weitere Bögen, der letzte wird nur teilweise bedruckt. Die Rückseite richtet sich nach der Art der Pilzart (Zucht, Wild, Flockenstieliger Hexenröhrling). Die Liste der Pilzarten kann in der Administration angepasst werden.</p>
+<p class="muted">Risotto/Bramata: Vorderseite und kleine Etiketten werden nie zusammen gedruckt, weil das zugeschnittene Papier im Drucker separat eingelegt wird. Bei der Vorderseite ist die Anzahl = Anzahl Papiere (1 pro Seite), bei den kleinen Etiketten 64 pro A4-Bogen.<br>8 Etiketten pro A4-Bogen (2 × 4). Bei mehr als 8 Etiketten kommen weitere Bögen, der letzte wird nur teilweise bedruckt. Die Rückseite richtet sich nach der Art der Pilzart (Zucht, Wild, Flockenstieliger Hexenröhrling). Die Liste der Pilzarten kann in der Administration angepasst werden.</p>
 </div>
 
 <div class="card">
@@ -3638,7 +3643,10 @@ showWrap('subUnknownWrap', (el('subSourceType')?.value||'kb') === 'unknown');
 showWrap('subKbUsageWrap', (el('subSourceType')?.value||'kb') === 'kb');
 showWrap('packBucketWrap', (el('packSourceType')?.value||'bucket') === 'bucket');
 showWrap('packFormWrap', (el('packSourceType')?.value||'bucket') === 'bucket');
-showWrap('packMixWrap', (el('packSourceType')?.value||'bucket') === 'mix');
+showWrap('packMixWrap', ['mix','rb'].includes(el('packSourceType')?.value||'bucket'));
+showWrap('packRbWrap', (el('packSourceType')?.value||'bucket') === 'rb');
+showWrap('packRbKindWrap', (el('packSourceType')?.value||'bucket') === 'rb');
+if(el('packMixLabel')) el('packMixLabel').textContent=(el('packSourceType')?.value==='rb')?'Dörrpilz-Eimer (ein oder mehrere Eimer, nur Pilze der gewählten Art)':'Eimer für Mischpilze (2–3 Pilzarten, nie Zucht und Wild zusammen)';
 showWrap('packUnknownWrap', (el('packSourceType')?.value||'bucket') === 'unknown');
 const duebType=(el('duebSourceType')?.value||'kb');
 showWrap('duebKbWrap', duebType === 'kb');
@@ -4193,7 +4201,8 @@ function renderPackMixList(){
   const checked=new Set([...box.querySelectorAll('input[type=checkbox]:checked')].map(i=>i.value));
   dlEnsureSpecies();
   const groups={zucht:[],wild:[],other:[]};
-  packMixBuckets().forEach(b=>{const i=dlMatchSpecies(b.product);const sp=i>=0?db.driedSpecies[i]:null;(sp&&(sp.kind==='zucht'||sp.kind==='wild')?groups[sp.kind]:groups.other).push({b,sp});});
+  const rbKind=el('packSourceType')?.value==='rb'?(el('packRbKind')?.value||'zucht'):'';
+  packMixBuckets().forEach(b=>{const i=dlMatchSpecies(b.product);const sp=i>=0?db.driedSpecies[i]:null;if(rbKind&&!(sp&&sp.kind===rbKind)) return;(sp&&(sp.kind==='zucht'||sp.kind==='wild')?groups[sp.kind]:groups.other).push({b,sp});});
   const row=({b,sp})=>`<label class="mixrow"><input type="checkbox" value="${escHtml(b.id)}" ${checked.has(b.id)?'checked':''} onchange="packMixSummary()"><span><b>${escHtml(b.id)}</b> – ${escHtml(b.product)}${sp?'':' <em style="color:#b91c1c">(Pilzart nicht in Liste)</em>'}</span></label>`;
   const sect=(title,list)=>list.length?`<div class="mixhead">${title} (${list.length})</div>`+list.sort((a,c)=>String(a.sp?.de||a.b.product).localeCompare(String(c.sp?.de||c.b.product),'de')||String(a.b.id).localeCompare(String(c.b.id))).map(row).join(''):'';
   setHTML('packMixList', (sect('Zuchtpilze',groups.zucht)+sect('Wildpilze',groups.wild)+sect('Pilzart nicht in Liste',groups.other))||'<span class="muted">Keine offenen Eimer vorhanden.</span>');
@@ -4230,8 +4239,39 @@ function generateMixPacks(){
   });
   save('Mischpilz-Lot erstellt');
 }
+const RB_INFO={
+  risotto:{type:'risotto',variant:'',product:'Risotto mit Dörrpilzen',title:'Bio-Risotto mit Dörrpilzen',rice:'Bio-Risottoreis aus Italien',ing:'Risottoreis',
+    recipe:'Risottoreis, Zwiebeln und Pilze in Öl anbraten. Mit reichlich Weisswein ablöschen. Bouillon nach und nach zugiessen bis die gewünschte Bissfestigkeit erreicht ist. Mit Parmesan abschmecken. En guete'},
+  'bramata-bs':{type:'bramata',variant:'biosuisse',product:'Bramata mit Dörrpilzen',title:'Bio-Bramata mit Dörrpilzen',rice:'Bio-Bramata (CH)',ing:'Bramata',
+    recipe:'Zwiebeln und Knoblauch in Butter andünsten. Bramata und Pilze zugeben und mit Bouillon aufkochen. Auf kleinster Stufe für mindestens 40min kochen. Mit Butter abschmecken. En guete.'},
+  'bramata-kn':{type:'bramata',variant:'knospe',product:'Bramata mit Dörrpilzen (Knospe)',title:'Bio-Bramata mit Dörrpilzen',rice:'Bio-Bramata (CH)',ing:'Bramata',
+    recipe:'Zwiebeln und Knoblauch in Butter andünsten. Bramata und Pilze zugeben und mit Bouillon aufkochen. Auf kleinster Stufe für mindestens 40min kochen. Mit Butter abschmecken. En guete.'}
+};
+function dlIsRb(lot){ return !!(lot&&(lot.type==='risotto'||lot.type==='bramata')); }
+function rbInfoOf(lot){ return lot.type==='risotto'?RB_INFO.risotto:(lot.variant==='knospe'?RB_INFO['bramata-kn']:RB_INFO['bramata-bs']); }
+function generateRbPacks(){
+  dlEnsureSpecies();
+  const ids=[...document.querySelectorAll('#packMixList input:checked')].map(i=>i.value);
+  if(!ids.length) return alert('Bitte mindestens einen Dörrpilz-Eimer wählen.');
+  const bs=ids.map(id=>by('buckets',id));
+  const sp=bs.map(b=>{const i=dlMatchSpecies(b.product);return i>=0?db.driedSpecies[i]:null;});
+  const bad=bs.filter((b,i)=>!sp[i]); if(bad.length) return alert('Diese Eimer haben eine Pilzart, die nicht in der Pilzarten-Liste (Administration) steht: '+bad.map(b=>b.id+' – '+b.product).join(', '));
+  const kind=el('packRbKind')?.value||'zucht';
+  if(sp.some(x=>x.kind!==kind)) return alert('Alle gewählten Eimer müssen '+(kind==='zucht'?'Zuchtpilze':'Wildpilze')+' sein.');
+  const info=RB_INFO[el('packRbProduct')?.value||'risotto'];
+  const count=+packCount.value||0; if(count<=0) return alert('Bitte gültige Anzahl Packungen eingeben.');
+  const d=packDate.value||today();
+  const sku=findSku('lots', info.product, '');
+  db.lots.push({
+    id:next('LOT',db.lots), type:info.type, ...(info.variant?{variant:info.variant}:{}), kind, species:[...new Set(sp.map(x=>x.de))], buckets:ids, bucket:ids.join(', '),
+    product:info.product, sku, storageLocation:defaultStorageLocationForSku(sku),
+    date:d, mhd:addYearsIso(d,1), qty:count, status:'lagernd'
+  });
+  save(info.type==='risotto'?'Risotto-Lot erstellt':'Bramata-Lot erstellt');
+}
 function generatePacks(){
 if((el('packSourceType')?.value||'bucket')==='mix') return generateMixPacks();
+if((el('packSourceType')?.value||'bucket')==='rb') return generateRbPacks();
 let pt=(el('packSourceType')?.value||'bucket');
 let b=pt==='unknown'?{id:'unbekannt', product:(packUnknownProduct.value||'').trim()}:by('buckets',packBucket.value);
 if(!b.id)return alert('Eimer wählen');
@@ -4293,7 +4333,7 @@ function dlMatchSpecies(product){
 function dlLotNr(lot){
   // Auf dem Etikett genügt der Eimer-Code ohne «EIM-» (z. B. 2026-0099). Ohne Eimer (unbekannte Quelle) die Lot-Nummer ohne «LOT-».
   const b=String(lot?.bucket||'');
-  if(lot?.type==='mix') return String(lot.id||'').replace(/^LOT-/,'');
+  if(lot?.type==='mix'||dlIsRb(lot)) return String(lot.id||'').replace(/^LOT-/,'');
   if(b && b!=='unbekannt') return b.replace(/^EIM-/,'');
   return String(lot?.id||'').replace(/^LOT-/,'');
 }
@@ -4329,9 +4369,12 @@ function dlLotChanged(silent){
   el('dlMhd').value=lot.mhd||'';
   el('dlLotNr').value=dlLotNr(lot);
   el('dlCount').value=String(Math.min(Number(lot.qty)||8,200));
-  const jk=dlIsJerky(lot), mx=dlIsMix(lot), vt=!!dlVitalKind(lot);
+  const jk=dlIsJerky(lot), mx=dlIsMix(lot)||dlIsRb(lot), vt=!!dlVitalKind(lot), rb=dlIsRb(lot);
   el('dlSpeciesWrap').style.display=(jk||mx||vt)?'none':'';
   if(jk||vt){ el('dlWeight').value='50'; } else if(el('dlWeight').value==='50'){ el('dlWeight').value='20'; }
+  document.querySelectorAll('.dlStd').forEach(b=>b.style.display=rb?'none':'');
+  document.querySelectorAll('.dlRb').forEach(b=>b.style.display=rb?'':'none');
+  el('dlPaperWrap').style.display=rb?'':'none';
   if(!jk&&!mx&&!vt){ const i=dlMatchSpecies(lot.product); if(i>=0) el('dlSpecies').value=String(i); }
 }
 function dlOpenForLot(id){
@@ -4371,6 +4414,16 @@ function dlLabelHtml(kind,ctx){
     const origin=zucht?'Zuchtpilze aus eigener Produktion in Steffisburg':'Wildpilze aus eigener Wildsammlung aus dem Berner Oberland';
     return `<div class="lb front"><div class="rot"><div class="top"><img class="bio" src="/img/logo-biosuisse.png" alt="Bio Suisse"><img class="ffl" src="/img/logo-fungifuturi.png" alt="Fungi Futuri"></div><div class="nm">Dörrpilze gemischt</div><div class="sc">(${e(dlListNames(sp.list||[]))})</div><div class="ds">${e(ctx.weight)}g gedörrte ${origin}</div></div></div>`;
   }
+  if(kind==='rfront'){
+    const info=ctx.rbInfo, sp=ctx.species, zucht=sp.kind==='zucht';
+    const seal=info.variant==='biosuisse'?'<img class="seal" src="/img/logo-biosuisse.png" alt="Bio Suisse">':'<img class="seal" src="/img/logo-bio.png" alt="Bio">';
+    const mush=zucht?'gedörrten Zuchtpilzen aus unserem Betrieb in Steffisburg':'gedörrten Wildpilzen aus dem Berner Oberland';
+    const ing=[info.ing].concat(sp.list||[]);
+    return `<div class="pp"><div class="rfin"><div class="rt">${e(info.title)}</div><div class="rl"><img class="ffl" src="/img/logo-fungifuturi.png" alt="Fungi Futuri">${seal}</div><div class="rd">200g ${e(info.rice)} mit ${e(ctx.weight)}g ${mush}</div><div class="rh">Rezept</div><div class="rr">${e(info.recipe)}</div><div class="ra">Fungi Futuri GmbH, Erlenstrasse 43, 3612 Steffisburg, www.fungifuturi.ch</div><div class="rw">Trotz sorgfältiger Verarbeitung können die Trockenpilze Fremdkörper enthalten.</div><div class="rz">Zutaten: ${e(info.ing)}, ${e(dlListNames(sp.list||[]).replace(' & ',' und '))}</div></div></div>`;
+  }
+  if(kind==='rsmall'){
+    return `<div class="rs64">Mind. Haltbar bis: ${e(ctx.mhd)}<br>CH-BIO-006 | Lot Nr. ${e(ctx.lotNr)}</div>`;
+  }
   if(kind==='back'){
     const sp=ctx.species, wild=sp.kind!=='zucht', flocki=sp.kind==='flocki';
     return `<div class="lb back"><div class="t1">Trockenpilze</div>${wild?'<div class="t2">Wildpilze aus dem Berner Oberland</div>':''}<p>Dörrpilze sollten vor dem Verarbeiten mindestens für 30 Minuten im warmen Wasser eingeweicht werden.</p><p>Trotz sorgfältiger Verarbeitung kann das Produkt Fremdkörper enthalten.${flocki?' Für mindestens 20 min erhitzen.':''}</p><p>Mindesthaltbarkeit: ${e(ctx.mhd)}<br>CH-BIO-006 ¦ Lot Nr. ${e(ctx.lotNr)}</p><p class="ad">Fungi Futuri GmbH, Erlenstrasse 43, 3612 Steffisburg<br>www.fungifuturi.ch</p></div>`;
@@ -4388,6 +4441,8 @@ function dlLabelHtml(kind,ctx){
   return '';
 }
 function dlSheets(kind,count,ctx){
+  if(kind==='rfront') return Array.from({length:count},()=>dlLabelHtml(kind,ctx)).join('');
+  if(kind==='rsmall'){ const o=[]; let l=count; while(l>0){ const n=Math.min(64,l); o.push(`<div class="sheet s64">${Array.from({length:n},()=>dlLabelHtml(kind,ctx)).join('')}</div>`); l-=n; } return o.join(''); }
   const sheets=[]; let left=count; const per=kind==='jback'?24:8, cls=kind==='jback'?'sheet s3':'sheet';
   const rotated=(kind==='front'||kind==='jfront'||kind==='mfront'||kind==='vfront');
   while(left>0){ const n=Math.min(per,left);
@@ -4400,7 +4455,7 @@ function dlSheets(kind,count,ctx){
     left-=n; }
   return sheets.join('');
 }
-function dlOpenPrint(body,title){
+function dlOpenPrint(body,title,extraCss,extraJs){
   const w=window.open('','_blank');
   if(!w) return alert('Das Druckfenster wurde blockiert. Bitte Pop-ups für diese Seite erlauben.');
   const css=`@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff}
@@ -4421,21 +4476,36 @@ function dlOpenPrint(body,title){
 @media screen{.jb{outline:1px dotted #bbb}}
 .front.jerky .top{align-items:center}.front.jerky .logos{display:flex;align-items:center;gap:3mm}.front.jerky .logos .vegan{width:17mm;height:auto}.front.jerky .logos .bio{width:14mm}.front.jerky .top .ffl{width:34mm}
 .front .jt{font-size:36pt;white-space:nowrap;line-height:1.1;text-decoration:underline}.front .jn{font-size:16pt;margin:1mm 0 3mm}.front .jz{font-size:12pt;line-height:1.3;margin-bottom:3mm}.front .jm{font-size:8pt;line-height:1.35}
+.sheet.s64{grid-template-columns:repeat(4,48.3mm);grid-template-rows:repeat(16,16.9mm);padding:13.1mm 0 0 10.3mm}
+.rs64{width:48.3mm;height:16.9mm;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Times New Roman',Times,serif;font-size:8pt;line-height:1.2;overflow:hidden}
+@media screen{.rs64{outline:1px dotted #bbb}}
+.pp{display:flex;align-items:center;justify-content:center;page-break-after:always;overflow:hidden;font-family:'Monotype Corsiva','Apple Chancery','URW Chancery L','Z003','Palatino Linotype',Georgia,serif;font-style:italic;text-align:center}
+.pp:last-child{page-break-after:auto}.rfin{width:100%;padding:5mm;font-size:11pt;line-height:1.25}
+.rfin .rt{font-size:2.1em;line-height:1.1;margin-bottom:3mm}.rfin .rl{display:flex;align-items:center;justify-content:center;gap:5mm;margin-bottom:3mm}.rfin .ffl{width:38mm;height:auto}.rfin .seal{height:16mm;width:auto}
+.rfin .rd{font-size:1.1em;margin-bottom:3mm}.rfin .rh{font-size:1.2em;text-decoration:underline;margin-bottom:1mm}.rfin .rr{margin-bottom:3mm}.rfin .ra{font-size:.9em;margin-bottom:2mm}.rfin .rw{font-size:.75em;font-weight:bold;margin-bottom:1mm}.rfin .rz{font-size:.8em}
 .qr{display:flex;align-items:center;gap:5mm}.qr img{width:50mm;height:50mm;flex:0 0 50mm}.qr .qt{font-size:11pt;line-height:1.3}.qr .qt span{font-size:9pt;color:#444}`;
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(title)}</title><style>${css}</style></head><body>${body}<script>window.addEventListener('load',()=>{document.querySelectorAll('.jt').forEach(t=>{let fs=36;const w=t.clientWidth;while(fs>20&&t.scrollWidth>w+1){fs-=0.5;t.style.fontSize=fs+'pt';}});document.querySelectorAll('.jb').forEach(c=>{const t=c.firstElementChild;let fs=8;while(fs>4.5&&t.scrollHeight>c.clientHeight-8){fs-=0.25;t.style.fontSize=fs+'pt';}});setTimeout(()=>window.print(),400)})<\/script></body></html>`);
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(title)}</title><style>${css}${extraCss||''}</style></head><body>${body}<script>window.addEventListener('load',()=>{document.querySelectorAll('.jt').forEach(t=>{let fs=36;const w=t.clientWidth;while(fs>20&&t.scrollWidth>w+1){fs-=0.5;t.style.fontSize=fs+'pt';}});document.querySelectorAll('.jb').forEach(c=>{const t=c.firstElementChild;let fs=8;while(fs>4.5&&t.scrollHeight>c.clientHeight-8){fs-=0.25;t.style.fontSize=fs+'pt';}});document.querySelectorAll('.pp').forEach(pp=>{const c=pp.firstElementChild;let fs=11;while(fs>5&&c.scrollHeight>pp.clientHeight){fs-=0.25;c.style.fontSize=fs+'pt';}});setTimeout(()=>window.print(),400)})<\/script></body></html>`);
   w.document.close();
 }
 function dlContext(){
   dlEnsureSpecies();
   const lot=by('lots',el('dlLot').value); if(!lot||!lot.id){ alert('Bitte ein Lot wählen.'); return null; }
-  const jerky=dlIsJerky(lot), mix=dlIsMix(lot), vital=jerky||mix?'':dlVitalKind(lot);
-  const species=vital?{de:VITAL_INFO[vital].name,sci:VITAL_INFO[vital].sci,kind:'vital'}:jerky?{de:'Jerky Shrooms',sci:'',kind:'zucht'}:mix?{de:'Dörrpilze gemischt',sci:'',kind:lot.kind||'zucht',list:lot.species||[]}:db.driedSpecies[Number(el('dlSpecies').value)]; if(!species){ alert('Bitte eine Pilzart wählen (Liste in der Administration).'); return null; }
+  const jerky=dlIsJerky(lot), rb=dlIsRb(lot), mix=dlIsMix(lot)||rb, vital=jerky||mix?'':dlVitalKind(lot);
+  const species=rb?{de:lot.product,sci:'',kind:lot.kind||'zucht',list:lot.species||[]}:vital?{de:VITAL_INFO[vital].name,sci:VITAL_INFO[vital].sci,kind:'vital'}:jerky?{de:'Jerky Shrooms',sci:'',kind:'zucht'}:mix?{de:'Dörrpilze gemischt',sci:'',kind:lot.kind||'zucht',list:lot.species||[]}:db.driedSpecies[Number(el('dlSpecies').value)]; if(!species){ alert('Bitte eine Pilzart wählen (Liste in der Administration).'); return null; }
   const mhdIso=el('dlMhd').value; if(!mhdIso){ alert('Bitte ein Mindesthaltbarkeitsdatum eingeben.'); return null; }
-  return {jerky,mix,vital,lot,species,mhd:fmt(mhdIso),lotNr:el('dlLotNr').value||dlLotNr(lot),weight:(el('dlWeight').value||((jerky||vital)?'50':'20')).trim(),product:lot.product||species.de,lotId:lot.id,qrUrl:qrTargetUrl('lots',lot)};
+  return {jerky,mix,rb,rbInfo:rb?rbInfoOf(lot):null,vital,lot,species,mhd:fmt(mhdIso),lotNr:el('dlLotNr').value||dlLotNr(lot),weight:(el('dlWeight').value||((jerky||vital)?'50':'20')).trim(),product:lot.product||species.de,lotId:lot.id,qrUrl:qrTargetUrl('lots',lot)};
 }
 function dlPrint(mode){
   const ctx=dlContext(); if(!ctx) return;
   const n=Math.max(1,Math.min(400,parseInt(el('dlCount').value,10)||0)); if(!n) return alert('Bitte eine Anzahl eingeben.');
+  if(ctx.rb){
+    if(mode==='both') return alert('Vorderseite und kleine Etiketten bitte getrennt drucken.');
+    if(mode==='front'){
+      const w=Math.max(40,Math.min(297,parseInt(el('dlPaperW').value,10)||105)), h=Math.max(40,Math.min(420,parseInt(el('dlPaperH').value,10)||148));
+      return dlOpenPrint(dlSheets('rfront',n,ctx),'Vorderseite '+ctx.lotNr,`@page{size:${w}mm ${h}mm;margin:0}.pp{width:${w}mm;height:${h}mm}`);
+    }
+    return dlOpenPrint(dlSheets('rsmall',n,ctx),'Kleine Etiketten '+ctx.lotNr);
+  }
   const fk=ctx.jerky?'jfront':ctx.mix?'mfront':ctx.vital?'vfront':'front', bk=ctx.jerky?'jback':ctx.vital?'vback':'back';
   const body=(mode!=='back'?dlSheets(fk,n,ctx):'')+(mode!=='front'?dlSheets(bk,n,ctx):'');
   dlOpenPrint(body,'Dörrpilz-Etiketten '+ctx.lotNr);
@@ -6716,7 +6786,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.74'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.75'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
