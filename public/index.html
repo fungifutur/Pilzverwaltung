@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.68</title>
+<title>Pilzverwaltung Serverversion 1.5.69</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -131,7 +131,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.68</h1>
+<h1>Pilzverwaltung – Version 1.5.69</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -4275,7 +4275,7 @@ function dlLabelHtml(kind,ctx){
     return `<div class="lb back"><div class="t1">Trockenpilze</div>${wild?'<div class="t2">Wildpilze aus dem Berner Oberland</div>':''}<p>Dörrpilze sollten vor dem Verarbeiten mindestens für 30 Minuten im warmen Wasser eingeweicht werden.</p><p>Trotz sorgfältiger Verarbeitung kann das Produkt Fremdkörper enthalten.${flocki?' Für mindestens 20 min erhitzen.':''}</p><p>Mindesthaltbarkeit: ${e(ctx.mhd)}<br>CH-BIO-006 ¦ Lot Nr. ${e(ctx.lotNr)}</p><p class="ad">Fungi Futuri GmbH, Erlenstrasse 43, 3612 Steffisburg<br>www.fungifuturi.ch</p></div>`;
   }
   if(kind==='jfront'){
-    return `<div class="lb front jerky"><div class="rot"><div class="top"><div class="logos"><img class="bio" src="/img/logo-biosuisse.png" alt="Bio Suisse"><img class="vegan" src="/img/logo-vegan.png" alt="Vegan"></div><img class="ffl" src="/img/logo-fungifuturi.png" alt="Fungi Futuri"></div><div class="jt">Jerky Shrooms</div><div class="jn">net.: ${e(ctx.weight)}g, zum Rohessen</div><div class="jz">Zutaten: Zuchtpilze (siehe Rückseite), <b>Tamari,*</b> Birnel, Apfelessig, Gewürze | <b><u>*enthält Soja</u></b></div><div class="jm">Mind. haltbar bis: ${e(ctx.mhd)} | CH-BIO-006 | Lot Nr. ${e(ctx.lotNr)}<br>Fungifuturi GmbH Erlenstrasse 43, 3612 Steffisburg fungifuturi.ch</div></div></div>`;
+    return `<div class="lb front jerky"><div class="rot"><div class="top"><div class="logos"><img class="bio" src="/img/logo-biosuisse.png" alt="Bio Suisse"><img class="vegan" src="/img/logo-vegan.png" alt="Vegan"></div><img class="ffl" src="/img/logo-fungifuturi.png" alt="Fungi Futuri"></div><div class="jt">Jerky Shrooms</div><div class="jn">net.: ${e(ctx.weight)}g, zum Rohessen</div><div class="jz">Zutaten: Zuchtpilze (siehe Rückseite), <b>Tamari,*</b> Birnel, Apfelessig, Gewürze<br><b><u>*enthält Soja</u></b></div><div class="jm">Mind. haltbar bis: ${e(ctx.mhd)} | CH-BIO-006 | Lot Nr. ${e(ctx.lotNr)}<br>Fungifuturi GmbH Erlenstrasse 43, 3612 Steffisburg fungifuturi.ch</div></div></div>`;
   }
   if(kind==='jback'){
     return `<div class="jb"><div class="fit">Folgende Zuchtpilze können im Jerky verarbeitet sein: Austern-, Kräuter-, Rosen-, Limonen-, Estragon- und Lungen-seitling, Shiitake, Stachelbärte, Klapperschwamm, Buchenpilz, Samtfussrübling, Pioppino, Chestnut, Nameko (Pleurotus ostreatus, P. eryngii, P. djamor, P. citrinopileatus, P. eosmus, P. pulmonarius, Lentinula edodes, Hericium erinaceus, H. coralloides, H. americanum, H. abietis, H. flagellum, Grifola frondosa, Hypsizygus tessellatus, Flammulina velutipes, Cyclocybe aegerita, Pholiota adiposa, P. nameko)</div></div>`;
@@ -6615,7 +6615,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.68'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.69'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

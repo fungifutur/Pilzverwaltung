@@ -1,3 +1,9 @@
+# Version 1.5.69 – Jerky-Etikette: Strich entfernt
+
+Auf der Jerky-Vorderseite ist der senkrechte Strich nach «Gewürze» weg. «*enthält Soja» steht in einer eigenen Zeile.
+
+Vorherige Version 1.5.68:
+
 # Version 1.5.68 – Etiketten-Druck: letzte Reihe und Vegan-Zeichen
 
 - **Fehler behoben:** Auf den Vorderseiten-Bögen (Dörrpilze und Jerky) war die unterste Reihe abgeschnitten und verschoben. Ursache: Die einzeln gedrehten Etiketten ragten unten über die Seite hinaus, der Browser hat sie beim Drucken umgebrochen. Jetzt wird der ganze Bogen als Ganzes gedreht. Die Reihenfolge der Etiketten bleibt gleich (bei teilweise gefüllten Bögen von oben links).
