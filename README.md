@@ -1,3 +1,10 @@
+# Version 1.5.85 – Verkäufe ohne Kundennamen
+
+- Im Reiter **Verkäufe** gibt es keine Auswertung nach Kunde mehr, keine Kundenspalte, keine Kundensuche und keine Kundenspalte im CSV-Export.
+- Die «Verkaufen»-Knöpfe fragen nicht mehr nach einem Kunden. Bereits früher erfasste Kunden bleiben im Archiv, werden aber in der Statistik nicht angezeigt.
+
+Vorherige Version 1.5.84:
+
 # Version 1.5.84 – Statusquote Substratsäcke und einfacher Stückbestand für Substratsäcke
 
 - **Statistik → Statusquoten:** neue Zeile **Substratsäcke** (Zielstatus «fertig durchwachsen», dazu kontaminiert und die Quoten). Test-Säcke zählen nicht mit.
