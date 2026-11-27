@@ -1,3 +1,9 @@
+# Version 1.5.88 – Gesamtmenge bei «Bestand pro Strain»
+
+- Bei **Dübel, Holzstämme, Spritzen** (und ebenso bei Dauerkulturen, Petrischalen, Flüssigmyzel, Körnerbrut, Substratsäcke) zeigt der erste Knopf neu die **Gesamtmenge**: «**Alle zusammen: N**». Ein Klick darauf zeigt wie bisher alle Einträge ohne Strain-Filter.
+
+Vorherige Version 1.5.87:
+
 # Version 1.5.87 – Verkäufe: Webshop und Direkt zusammen oder getrennt
 
 - Im Reiter **Verkäufe** wählst du bei **Quelle**: alle Quellen, nur Webshop (WooCommerce), nur Direkt oder nur Lager manuell.
