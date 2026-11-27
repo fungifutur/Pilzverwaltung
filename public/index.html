@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.89</title>
+<title>Pilzverwaltung Serverversion 1.5.90</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -137,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.89</h1>
+<h1>Pilzverwaltung – Version 1.5.90</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -293,6 +293,7 @@ nav button.top-link{font-weight:bold}
 <div><label>Bis</label><input id="salesTo" type="date" data-nodefault oninput="renderSales()"></div>
 <div><label>Quelle</label><select id="salesSource" onchange="renderSales()"><option value="">alle Quellen</option><option value="woo">nur Webshop (WooCommerce, abgeschlossene Bestellungen)</option><option value="direkt">nur Direkt (Verkaufen-Knopf, Verkauf buchen, Statuswechsel)</option><option value="lager">nur Lager manuell ausgebucht</option></select></div>
 <div><label>Produkte anzeigen</label><select id="salesGroup" onchange="renderSales()"><option value="merged">Webshop und Direkt zusammen (eine Zeile pro Produkt)</option><option value="sep">getrennt nach Quelle (Webshop und Direkt je eine Zeile)</option></select></div>
+<div style="align-self:end"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="salesAllSkus" onchange="renderSales()"> Alle SKUs zeigen, auch ohne Verkäufe</label></div>
 <div><label>Bereich</label><select id="salesCat" onchange="renderSales()"></select></div>
 <div><label>Suche (Produkt, SKU)</label><input id="salesSearch" oninput="renderSales()" placeholder="z.B. Austern oder Heri_"></div>
 <div style="align-self:end"><button class="secondary" onclick="clearSalesFilter()">Filter löschen</button> <button class="primary" onclick="salesCsv()">Als CSV exportieren</button></div>
@@ -4652,13 +4653,22 @@ function renderSales(){
     const gp=new Map();
     rows.forEach(r=>{ const base=String(r.sku||r.product).toLowerCase(); const key=merged?base:base+'|'+r.source; let g=gp.get(key); if(!g){g={product:r.product,sku:r.sku,cat:r.cat,qty:0,n:0,amount:0,src:{}}; gp.set(key,g);} g.qty+=r.qty; g.n++; g.amount+=r.amount||0; g.src[r.source]=(g.src[r.source]||0)+r.qty; if((g.cat==='WooCommerce'||!g.cat)&&r.cat&&r.cat!=='WooCommerce') g.cat=r.cat; if(r.source==='direkt'&&r.product) g.product=r.product; });
     const srcTxt=g=>Object.keys(g.src).map(k=>(merged?SALES_SRC[k]+' '+g.src[k]:SALES_SRC[k])).join(' · ');
-    setHTML('salesByProduct',[...gp.values()].sort((a,b)=>b.qty-a.qty).map(g=>`<tr><td>${esc(g.product)}</td><td>${esc(g.sku||'–')}</td><td>${esc(g.cat)}</td><td>${esc(srcTxt(g))}</td><td>${g.qty}</td><td>${g.n}</td><td>${g.amount?g.amount.toFixed(2):'–'}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">Keine Verkäufe im gewählten Zeitraum.</td></tr>'); }
+    if(el('salesAllSkus')?.checked){
+      const have=new Set([...gp.values()].map(g=>String(g.sku||'').toLowerCase()).filter(Boolean));
+      const catOf={dowels:'Dübel',kb:'Körnerbrut',syringes:'Spritzen',sub:'Substratsäcke',logs:'Holzstämme',lots:'Dörrpilze',other:'Sonstiges'};
+      const q=(el('salesSearch')?.value||'').trim().toLowerCase(), cf=el('salesCat')?.value||'';
+      allSkuProducts().forEach(p=>{ const sku=String(p.sku||'').trim(); if(!sku||have.has(sku.toLowerCase())) return;
+        const c=(p.area&&p.area!=='unassigned')?areaLabel(p.area):(catOf[skuKind(sku)]||'Sonstiges');
+        if(cf&&c!==cf) return; if(q&&!((p.name||'')+' '+sku).toLowerCase().includes(q)) return;
+        have.add(sku.toLowerCase()); gp.set('zero|'+sku.toLowerCase(),{product:p.name||sku,sku,cat:c,qty:0,n:0,amount:0,src:{}}); });
+    }
+    setHTML('salesByProduct',[...gp.values()].sort((a,b)=>b.qty-a.qty||String(a.sku||a.product).localeCompare(String(b.sku||b.product),'de')).map(g=>`<tr><td>${esc(g.product)}</td><td>${esc(g.sku||'–')}</td><td>${esc(g.cat)}</td><td>${esc(srcTxt(g)||'–')}</td><td>${g.qty}</td><td>${g.n}</td><td>${g.amount?g.amount.toFixed(2):'–'}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">Keine Verkäufe im gewählten Zeitraum.</td></tr>'); }
   setHTML('salesByMonth',group(r=>({key:String(r.date).slice(0,7)||'–'})).sort((a,b)=>String(b.key).localeCompare(String(a.key))).map(g=>`<tr><td>${esc(g.key)}</td><td>${g.qty}</td><td>${g.n}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">–</td></tr>');
   const LIM=500;
   setHTML('salesRows',sorted.slice(0,LIM).map(r=>`<tr><td>${fmt(r.date)}</td><td>${SALES_SRC[r.source]}</td><td>${esc(r.cat)}</td><td>${esc(r.product)}</td><td>${esc(r.sku||'–')}</td><td>${r.qty}</td><td>${esc(r.ref)}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">Keine Verkäufe.</td></tr>');
   setText('salesMore',sorted.length>LIM?`Es werden die neusten ${LIM} von ${sorted.length} Verkäufen angezeigt. Der CSV-Export enthält alle.`:'');
 }
-function clearSalesFilter(){ ['salesFrom','salesTo','salesSource','salesCat','salesSearch'].forEach(i=>{const n=el(i); if(n) n.value='';}); if(el('salesGroup')) el('salesGroup').value='merged'; renderSales(); }
+function clearSalesFilter(){ ['salesFrom','salesTo','salesSource','salesCat','salesSearch'].forEach(i=>{const n=el(i); if(n) n.value='';}); if(el('salesGroup')) el('salesGroup').value='merged'; if(el('salesAllSkus')) el('salesAllSkus').checked=false; renderSales(); }
 function salesCsv(){
   const {rows}=salesFiltered();
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
@@ -6942,7 +6952,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.89'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.90'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
