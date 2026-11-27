@@ -1,3 +1,11 @@
+# Version 1.5.87 – Verkäufe: Webshop und Direkt zusammen oder getrennt
+
+- Im Reiter **Verkäufe** wählst du bei **Quelle**: alle Quellen, nur Webshop (WooCommerce), nur Direkt oder nur Lager manuell.
+- Neu bei **Produkte anzeigen**: **zusammen** (eine Zeile pro Produkt, Menge von Webshop und Direkt zusammengezählt, in der Spalte «Quelle» steht die Aufteilung) oder **getrennt nach Quelle** (Webshop und Direkt je eine eigene Zeile).
+- Das gilt auch für Produkte, die vorher doppelt erschienen (z. B. Pilzholz einmal über WooCommerce und einmal direkt ausgebucht).
+
+Vorherige Version 1.5.86:
+
 # Version 1.5.86 – Substratsäcke im Test: Statusfilter
 
 - Im Reiter **Substratsäcke im Test** gibt es neu das Feld **«Status filtern»**: alle Status, **noch nicht im Fruchtungsraum** (am oder fertig durchwachsen), am durchwachsen, fertig durchwachsen, im Fruchtungsraum oder geerntet.
