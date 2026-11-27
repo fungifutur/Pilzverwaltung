@@ -1,3 +1,11 @@
+# Version 1.5.91 – Verkäufe: abgeschlossene WooCommerce-Bestellungen nachladen
+
+- **Ursache der Abweichungen:** Die Verwaltung lädt aus WooCommerce nur offene Bestellungen (in Bearbeitung, wartend, Kurs bestätigt). Bestellungen, die schon vor der Verwaltung abgeschlossen waren oder die zwischen zwei Abgleichen offen und abgeschlossen wurden, fehlten deshalb in der Verkaufsauswertung.
+- Im Reiter **Verkäufe** gibt es neu **«WooCommerce-Verkäufe nachladen ab»** mit dem Knopf **«Abgeschlossene Bestellungen aus WooCommerce nachladen»**. Der Server holt alle abgeschlossenen Bestellungen ab diesem Datum und speichert nur Bestellnummer, Datum und Artikel (SKU, Name, Menge, Betrag), **keine Personendaten**. Die Auswertung zählt sie zu den bisherigen Bestellungen, ohne etwas doppelt zu zählen. Das Nachladen lässt sich jederzeit wiederholen.
+- Neues Server-Feld `wooSalesHistory` (gehört dem Server, der Browser überschreibt es nicht).
+
+Vorherige Version 1.5.90:
+
 # Version 1.5.90 – Verkäufe: alle SKUs anzeigen
 
 - Im Reiter **Verkäufe** gibt es neu das Häkchen **«Alle SKUs zeigen, auch ohne Verkäufe»**. Dann steht in der Tabelle «Nach Produkt / SKU» jede SKU (aus der SKU-Liste und dem Produktkatalog, ohne ausgeblendete SKUs). SKUs ohne Verkauf erscheinen mit Menge 0 am Ende der Liste. Suche und Bereich gelten auch für diese Zeilen.

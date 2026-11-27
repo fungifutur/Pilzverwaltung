@@ -9,7 +9,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.90';
+const APP_VERSION = '1.5.91';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -52,10 +52,10 @@ const MIME = {
 
 const DEFAULT_DB = {
   dk: [], petri: [], lc: [], kb: [], mix: [], sub: [], harv: [], buckets: [], lots: [], goods: [], logs: [],
-  archive: [], minStocks: [], testGroups: [], masterCultures: [], productCatalog: [], storageLocations: [], stockTransactions: [], wooOrders: [], wooReservations: [], wooSyncLog: [], productionRequests: [], personalTasks: [], personalTaskCategories: [], driedSpecies: [], contamDismissed: [], contamSettings: {}, masterCounters: {}
+  archive: [], minStocks: [], testGroups: [], masterCultures: [], productCatalog: [], storageLocations: [], stockTransactions: [], wooOrders: [], wooReservations: [], wooSyncLog: [], wooSalesHistory: [], productionRequests: [], personalTasks: [], personalTaskCategories: [], driedSpecies: [], contamDismissed: [], contamSettings: {}, masterCounters: {}
 };
 // Sammlungen, die der Server führt bzw. die der Browser nicht überschreiben darf.
-const SERVER_OWNED_KEYS = ['wooOrders', 'wooReservations', 'wooSyncLog'];
+const SERVER_OWNED_KEYS = ['wooOrders', 'wooReservations', 'wooSyncLog', 'wooSalesHistory'];
 
 let pool = null;
 function pgSslConfig() {
@@ -375,7 +375,7 @@ function pruneDb(db) {
 
 // Version = Prüfsumme des vom Browser geführten Teils der Daten. Bestellungen, Reservierungen und
 // Sync-Protokoll gehören dem Server und zählen nicht mit, sonst würde jede neue Bestellung das Speichern blockieren.
-const VERSION_SQL = `md5((data - 'wooOrders' - 'wooReservations' - 'wooSyncLog')::text)`;
+const VERSION_SQL = `md5((data - 'wooOrders' - 'wooReservations' - 'wooSyncLog' - 'wooSalesHistory')::text)`;
 
 let schemaReady = null;
 function ensurePostgres() {
@@ -1923,6 +1923,35 @@ async function handleApi(req, res) {
       if(progressId)wooReconcileProgress.set(progressId,{message:'Abgleich fehlgeschlagen.',done:true,at:Date.now()});
       return failJson(res,err,500,err.message||'Bestellungen konnten nicht mit WooCommerce abgeglichen werden.');
     }
+  }
+  // Verkaufsstatistik: abgeschlossene WooCommerce-Bestellungen ab einem Datum nachladen (nur Artikel, keine Personendaten).
+  if (url.pathname === '/api/woo/sales-history') {
+    if (req.method !== 'POST') return sendJson(res,405,{error:'Nur POST erlaubt.'});
+    try {
+      const body=await readJson(req);
+      const from=String(body.from||'').slice(0,10);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(from)) return sendJson(res,400,{error:'Bitte ein gültiges Von-Datum angeben.'});
+      if(!wooConfigured()) return sendJson(res,400,{error:'WooCommerce ist nicht konfiguriert.'});
+      const fetched=[];
+      for(let page=1;page<=100;page++){
+        const list=await wooRequest(`/orders?status=completed&after=${encodeURIComponent(from+'T00:00:00')}&per_page=100&page=${page}&orderby=date&order=asc`,{method:'GET'});
+        if(!Array.isArray(list)||!list.length) break;
+        for(const o of list){
+          fetched.push({id:o.id,number:String(o.number||o.id),date:String(o.date_completed||o.date_modified||o.date_created||'').slice(0,10),
+            items:(o.line_items||[]).map(i=>({sku:String(i.sku||''),name:String(i.name||''),quantity:Number(i.quantity)||0,total:String(i.total||'0')}))});
+        }
+        if(list.length<100) break;
+      }
+      const out=await withStateLock(async()=>{
+        const db=await readData();
+        const byId=new Map((db.wooSalesHistory||[]).map(h=>[String(h.id),h]));
+        fetched.forEach(h=>byId.set(String(h.id),h));
+        db.wooSalesHistory=[...byId.values()].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+        await writeData(db,'server_limited');
+        return db.wooSalesHistory;
+      });
+      return sendJson(res,200,{ok:true,loaded:fetched.length,history:out});
+    } catch(err){ return failJson(res,err,500,'Verkäufe konnten nicht aus WooCommerce geladen werden.'); }
   }
   if (url.pathname === '/api/woo/order-internal-note') {
     if (req.method !== 'POST') return sendJson(res,405,{error:'Nur POST erlaubt.'});

@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.90</title>
+<title>Pilzverwaltung Serverversion 1.5.91</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -137,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.90</h1>
+<h1>Pilzverwaltung – Version 1.5.91</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -298,6 +298,8 @@ nav button.top-link{font-weight:bold}
 <div><label>Suche (Produkt, SKU)</label><input id="salesSearch" oninput="renderSales()" placeholder="z.B. Austern oder Heri_"></div>
 <div style="align-self:end"><button class="secondary" onclick="clearSalesFilter()">Filter löschen</button> <button class="primary" onclick="salesCsv()">Als CSV exportieren</button></div>
 </div>
+<div class="form" style="align-items:end"><div><label>WooCommerce-Verkäufe nachladen ab</label><input id="salesHistFrom" type="date" data-nodefault></div><div><button class="secondary" id="salesHistBtn" onclick="loadSalesHistory()">Abgeschlossene Bestellungen aus WooCommerce nachladen</button></div><div class="muted" id="salesHistInfo" style="align-self:center"></div></div>
+<p class="muted">Die Verwaltung kennt nur Bestellungen, die sie selbst als offen gesehen hat. Ältere oder zwischen zwei Abgleichen abgeschlossene Bestellungen holst du hier nach (nur Artikel und Mengen, keine Personendaten). Du kannst das jederzeit wiederholen.</p>
 <p class="muted">Gezählt wird, was über einen Verkaufen-Knopf, «Verkauf buchen» oder einen Statuswechsel auf «verkauft» gebucht wurde (Archiv), alles, was in WooCommerce abgeschlossen wurde (Artikel mit SKU), und manuelle Lager-Abgänge. Offene Bestellungen zählen erst, wenn sie in WooCommerce abgeschlossen sind.</p>
 </div>
 <div class="card"><h3>Übersicht</h3><div id="salesSummary"></div></div>
@@ -4623,6 +4625,16 @@ function salesCollect(){
       rows.push({date,source:'woo',cat:cat&&cat.area&&cat.area!=='unassigned'?areaLabel(cat.area):'WooCommerce',product:i.name||i.sku||'',sku:i.sku||'',qty,ref:'Bestellung #'+(o.number||o.id),amount:Number(i.total)||0});
     }
   }
+  // 2b) Nachgeladene abgeschlossene Bestellungen (nur, wenn nicht schon in den Bestellungen enthalten)
+  { const known=new Set((db.wooOrders||[]).filter(o=>String(o.status||'').toLowerCase()==='completed').map(o=>String(o.id)));
+    for(const h of (db.wooSalesHistory||[])){
+      if(known.has(String(h.id))) continue;
+      for(const i of (h.items||[])){
+        const qty=Number(i.quantity)||0; if(qty<=0) continue;
+        const cat=(db.productCatalog||[]).find(p=>p.sku&&i.sku&&String(p.sku).toLowerCase()===String(i.sku).toLowerCase());
+        rows.push({date:salesIso(h.date),source:'woo',cat:cat&&cat.area&&cat.area!=='unassigned'?areaLabel(cat.area):'WooCommerce',product:i.name||i.sku||'',sku:i.sku||'',qty,ref:'Bestellung #'+(h.number||h.id),amount:Number(i.total)||0});
+      }
+    } }
   // 3) Manuelle Lager-Abgänge
   for(const t of (db.stockTransactions||[])){
     if(!(Number(t.change)<0) || !/Abgang/i.test(String(t.note||''))) continue;
@@ -4667,6 +4679,17 @@ function renderSales(){
   const LIM=500;
   setHTML('salesRows',sorted.slice(0,LIM).map(r=>`<tr><td>${fmt(r.date)}</td><td>${SALES_SRC[r.source]}</td><td>${esc(r.cat)}</td><td>${esc(r.product)}</td><td>${esc(r.sku||'–')}</td><td>${r.qty}</td><td>${esc(r.ref)}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">Keine Verkäufe.</td></tr>');
   setText('salesMore',sorted.length>LIM?`Es werden die neusten ${LIM} von ${sorted.length} Verkäufen angezeigt. Der CSV-Export enthält alle.`:'');
+}
+async function loadSalesHistory(){
+  const from=el('salesHistFrom')?.value||''; const info=el('salesHistInfo'), btn=el('salesHistBtn');
+  if(!from){ alert('Bitte zuerst das Datum «nachladen ab» wählen.'); return; }
+  if(btn) btn.disabled=true; if(info) info.textContent='Lade Bestellungen aus WooCommerce … das kann etwas dauern.';
+  try{
+    const d=await wooApi('/api/woo/sales-history',{method:'POST',body:JSON.stringify({from})});
+    db.wooSalesHistory=d.history||[]; renderSales();
+    if(info) info.textContent='Geladen: '+d.loaded+' abgeschlossene Bestellungen ab '+fmt(from)+' (insgesamt '+db.wooSalesHistory.length+' gespeichert).';
+  }catch(e){ if(info) info.textContent='Fehler: '+(e.message||'Laden fehlgeschlagen'); alert(e.message||'Laden fehlgeschlagen'); }
+  finally{ if(btn) btn.disabled=false; }
 }
 function clearSalesFilter(){ ['salesFrom','salesTo','salesSource','salesCat','salesSearch'].forEach(i=>{const n=el(i); if(n) n.value='';}); if(el('salesGroup')) el('salesGroup').value='merged'; if(el('salesAllSkus')) el('salesAllSkus').checked=false; renderSales(); }
 function salesCsv(){
@@ -6952,7 +6975,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.90'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.91'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });

@@ -48,8 +48,8 @@ const wooOrder = (id, status, items = [{ id: id * 10, name: 'Körnerbrut', sku: 
 });
 const until = async (fn, ms = 8000) => { const t0 = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error('Zeitüberschreitung'); await new Promise(r => setTimeout(r, 100)); } };
 
-describe('Pilzverwaltung 1.5.90 gegen PostgreSQL', { skip }, () => {
-  let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [];
+describe('Pilzverwaltung 1.5.91 gegen PostgreSQL', { skip }, () => {
+  let server, serverLog = '', pg, db, wooServer, wooStock = {}, wooFail = false, wooOrdersProcessing = [], wooOrdersCompleted = [];
   const A = new Browser('10.0.0.1');      // Hauptgerät
   const B = new Browser('10.0.0.2');      // zweites Gerät
 
@@ -86,7 +86,7 @@ describe('Pilzverwaltung 1.5.90 gegen PostgreSQL', { skip }, () => {
       const u = new URL(req.url, 'http://x'); res.setHeader('content-type', 'application/json');
       if (wooFail) { res.statusCode = 500; return res.end(JSON.stringify({ message: 'kaputt' })); }
       const sku = u.searchParams.get('sku');
-      if (u.pathname.endsWith('/orders') && req.method === 'GET') { const st = u.searchParams.get('status'); return res.end(JSON.stringify(st === 'processing' && u.searchParams.get('page') === '1' ? wooOrdersProcessing : [])); }
+      if (u.pathname.endsWith('/orders') && req.method === 'GET') { const st = u.searchParams.get('status'); return res.end(JSON.stringify(st === 'processing' && u.searchParams.get('page') === '1' ? wooOrdersProcessing : (st === 'completed' && u.searchParams.get('page') === '1' ? wooOrdersCompleted : []))); }
       if (u.pathname.match(/\/orders\/\d+$/)) { const id = Number(u.pathname.split('/').pop()); const o = wooOrdersProcessing.find(x => x.id === id); if (o) return res.end(JSON.stringify(o)); res.statusCode = 404; return res.end(JSON.stringify({ code: 'woocommerce_rest_shop_order_invalid_id', message: 'Ungültige ID.' })); }
       if (req.method === 'GET' && u.pathname.endsWith('/products') && sku) return res.end(JSON.stringify(sku === 'UNKNOWN' ? [{ id: 99, sku: 'ANDERE_SKU', manage_stock: true }] : [{ id: 1, sku, manage_stock: true, stock_quantity: wooStock[sku] ?? 0, type: 'simple' }]));
       if (u.pathname.match(/\/products\/\d+$/)) {
@@ -313,6 +313,20 @@ describe('Pilzverwaltung 1.5.90 gegen PostgreSQL', { skip }, () => {
     assert.equal(restored.status, 200, restored.text);
     assert.equal((await A.req('GET', '/api/data')).json.archive.length, 1, 'Stand des Backups');
     assert.ok((await db.query(`SELECT 1 FROM app_backups WHERE backup_kind='undo'`)).rows.length >= 1, 'Vorheriger Stand als undo-Backup gesichert');
+  });
+
+  it('Verkaufsstatistik: abgeschlossene Bestellungen werden ohne Personendaten nachgeladen', async () => {
+    wooOrdersCompleted = [{ ...wooOrder(8801, 'completed', [{ id: 1, name: 'Austernseitling Körnerbrut', sku: 'Post_Kör_1000g', quantity: 2, product_id: 0, variation_id: 0, total: '57.50' }]), date_completed: '2026-10-05T10:00:00', billing: { first_name: 'Anna', last_name: 'Muster', email: 'a@b.ch' } }];
+    assert.equal((await A.req('POST', '/api/woo/sales-history', { body: { from: 'kaputt' } })).status, 400);
+    const r = await A.req('POST', '/api/woo/sales-history', { body: { from: '2026-01-01' } });
+    assert.equal(r.status, 200, r.text);
+    assert.equal(r.json.loaded, 1);
+    const h = r.json.history.find(x => x.id === 8801);
+    assert.equal(h.date, '2026-10-05'); assert.equal(h.items[0].sku, 'Post_Kör_1000g'); assert.equal(h.items[0].quantity, 2);
+    assert.ok(!JSON.stringify(h).includes('Muster'), 'keine Personendaten');
+    const again = await A.req('POST', '/api/woo/sales-history', { body: { from: '2026-01-01' } });
+    assert.equal(again.json.history.filter(x => x.id === 8801).length, 1, 'kein Doppeleintrag');
+    wooOrdersCompleted = [];
   });
 
   it('Abgleich mit WooCommerce: importiert neue Bestellungen, erkennt gelöschte, überschreibt keine Bemerkungen (WOO-02)', async () => {
