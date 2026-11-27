@@ -1,3 +1,10 @@
+# Version 1.5.86 – Substratsäcke im Test: Statusfilter
+
+- Im Reiter **Substratsäcke im Test** gibt es neu das Feld **«Status filtern»**: alle Status, **noch nicht im Fruchtungsraum** (am oder fertig durchwachsen), am durchwachsen, fertig durchwachsen, im Fruchtungsraum oder geerntet.
+- Der Statusfilter lässt sich mit der **Strain-Auswahl** kombinieren. Die Zahlen pro Strain und «Alle sichtbaren markieren» gelten für die gefilterten Säcke. So kannst du zuerst nach Status filtern und dann gezielt die noch nicht transferierten Säcke eines Strains auswählen.
+
+Vorherige Version 1.5.85:
+
 # Version 1.5.85 – Verkäufe ohne Kundennamen
 
 - Im Reiter **Verkäufe** gibt es keine Auswertung nach Kunde mehr, keine Kundenspalte, keine Kundensuche und keine Kundenspalte im CSV-Export.
