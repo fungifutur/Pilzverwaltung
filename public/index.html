@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.91</title>
+<title>Pilzverwaltung Serverversion 1.5.92</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -137,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.91</h1>
+<h1>Pilzverwaltung – Version 1.5.92</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -301,7 +301,7 @@ nav button.top-link{font-weight:bold}
 <p class="muted">Gezählt wird, was über einen Verkaufen-Knopf, «Verkauf buchen» oder einen Statuswechsel auf «verkauft» gebucht wurde (Archiv), alles, was in WooCommerce abgeschlossen wurde (Artikel mit SKU), und manuelle Lager-Abgänge. Offene Bestellungen zählen erst, wenn sie in WooCommerce abgeschlossen sind.</p>
 </div>
 <div class="card"><h3>Übersicht</h3><div id="salesSummary"></div></div>
-<div class="card"><h3>Vergleich nach Produktart (SKU-Endung)</h3><p class="muted">_Sub = Substratsäcke, _Hol = Holzstämme, _Düb = Dübel, _Flü = Flüssigmyzel. Es gelten die Filter oben (Zeitraum, Quelle, Bereich, Suche).</p><table><thead><tr><th>Produktart</th><th>Menge</th><th>Anteil</th><th style="width:30%">Vergleich</th><th>Webshop</th><th>Direkt</th><th>Vorgänge</th><th>Umsatz WooCommerce (CHF)</th></tr></thead><tbody id="salesByKind"></tbody></table>
+<div class="card"><h3>Vergleich nach Produktart (SKU-Endung)</h3><p class="muted">_Sub = Substratsäcke, _Hol = Holzstämme, _Düb = Dübel, _Flü = Flüssigmyzel. Der Balken und der Anteil beziehen sich auf den Umsatz (CHF). Der Umsatz ist nur bei WooCommerce-Bestellungen bekannt, direkt gebuchte Verkäufe haben keinen Preis. Es gelten die Filter oben (Zeitraum, Quelle, Bereich, Suche).</p><table><thead><tr><th>Produktart</th><th>Menge</th><th>Anteil Umsatz</th><th style="width:30%">Vergleich nach Umsatz</th><th>Webshop</th><th>Direkt</th><th>Vorgänge</th><th>Umsatz WooCommerce (CHF)</th></tr></thead><tbody id="salesByKind"></tbody></table>
 <h4 style="margin-top:14px">Menge pro Monat und Produktart</h4><div style="overflow-x:auto"><table><thead id="salesKindMonthHead"></thead><tbody id="salesKindMonthRows"></tbody></table></div></div>
 <div class="card"><h3>Nach Produkt / SKU</h3><table><thead><tr><th>Produkt</th><th>SKU</th><th>Bereich</th><th>Quelle</th><th>Menge</th><th>Vorgänge</th><th>Umsatz WooCommerce (CHF)</th></tr></thead><tbody id="salesByProduct"></tbody></table></div>
 <div class="card"><h3>Nach Monat</h3><table><thead><tr><th>Monat</th><th>Menge</th><th>Vorgänge</th></tr></thead><tbody id="salesByMonth"></tbody></table></div>
@@ -4671,9 +4671,9 @@ function renderSales(){
     const order=KINDS.map(k=>k[0]).concat(['Sonstige','ohne SKU']);
     const agg=new Map(order.map(k=>[k,{qty:0,woo:0,direkt:0,n:0,amount:0,months:{}}]));
     rows.forEach(r=>{ const g=agg.get(kindOf(r)); g.qty+=r.qty; g.n++; g.amount+=r.amount||0; if(r.source==='woo') g.woo+=r.qty; else if(r.source==='direkt') g.direkt+=r.qty; const m=String(r.date).slice(0,7)||'–'; g.months[m]=(g.months[m]||0)+r.qty; });
-    const total=[...agg.values()].reduce((a,g)=>a+g.qty,0), max=Math.max(1,...[...agg.values()].map(g=>g.qty));
+    const total=[...agg.values()].reduce((a,g)=>a+g.amount,0), max=Math.max(0.01,...[...agg.values()].map(g=>g.amount));
     const show=order.filter((k,i)=>i<4||agg.get(k).qty>0||agg.get(k).n>0);
-    setHTML('salesByKind',show.map(k=>{const g=agg.get(k);return `<tr><td><b>${esc(k)}</b></td><td>${g.qty}</td><td>${total?Math.round(g.qty/total*1000)/10:0}%</td><td><div style="background:#e8efe9;border-radius:4px;height:14px"><div style="background:#2e7d4f;height:14px;border-radius:4px;width:${(g.qty/max*100).toFixed(1)}%"></div></div></td><td>${g.woo}</td><td>${g.direkt}</td><td>${g.n}</td><td>${g.amount?g.amount.toFixed(2):'–'}</td></tr>`;}).join(''));
+    setHTML('salesByKind',show.map(k=>{const g=agg.get(k);return `<tr><td><b>${esc(k)}</b></td><td>${g.qty}</td><td>${total?Math.round(g.amount/total*1000)/10:0}%</td><td><div style="background:#e8efe9;border-radius:4px;height:14px"><div style="background:#2e7d4f;height:14px;border-radius:4px;width:${(g.amount/max*100).toFixed(1)}%"></div></div></td><td>${g.woo}</td><td>${g.direkt}</td><td>${g.n}</td><td>${g.amount?g.amount.toFixed(2):'–'}</td></tr>`;}).join(''));
     const months=[...new Set([...agg.values()].flatMap(g=>Object.keys(g.months)))].sort();
     setHTML('salesKindMonthHead','<tr><th>Produktart</th>'+months.map(m=>`<th>${esc(m)}</th>`).join('')+'<th>Total</th></tr>');
     setHTML('salesKindMonthRows',months.length?show.map(k=>{const g=agg.get(k);return `<tr><td><b>${esc(k)}</b></td>${months.map(m=>`<td>${g.months[m]||'–'}</td>`).join('')}<td><b>${g.qty}</b></td></tr>`;}).join(''):'<tr><td class="muted">Keine Verkäufe im gewählten Zeitraum.</td></tr>'); }
@@ -6965,7 +6965,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.91'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.92'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
