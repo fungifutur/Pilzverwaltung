@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.85</title>
+<title>Pilzverwaltung Serverversion 1.5.86</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -137,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.85</h1>
+<h1>Pilzverwaltung – Version 1.5.86</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -262,6 +262,7 @@ nav button.top-link{font-weight:bold}
 <h2>Substratsäcke im Test</h2>
 <div class="card">
 <p class="muted">Nur Substratsäcke, die beim Erzeugen als Test markiert wurden. Über die Suche kannst du nach Strain filtern.</p>
+<div class="form" style="align-items:end;margin-bottom:8px"><div><label>Status filtern</label><select id="testSubStatusFilter" onchange="render()"><option value="">alle Status</option><option value="notTransferred">noch nicht im Fruchtungsraum (am / fertig durchwachsen)</option><option value="am durchwachsen">am durchwachsen</option><option value="fertig durchwachsen">fertig durchwachsen</option><option value="im Fruchtungsraum">im Fruchtungsraum</option><option value="geerntet">geerntet</option></select></div><div class="muted" style="align-self:center">Kombinierbar mit der Strain-Auswahl unten.</div></div>
 <div><strong>Auswahl pro Strain:</strong><br><span id="testSubSummary"></span></div>
 <div style="margin-top:12px">
 <div class="form" style="align-items:end">
@@ -3484,7 +3485,13 @@ updateDbPrepStats();
 
 renderTaskCenter();
 
-const testSubs = (db.sub||[]).filter(x=>x.forTest && !isArchivedStatus(x.status));
+const _tsf=el('testSubStatusFilter')?.value||'';
+const testSubs = (db.sub||[]).filter(x=>x.forTest && !isArchivedStatus(x.status)).filter(x=>{
+  const st=String(x.status||'').toLowerCase();
+  if(!_tsf) return true;
+  if(_tsf==='notTransferred') return st==='am durchwachsen'||st==='fertig durchwachsen';
+  return st===_tsf.toLowerCase();
+});
 setHTML('testSubSummary', stockSummaryDropdown('testsub', testSubs, x=>qtyOrOne(x.qty)));
 setHTML('testSubRows', applyViewFilter('testsub', testSubs).map(x=>{
   const hid = domId(x.id);
@@ -6928,7 +6935,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.85'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.86'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
