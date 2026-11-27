@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.87</title>
+<title>Pilzverwaltung Serverversion 1.5.88</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -137,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.87</h1>
+<h1>Pilzverwaltung – Version 1.5.88</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -1373,7 +1373,8 @@ function stockSummary(moduleKey, arr, countFn=(x)=>1){
   activeItems(arr).forEach(x=>{ const key=filterKeyFor(x); map[key]=(map[key]||0)+countFn(x); });
   const keys=Object.keys(map).sort();
   if(!keys.length) return '<span class="muted">Keine aktiven Einträge.</span>';
-  const allButton = `<button class="secondary" onclick="clearViewFilter('${moduleKey}')">Alle anzeigen</button>`;
+  const total=keys.reduce((a,k)=>a+(+map[k]||0),0);
+  const allButton = `<button class="secondary" onclick="clearViewFilter('${moduleKey}')"><b>Alle zusammen: ${total}</b></button>`;
   const buttons = keys.map(k=>`<button class="secondary" onclick="setViewFilter('${moduleKey}', '${escHtml(escJs(k))}')">${escHtml(k)}: ${map[k]}</button>`).join(' ');
   return allButton + ' ' + buttons;
 }
@@ -1431,7 +1432,8 @@ function stockSummaryDropdown(moduleKey, arr, countFn=(x)=>1){
   const searchId = moduleKey + 'SummarySearch';
   const resultsId = moduleKey + 'SummaryResults';
   const termValue = escHtml(el(searchId)?.value || '');
-  const allButton = `<button class="secondary" onclick="clearViewFilter('${moduleKey}')">Alle anzeigen</button>`;
+  const total=allKeys.reduce((a,k)=>a+(+map[k]||0),0);
+  const allButton = `<button class="secondary" onclick="clearViewFilter('${moduleKey}')"><b>Alle zusammen: ${total}</b></button>`;
   const search = `<input id="${searchId}" value="${termValue}" oninput="refreshSummaryDropdown('${moduleKey}')" placeholder="Strain oder ID suchen, z.B. pleu oder PET-..." style="max-width:320px;display:inline-block;margin-left:8px">`;
   const current = viewFilters[moduleKey] ? `<span class="badge" style="margin-left:8px">Filter: ${escHtml(viewFilters[moduleKey])}</span>` : '';
   const results = `<div id="${resultsId}" style="margin-top:8px"><span class="muted">Suchbegriff eingeben, um Strains/IDs anzuzeigen.</span></div>`;
@@ -6940,7 +6942,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.87'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.88'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
