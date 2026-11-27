@@ -1,3 +1,9 @@
+# Version 1.5.92 – Verkäufe: Vergleich nach Umsatz
+
+- Beim **Vergleich nach Produktart** zeigen der **Balken** und der **Anteil** jetzt den **Umsatz (CHF)** statt der verkauften Menge. Die Menge steht weiterhin in der Tabelle. Der Umsatz ist nur bei WooCommerce-Bestellungen bekannt, direkt gebuchte Verkäufe haben keinen Preis.
+
+Vorherige Version 1.5.91:
+
 # Version 1.5.91 – Verkäufe: Vergleich nach Produktart
 
 - Im Reiter **Verkäufe** gibt es neu die Karte **«Vergleich nach Produktart (SKU-Endung)»**: **_Sub** (Substratsäcke), **_Hol** (Holzstämme), **_Düb** (Dübel) und **_Flü** (Flüssigmyzel) direkt nebeneinander, dazu Körnerbrut (_Kör), Sonstige und Verkäufe ohne SKU. Pro Produktart stehen Menge, Anteil in %, ein Balken zum Vergleichen, Aufteilung Webshop/Direkt, Vorgänge und WooCommerce-Umsatz.
