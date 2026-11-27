@@ -1,3 +1,9 @@
+# Version 1.5.90 – Verkäufe: alle SKUs anzeigen
+
+- Im Reiter **Verkäufe** gibt es neu das Häkchen **«Alle SKUs zeigen, auch ohne Verkäufe»**. Dann steht in der Tabelle «Nach Produkt / SKU» jede SKU (aus der SKU-Liste und dem Produktkatalog, ohne ausgeblendete SKUs). SKUs ohne Verkauf erscheinen mit Menge 0 am Ende der Liste. Suche und Bereich gelten auch für diese Zeilen.
+
+Vorherige Version 1.5.89:
+
 # Version 1.5.89 – Verkäufe: richtiges Datum für WooCommerce-Bestellungen
 
 - Im Reiter **Verkäufe** wurde bei WooCommerce-Bestellungen bisher das Datum genommen, an dem die Verwaltung die Bestellung archiviert hat (Abgleichzeitpunkt). Dadurch lagen viele Bestellungen auf wenigen Tagen. Neu gilt: **Abschlussdatum** der Bestellung (`date_completed`, wird bei neuen Abgleichen mitgespeichert), sonst das **letzte Änderungsdatum** in WooCommerce, sonst das Bestelldatum. Das Archivierungsdatum wird nur noch als letzte Möglichkeit verwendet.
