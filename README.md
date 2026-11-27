@@ -1,3 +1,10 @@
+# Version 1.5.89 – Verkäufe: richtiges Datum für WooCommerce-Bestellungen
+
+- Im Reiter **Verkäufe** wurde bei WooCommerce-Bestellungen bisher das Datum genommen, an dem die Verwaltung die Bestellung archiviert hat (Abgleichzeitpunkt). Dadurch lagen viele Bestellungen auf wenigen Tagen. Neu gilt: **Abschlussdatum** der Bestellung (`date_completed`, wird bei neuen Abgleichen mitgespeichert), sonst das **letzte Änderungsdatum** in WooCommerce, sonst das Bestelldatum. Das Archivierungsdatum wird nur noch als letzte Möglichkeit verwendet.
+- Bereits archivierte ältere Bestellungen haben noch kein Abschlussdatum. Für sie gilt das letzte Änderungsdatum in WooCommerce.
+
+Vorherige Version 1.5.88:
+
 # Version 1.5.88 – Gesamtmenge bei «Bestand pro Strain»
 
 - Bei **Dübel, Holzstämme, Spritzen** (und ebenso bei Dauerkulturen, Petrischalen, Flüssigmyzel, Körnerbrut, Substratsäcke) zeigt der erste Knopf neu die **Gesamtmenge**: «**Alle zusammen: N**». Ein Klick darauf zeigt wie bisher alle Einträge ohne Strain-Filter.

@@ -9,7 +9,7 @@ let QRCode = null;
 try { ({ Pool } = require('pg')); } catch (_) { Pool = null; }
 try { QRCode = require('qrcode'); } catch (_) { QRCode = null; }
 
-const APP_VERSION = '1.5.88';
+const APP_VERSION = '1.5.89';
 const PORT = Number(process.env.PORT || 3000);
 const wooReconcileProgress = new Map();
 
@@ -1179,7 +1179,7 @@ function scheduleWooSync(oldDb, newDb, reason) {
 }
 function normalizeWooOrder(o) {
   return {
-    id:o.id, number:o.number, status:o.status, date_created:o.date_created, date_modified:o.date_modified||'',
+    id:o.id, number:o.number, status:o.status, date_created:o.date_created, date_modified:o.date_modified||'', date_completed:o.date_completed||'',
     customer:[o.shipping?.first_name,o.shipping?.last_name].filter(Boolean).join(' ') || [o.billing?.first_name,o.billing?.last_name].filter(Boolean).join(' '),
     shipping:minimizeContact(o.shipping), billing:minimizeContact(o.billing), payment_method:o.payment_method_title||o.payment_method||'',
     shipping_lines:o.shipping_lines||[], shipping_method:o.shipping_method||'', latest_shipping_date:o.latest_shipping_date||'', customer_note:String(o.customer_note||''),
