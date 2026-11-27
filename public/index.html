@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Pilzverwaltung Serverversion 1.5.86</title>
+<title>Pilzverwaltung Serverversion 1.5.87</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f4f5f1;color:#1f2933}
@@ -137,7 +137,7 @@ nav button.top-link{font-weight:bold}
 <datalist id="strainAutocompleteList"></datalist>
 <datalist id="productAutocompleteList"></datalist>
 <header>
-<h1>Pilzverwaltung – Version 1.5.86</h1>
+<h1>Pilzverwaltung – Version 1.5.87</h1>
 <p class="muted">Server-Version: Daten werden zentral auf dem Server gespeichert.</p>
 </header>
 <div class="layout">
@@ -291,7 +291,8 @@ nav button.top-link{font-weight:bold}
 <div class="form">
 <div><label>Von</label><input id="salesFrom" type="date" data-nodefault oninput="renderSales()"></div>
 <div><label>Bis</label><input id="salesTo" type="date" data-nodefault oninput="renderSales()"></div>
-<div><label>Quelle</label><select id="salesSource" onchange="renderSales()"><option value="">alle</option><option value="direkt">Direkt (Verkaufen-Knopf, Verkauf buchen, Statuswechsel)</option><option value="woo">WooCommerce (abgeschlossene Bestellungen)</option><option value="lager">Lager manuell ausgebucht</option></select></div>
+<div><label>Quelle</label><select id="salesSource" onchange="renderSales()"><option value="">alle Quellen</option><option value="woo">nur Webshop (WooCommerce, abgeschlossene Bestellungen)</option><option value="direkt">nur Direkt (Verkaufen-Knopf, Verkauf buchen, Statuswechsel)</option><option value="lager">nur Lager manuell ausgebucht</option></select></div>
+<div><label>Produkte anzeigen</label><select id="salesGroup" onchange="renderSales()"><option value="merged">Webshop und Direkt zusammen (eine Zeile pro Produkt)</option><option value="sep">getrennt nach Quelle (Webshop und Direkt je eine Zeile)</option></select></div>
 <div><label>Bereich</label><select id="salesCat" onchange="renderSales()"></select></div>
 <div><label>Suche (Produkt, SKU)</label><input id="salesSearch" oninput="renderSales()" placeholder="z.B. Austern oder Heri_"></div>
 <div style="align-self:end"><button class="secondary" onclick="clearSalesFilter()">Filter löschen</button> <button class="primary" onclick="salesCsv()">Als CSV exportieren</button></div>
@@ -299,7 +300,7 @@ nav button.top-link{font-weight:bold}
 <p class="muted">Gezählt wird, was über einen Verkaufen-Knopf, «Verkauf buchen» oder einen Statuswechsel auf «verkauft» gebucht wurde (Archiv), alles, was in WooCommerce abgeschlossen wurde (Artikel mit SKU), und manuelle Lager-Abgänge. Offene Bestellungen zählen erst, wenn sie in WooCommerce abgeschlossen sind.</p>
 </div>
 <div class="card"><h3>Übersicht</h3><div id="salesSummary"></div></div>
-<div class="card"><h3>Nach Produkt / SKU</h3><table><thead><tr><th>Produkt</th><th>SKU</th><th>Bereich</th><th>Menge</th><th>Vorgänge</th><th>Umsatz WooCommerce (CHF)</th></tr></thead><tbody id="salesByProduct"></tbody></table></div>
+<div class="card"><h3>Nach Produkt / SKU</h3><table><thead><tr><th>Produkt</th><th>SKU</th><th>Bereich</th><th>Quelle</th><th>Menge</th><th>Vorgänge</th><th>Umsatz WooCommerce (CHF)</th></tr></thead><tbody id="salesByProduct"></tbody></table></div>
 <div class="card"><h3>Nach Monat</h3><table><thead><tr><th>Monat</th><th>Menge</th><th>Vorgänge</th></tr></thead><tbody id="salesByMonth"></tbody></table></div>
 <div class="card"><h3>Einzelne Verkäufe</h3><table><thead><tr><th>Datum</th><th>Quelle</th><th>Bereich</th><th>Produkt</th><th>SKU</th><th>Menge</th><th>Bezug</th></tr></thead><tbody id="salesRows"></tbody></table><p class="muted" id="salesMore"></p></div>
 </section>
@@ -4645,13 +4646,17 @@ function renderSales(){
   const umsatz=rows.reduce((a,r)=>a+(r.amount||0),0);
   setHTML('salesSummary',`<p><b>${sum(rows)}</b> Stück in <b>${rows.length}</b> Verkaufsvorgängen${umsatz?` · WooCommerce-Umsatz <b>CHF ${umsatz.toFixed(2)}</b>`:''}</p><table><thead><tr><th>Quelle</th><th>Menge</th><th>Vorgänge</th></tr></thead><tbody>${bySrc}</tbody></table>`);
   const group=(keyFn)=>{const m=new Map();rows.forEach(r=>{const k=keyFn(r);let g=m.get(k.key);if(!g){g={...k,qty:0,n:0,amount:0};m.set(k.key,g);}g.qty+=r.qty;g.n++;g.amount+=r.amount||0;});return [...m.values()];};
-  setHTML('salesByProduct',group(r=>({key:(r.sku||r.product)+'|'+r.cat,product:r.product,sku:r.sku,cat:r.cat})).sort((a,b)=>b.qty-a.qty).map(g=>`<tr><td>${esc(g.product)}</td><td>${esc(g.sku||'–')}</td><td>${esc(g.cat)}</td><td>${g.qty}</td><td>${g.n}</td><td>${g.amount?g.amount.toFixed(2):'–'}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">Keine Verkäufe im gewählten Zeitraum.</td></tr>');
+  { const merged=(el('salesGroup')?.value||'merged')==='merged';
+    const gp=new Map();
+    rows.forEach(r=>{ const base=String(r.sku||r.product).toLowerCase(); const key=merged?base:base+'|'+r.source; let g=gp.get(key); if(!g){g={product:r.product,sku:r.sku,cat:r.cat,qty:0,n:0,amount:0,src:{}}; gp.set(key,g);} g.qty+=r.qty; g.n++; g.amount+=r.amount||0; g.src[r.source]=(g.src[r.source]||0)+r.qty; if((g.cat==='WooCommerce'||!g.cat)&&r.cat&&r.cat!=='WooCommerce') g.cat=r.cat; if(r.source==='direkt'&&r.product) g.product=r.product; });
+    const srcTxt=g=>Object.keys(g.src).map(k=>(merged?SALES_SRC[k]+' '+g.src[k]:SALES_SRC[k])).join(' · ');
+    setHTML('salesByProduct',[...gp.values()].sort((a,b)=>b.qty-a.qty).map(g=>`<tr><td>${esc(g.product)}</td><td>${esc(g.sku||'–')}</td><td>${esc(g.cat)}</td><td>${esc(srcTxt(g))}</td><td>${g.qty}</td><td>${g.n}</td><td>${g.amount?g.amount.toFixed(2):'–'}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">Keine Verkäufe im gewählten Zeitraum.</td></tr>'); }
   setHTML('salesByMonth',group(r=>({key:String(r.date).slice(0,7)||'–'})).sort((a,b)=>String(b.key).localeCompare(String(a.key))).map(g=>`<tr><td>${esc(g.key)}</td><td>${g.qty}</td><td>${g.n}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">–</td></tr>');
   const LIM=500;
   setHTML('salesRows',sorted.slice(0,LIM).map(r=>`<tr><td>${fmt(r.date)}</td><td>${SALES_SRC[r.source]}</td><td>${esc(r.cat)}</td><td>${esc(r.product)}</td><td>${esc(r.sku||'–')}</td><td>${r.qty}</td><td>${esc(r.ref)}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">Keine Verkäufe.</td></tr>');
   setText('salesMore',sorted.length>LIM?`Es werden die neusten ${LIM} von ${sorted.length} Verkäufen angezeigt. Der CSV-Export enthält alle.`:'');
 }
-function clearSalesFilter(){ ['salesFrom','salesTo','salesSource','salesCat','salesSearch'].forEach(i=>{const n=el(i); if(n) n.value='';}); renderSales(); }
+function clearSalesFilter(){ ['salesFrom','salesTo','salesSource','salesCat','salesSearch'].forEach(i=>{const n=el(i); if(n) n.value='';}); if(el('salesGroup')) el('salesGroup').value='merged'; renderSales(); }
 function salesCsv(){
   const {rows}=salesFiltered();
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
@@ -6935,7 +6940,7 @@ async function mergeMasterCodesPrompt(){
   renderAdmin();
 }
 
-function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.86'; }
+function updateAdminVersionEcho(){ const n=el('adminUpdateVersion'); if(n) n.textContent='1.5.87'; }
 
 function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='pilzverwaltung_serverdaten.json';a.click()}
 initApp().catch(e=>{ if(e?.code!=='DEVICE_BLOCKED') console.error('Initialisierung fehlgeschlagen',e); });
