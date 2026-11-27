@@ -1,3 +1,11 @@
+# Version 1.5.91 – Verkäufe: Vergleich nach Produktart
+
+- Im Reiter **Verkäufe** gibt es neu die Karte **«Vergleich nach Produktart (SKU-Endung)»**: **_Sub** (Substratsäcke), **_Hol** (Holzstämme), **_Düb** (Dübel) und **_Flü** (Flüssigmyzel) direkt nebeneinander, dazu Körnerbrut (_Kör), Sonstige und Verkäufe ohne SKU. Pro Produktart stehen Menge, Anteil in %, ein Balken zum Vergleichen, Aufteilung Webshop/Direkt, Vorgänge und WooCommerce-Umsatz.
+- Darunter die Tabelle **«Menge pro Monat und Produktart»**.
+- Es gelten die Filter des Reiters (Zeitraum, Quelle, Bereich, Suche).
+
+Vorherige Version 1.5.90:
+
 # Version 1.5.90 – Verkäufe: alle SKUs anzeigen
 
 - Im Reiter **Verkäufe** gibt es neu das Häkchen **«Alle SKUs zeigen, auch ohne Verkäufe»**. Dann steht in der Tabelle «Nach Produkt / SKU» jede SKU (aus der SKU-Liste und dem Produktkatalog, ohne ausgeblendete SKUs). SKUs ohne Verkauf erscheinen mit Menge 0 am Ende der Liste. Suche und Bereich gelten auch für diese Zeilen.
